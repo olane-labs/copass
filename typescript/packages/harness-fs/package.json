@@ -1,0 +1,65 @@
+{
+  "name": "@copass/harness-fs",
+  "version": "0.1.0",
+  "description": "Filesystem ingestion, watching, and indexing for the Copass knowledge graph",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/",
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "copass",
+    "knowledge-graph",
+    "filesystem",
+    "watcher",
+    "indexing"
+  ],
+  "author": "Olane Inc.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/olane-labs/copass-harness.git",
+    "directory": "typescript/packages/harness-fs"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "chokidar": "^4.0.0",
+    "ignore": "^7.0.0"
+  },
+  "peerDependencies": {
+    "@copass/core": "^0.1.0"
+  },
+  "devDependencies": {
+    "@copass/core": "*",
+    "@types/node": "^20.17.0",
+    "tsup": "^8.3.0",
+    "vitest": "^2.1.0"
+  }
+}

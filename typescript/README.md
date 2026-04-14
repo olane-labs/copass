@@ -1,45 +1,25 @@
-# @copass/harness
+# Copass TypeScript Packages
 
-TypeScript client SDK for the [Copass](https://copass.id) knowledge graph platform.
+npm workspaces monorepo for Copass TypeScript packages.
 
-## Installation
+## Packages
+
+| Package | Description | Path |
+|---------|-------------|------|
+| [`@copass/core`](./packages/core/) | Core client SDK | `packages/core/` |
+
+## Development
 
 ```bash
-npm install @copass/harness
+npm install          # install all workspaces
+npm run build        # build all packages
+npm run typecheck    # type check all packages
+npm run lint         # lint all packages
+npm test             # test all packages
 ```
 
-Requires Node.js >= 18.0.0.
+## Adding a New Package
 
-## Usage
-
-```typescript
-import { CopassClient } from '@copass/harness';
-
-const client = new CopassClient({
-  auth: { type: 'api-key', key: 'olk_your_api_key' },
-});
-
-// Natural language search
-const result = await client.matrix.query({
-  query: 'How does authentication work?',
-});
-
-// Knowledge scoring
-const score = await client.cosync.score({
-  canonical_ids: ['entity-uuid'],
-});
-
-// Code ingestion
-await client.extraction.extractCode({
-  code: 'const x = 1;',
-  language: 'typescript',
-});
-```
-
-## Documentation
-
-See the [main documentation](../docs/) for architecture, API reference, and guides.
-
-## License
-
-MIT
+1. Create `packages/<name>/` with `package.json`, `tsconfig.json`, `tsup.config.ts`, `vitest.config.ts`
+2. Extend `../../tsconfig.base.json` in the package tsconfig
+3. Run `npm install` from the workspace root
