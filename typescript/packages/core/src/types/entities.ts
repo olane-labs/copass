@@ -36,10 +36,3 @@ export interface ProvenanceMetadata {
   extraction_batch_id?: string;
 }
 
-/** An extraction source for a canonical entity. */
-export interface ExtractionSource {
-  source_type: string;
-  source_id?: string;
-  extracted_at: string;
-  event_count: number;
-}

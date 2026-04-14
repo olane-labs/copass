@@ -27,8 +27,13 @@ export abstract class BaseResource {
     return this.http.request<TRes>(path, { ...options, method: 'PATCH', body });
   }
 
+  /** PUT a typed request body and return a typed response. */
+  protected put<TRes>(path: string, body?: unknown, options?: Omit<RequestOptions, 'method' | 'body'>): Promise<TRes> {
+    return this.http.request<TRes>(path, { ...options, method: 'PUT', body });
+  }
+
   /** DELETE a resource. */
-  protected delete(path: string, options?: Omit<RequestOptions, 'method' | 'body'>): Promise<unknown> {
-    return this.http.request(path, { ...options, method: 'DELETE' });
+  protected delete<TRes = unknown>(path: string, options?: Omit<RequestOptions, 'method' | 'body'>): Promise<TRes> {
+    return this.http.request<TRes>(path, { ...options, method: 'DELETE' });
   }
 }

@@ -10,6 +10,6 @@ export class UsageResource extends BaseResource {
   }
 
   async getBalance(): Promise<UsageBalance> {
-    return this.get<UsageBalance>('/api/v1/usage/balance');
+    return this.get<UsageBalance>('/api/v1/usage/credits');
   }
 }

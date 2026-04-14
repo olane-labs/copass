@@ -26,12 +26,15 @@ export type {
 
 // Resources
 export { BaseResource } from './resources/base.js';
-export { ExtractionResource } from './resources/extraction.js';
+export { SandboxesResource } from './resources/sandboxes.js';
+export { SourcesResource } from './resources/sources.js';
+export { ProjectsResource } from './resources/projects.js';
+export { VaultResource } from './resources/vault.js';
+export { IngestResource } from './resources/ingest.js';
 export { EntitiesResource } from './resources/entities.js';
 export { CosyncResource } from './resources/cosync.js';
 export { PlansResource } from './resources/plans.js';
 export { MatrixResource } from './resources/matrix.js';
-export { ProjectsResource } from './resources/projects.js';
 export { UsersResource } from './resources/users.js';
 export { ApiKeysResource } from './resources/api-keys.js';
 export { UsageResource } from './resources/usage.js';

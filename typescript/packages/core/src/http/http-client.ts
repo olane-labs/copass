@@ -51,6 +51,10 @@ export interface HttpClientOptions {
 export interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   body?: unknown;
+  /** Raw bytes body — caller must also set headers['Content-Type']. Bypasses JSON serialization. */
+  rawBody?: Uint8Array | ArrayBuffer | Blob;
+  /** When true, parse the response as raw bytes instead of JSON. */
+  rawResponse?: boolean;
   encryptedPayload?: EncryptedPayload;
   query?: Record<string, string | undefined>;
   headers?: Record<string, string>;
@@ -72,22 +76,27 @@ export class HttpClient {
   }
 
   async request<T = unknown>(path: string, options: RequestOptions = {}): Promise<T> {
-    const { method = 'GET', body, encryptedPayload, query, headers: extraHeaders } = options;
+    const { method = 'GET', body, rawBody, rawResponse, encryptedPayload, query, headers: extraHeaders } = options;
 
     const session = await this.authProvider.getSession();
 
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
       Authorization: `Bearer ${session.accessToken}`,
       ...extraHeaders,
     };
+
+    if (rawBody === undefined && !headers['Content-Type'] && !headers['content-type']) {
+      headers['Content-Type'] = 'application/json';
+    }
 
     if (session.sessionToken) {
       headers['X-Encryption-Token'] = session.sessionToken;
     }
 
-    let requestBody: string | undefined;
-    if (encryptedPayload && body) {
+    let requestBody: string | Uint8Array | ArrayBuffer | Blob | undefined;
+    if (rawBody !== undefined) {
+      requestBody = rawBody;
+    } else if (encryptedPayload && body) {
       requestBody = JSON.stringify({ ...(body as Record<string, unknown>), ...encryptedPayload });
     } else if (body !== undefined) {
       requestBody = JSON.stringify(body);
@@ -103,7 +112,9 @@ export class HttpClient {
       if (qs) url += `?${qs}`;
     }
 
-    const ctx: RequestContext = { method, path, url, headers, body: requestBody };
+    const ctxBodyForMiddleware =
+      typeof requestBody === 'string' || requestBody === undefined ? requestBody : '<binary>';
+    const ctx: RequestContext = { method, path, url, headers, body: ctxBodyForMiddleware };
     for (const mw of this.onRequest) {
       await mw(ctx);
     }
@@ -113,7 +124,7 @@ export class HttpClient {
       const response = await fetch(ctx.url, {
         method: ctx.method,
         headers: ctx.headers,
-        body: ctx.body,
+        body: (requestBody ?? undefined) as BodyInit | undefined,
       });
 
       if (!response.ok) {
@@ -136,6 +147,13 @@ export class HttpClient {
         await mw({ request: ctx, status: response.status, durationMs: Date.now() - start });
       }
 
+      if (rawResponse) {
+        const buf = await response.arrayBuffer();
+        return new Uint8Array(buf) as unknown as T;
+      }
+      if (response.status === 204) {
+        return undefined as unknown as T;
+      }
       return response.json() as Promise<T>;
     }, this.retryConfig);
   }

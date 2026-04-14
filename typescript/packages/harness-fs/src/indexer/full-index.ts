@@ -12,7 +12,6 @@ import {
   detectLanguage,
   matchPipeline,
   applyTransforms,
-  buildQueryMetadata,
 } from '@copass/core';
 import type { FullIndexOptions, FullIndexSummary } from '../types.js';
 import { scanProjectFiles } from '../scan/files.js';
@@ -53,17 +52,26 @@ export async function runFullIndex(
     };
   }
 
-  // 2. Register project
-  progress('Registering project...');
-  const project = await client.projects.register({
-    project_path: options.projectPath,
-    project_name: path.basename(options.projectPath),
-    indexing_mode: 'full',
-  });
-  const projectId = project.project_id;
+  // 2. Resolve or create a storage project inside the caller's sandbox.
+  // Caller must supply sandboxId; projectId optional (defaults to a new project).
+  if (!options.sandboxId) {
+    throw new Error(
+      'runFullIndex requires `sandboxId`. Create one with client.sandboxes.create() or pass the caller\'s primary sandbox_id.',
+    );
+  }
+  const sandboxId = options.sandboxId;
+
+  let projectId = options.projectId;
+  if (!projectId) {
+    progress('Creating storage project...');
+    const project = await client.projects.create(sandboxId, {
+      name: path.basename(options.projectPath),
+      metadata: { project_path: options.projectPath, indexing_mode: 'full' },
+    });
+    projectId = project.project_id;
+  }
 
   // 3. Index files with concurrency control
-  const metadata = buildQueryMetadata(options.projectPath);
   const concurrency = config.indexing.concurrency;
   let indexed = 0;
   let errorCount = 0;
@@ -86,25 +94,12 @@ export async function runFullIndex(
         processedContent = applyTransforms(content, pipeline.transforms);
       }
 
-      if (pipeline?.source_type) {
-        // Pipeline routes to text ingestion
-        await client.extraction.extractText({
-          text: processedContent,
-          source_type: pipeline.source_type,
-          entity_hints: pipeline.entity_hints,
-          project_id: projectId,
-          metadata,
-        });
-      } else {
-        // Default: code ingestion
-        await client.extraction.extractCode({
-          code: processedContent,
-          language,
-          file_path: relativePath,
-          project_id: projectId,
-          metadata,
-        });
-      }
+      await client.ingest.textInSandbox(sandboxId, {
+        text: processedContent,
+        source_type: pipeline?.source_type ?? 'code',
+        project_id: projectId,
+      });
+      void language;
 
       indexed++;
     } catch (error) {
@@ -131,14 +126,6 @@ export async function runFullIndex(
     workers.push(runWorker());
   }
   await Promise.all(workers);
-
-  // 4. Mark project complete
-  progress('Marking project complete...');
-  try {
-    await client.projects.complete(projectId);
-  } catch {
-    // Non-fatal — project is indexed even if complete call fails
-  }
 
   const summary: FullIndexSummary = {
     file_count: filePaths.length,

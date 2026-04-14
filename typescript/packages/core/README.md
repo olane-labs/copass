@@ -29,11 +29,12 @@ const score = await client.cosync.score({
   canonical_ids: ['entity-uuid'],
 });
 
-// Code ingestion
-await client.extraction.extractCode({
-  code: 'const x = 1;',
-  language: 'typescript',
+// Ingestion (auto-resolves caller's primary sandbox + default project)
+const job = await client.ingest.text({
+  text: 'const x = 1;',
+  source_type: 'code',
 });
+const status = await client.ingest.getJob(job.job_id);
 ```
 
 ## Documentation

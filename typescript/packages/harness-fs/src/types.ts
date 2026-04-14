@@ -72,6 +72,10 @@ export interface WatchRuntimeOptions {
   service?: boolean;
   once?: boolean;
   maxFiles?: number;
+  /** Sandbox to ingest into. Required. */
+  sandboxId: string;
+  /** Storage project id. Optional — leave unset to ingest into the sandbox's default project. */
+  projectId?: string;
 }
 
 // -- Full index --
@@ -82,6 +86,10 @@ export interface FullIndexOptions {
   maxFiles?: number;
   dryRun?: boolean;
   onProgress?: (msg: string) => void;
+  /** Sandbox to ingest into. Required. */
+  sandboxId: string;
+  /** Storage project id. If omitted, a new sandbox-scoped project is created. */
+  projectId?: string;
 }
 
 export interface FullIndexSummary {

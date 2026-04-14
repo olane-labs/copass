@@ -9,7 +9,7 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { watch as chokidarWatch, type FSWatcher } from 'chokidar';
 import type { CopassClient, ProjectConfig } from '@copass/core';
-import { defaultProjectConfig, detectLanguage, buildQueryMetadata } from '@copass/core';
+import { defaultProjectConfig, detectLanguage } from '@copass/core';
 import type { WatchRuntimeOptions } from '../types.js';
 import { scanProjectFiles, diffFiles, createWatchPathMatcher } from '../scan/files.js';
 import { GitignoreFilter } from '../scan/gitignore.js';
@@ -29,17 +29,24 @@ export class ProjectWatchRuntime {
   private readonly config: ProjectConfig;
   private readonly service: boolean;
   private readonly maxFiles?: number;
+  private readonly sandboxId: string;
+  private readonly projectId?: string;
   private watcher: FSWatcher | null = null;
   private pendingUpserts = new Set<string>();
   private pendingDeletes = new Set<string>();
   private debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(client: CopassClient, options: WatchRuntimeOptions) {
+    if (!options.sandboxId) {
+      throw new Error('ProjectWatchRuntime requires options.sandboxId');
+    }
     this.client = client;
     this.projectPath = options.projectPath;
     this.config = options.config ?? defaultProjectConfig();
     this.service = options.service ?? false;
     this.maxFiles = options.maxFiles;
+    this.sandboxId = options.sandboxId;
+    this.projectId = options.projectId;
   }
 
   /**
@@ -114,7 +121,6 @@ export class ProjectWatchRuntime {
       upserts = upserts.slice(0, this.maxFiles);
     }
 
-    const metadata = buildQueryMetadata(this.projectPath);
     const now = new Date().toISOString();
 
     // Process upserts
@@ -123,12 +129,12 @@ export class ProjectWatchRuntime {
         const absolutePath = path.join(this.projectPath, op.path);
         const content = await fs.readFile(absolutePath, 'utf-8');
         const language = detectLanguage(op.path, this.config.indexing.extra_languages);
+        void language;
 
-        await this.client.extraction.extractCode({
-          code: content,
-          language,
-          file_path: op.path,
-          metadata,
+        await this.client.ingest.textInSandbox(this.sandboxId, {
+          text: content,
+          source_type: 'code',
+          project_id: this.projectId,
         });
 
         state.files[op.path] = { ...op.fingerprint, lastIndexedAt: now };
@@ -194,7 +200,6 @@ export class ProjectWatchRuntime {
     this.pendingDeletes.clear();
 
     const state = await readWatchState(this.projectPath);
-    const metadata = buildQueryMetadata(this.projectPath);
     const now = new Date().toISOString();
     let errors = 0;
 
@@ -203,13 +208,13 @@ export class ProjectWatchRuntime {
         const absolutePath = path.join(this.projectPath, relativePath);
         const content = await fs.readFile(absolutePath, 'utf-8');
         const language = detectLanguage(relativePath, this.config.indexing.extra_languages);
+        void language;
         const stat = await fs.stat(absolutePath);
 
-        await this.client.extraction.extractCode({
-          code: content,
-          language,
-          file_path: relativePath,
-          metadata,
+        await this.client.ingest.textInSandbox(this.sandboxId, {
+          text: content,
+          source_type: 'code',
+          project_id: this.projectId,
         });
 
         const { createHash } = await import('node:crypto');

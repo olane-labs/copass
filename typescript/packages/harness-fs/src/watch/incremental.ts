@@ -50,13 +50,15 @@ export async function planIncrementalIndex(
 export async function runIncrementalIndex(
   client: CopassClient,
   projectPath: string,
-  config?: ProjectConfig,
-  maxFiles?: number,
+  sandboxId: string,
+  options: { config?: ProjectConfig; maxFiles?: number; projectId?: string } = {},
 ): Promise<WatchRunSummary> {
   const runtime = new ProjectWatchRuntime(client, {
     projectPath,
-    config,
-    maxFiles,
+    config: options.config,
+    maxFiles: options.maxFiles,
+    sandboxId,
+    projectId: options.projectId,
   });
   return runtime.reconcile();
 }

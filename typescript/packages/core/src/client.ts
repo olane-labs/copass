@@ -4,7 +4,6 @@ import { SupabaseAuthProvider } from './auth/supabase.js';
 import type { SupabaseAuthOptions } from './auth/supabase.js';
 import type { AuthProvider } from './auth/types.js';
 import { HttpClient } from './http/http-client.js';
-import { ExtractionResource } from './resources/extraction.js';
 import { EntitiesResource } from './resources/entities.js';
 import { CosyncResource } from './resources/cosync.js';
 import { PlansResource } from './resources/plans.js';
@@ -13,6 +12,10 @@ import { ProjectsResource } from './resources/projects.js';
 import { UsersResource } from './resources/users.js';
 import { ApiKeysResource } from './resources/api-keys.js';
 import { UsageResource } from './resources/usage.js';
+import { SandboxesResource } from './resources/sandboxes.js';
+import { SourcesResource } from './resources/sources.js';
+import { VaultResource } from './resources/vault.js';
+import { IngestResource } from './resources/ingest.js';
 import type { RequestMiddleware, ResponseMiddleware } from './http/http-client.js';
 import type { RetryConfig } from './types/common.js';
 
@@ -64,12 +67,15 @@ const DEFAULT_API_URL = 'https://ai.copass.id';
  * ```
  */
 export class CopassClient {
-  readonly extraction: ExtractionResource;
+  readonly sandboxes: SandboxesResource;
+  readonly sources: SourcesResource;
+  readonly projects: ProjectsResource;
+  readonly vault: VaultResource;
+  readonly ingest: IngestResource;
   readonly entities: EntitiesResource;
   readonly cosync: CosyncResource;
   readonly plans: PlansResource;
   readonly matrix: MatrixResource;
-  readonly projects: ProjectsResource;
   readonly users: UsersResource;
   readonly apiKeys: ApiKeysResource;
   readonly usage: UsageResource;
@@ -84,12 +90,15 @@ export class CopassClient {
       onResponse: options.onResponse,
     });
 
-    this.extraction = new ExtractionResource(http);
+    this.sandboxes = new SandboxesResource(http);
+    this.sources = new SourcesResource(http);
+    this.projects = new ProjectsResource(http);
+    this.vault = new VaultResource(http);
+    this.ingest = new IngestResource(http);
     this.entities = new EntitiesResource(http);
     this.cosync = new CosyncResource(http);
     this.plans = new PlansResource(http);
     this.matrix = new MatrixResource(http);
-    this.projects = new ProjectsResource(http);
     this.users = new UsersResource(http);
     this.apiKeys = new ApiKeysResource(http);
     this.usage = new UsageResource(http);

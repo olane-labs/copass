@@ -1,10 +1,13 @@
 export type * from './common.js';
-export type * from './extraction.js';
 export type * from './entities.js';
 export type * from './cosync.js';
 export type * from './plans.js';
 export type * from './matrix.js';
-export type * from './projects.js';
 export type * from './users.js';
 export type * from './api-keys.js';
 export type * from './usage.js';
+export type * from './sandboxes.js';
+export type * from './sources.js';
+export type * from './storage-projects.js';
+export type * from './vault.js';
+export type * from './ingest.js';

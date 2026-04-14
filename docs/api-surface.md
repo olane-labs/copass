@@ -1,6 +1,6 @@
 # Backend API Surface
 
-All endpoints are served under the base URL `https://ai.copass.id` with an `/api/v1` prefix (unless noted otherwise).
+All endpoints are served under the base URL `https://ai.copass.id` (unless noted otherwise).
 
 ## Authentication
 
@@ -11,60 +11,155 @@ All endpoints require authentication via one of:
 Endpoints that accept encrypted payloads also use:
 - `X-Encryption-Token: <session_token>` (wrapped DEK)
 
+## Surface at a glance
+
+The API is split between two layers:
+
+| Layer | Prefix | Purpose |
+|---|---|---|
+| **Copass-ID storage** | `/api/v1/storage/*` | Sandboxes, data sources, projects, vault, ingestion |
+| **Knowledge graph** | `/api/v1/*` | Querying, scoring, entities, users, API keys, usage |
+
+> The legacy `/api/v1/extract/*` endpoints are **deprecated**. All ingestion now flows through `/api/v1/storage/ingest` and the sandbox-scoped `/api/v1/storage/sandboxes/{sandbox_id}/ingest`.
+
 ---
 
-## Extraction
+## Storage · Sandboxes
 
-Ingest text, code, and files into the knowledge graph.
+Sandboxes are the tenancy unit for copass-id. Each sandbox owns its data sources, projects, vault, and ingestion jobs.
 
-### `POST /api/v1/extract`
-Process text and generate ontology events.
+### `POST /api/v1/storage/sandboxes`
+Create a new sandbox.
 
 **Request body:**
 ```json
+{ "name": "string", "owner_id": "uuid", "tier": "free|pro|enterprise", "metadata": {} }
+```
+**Response:** `Sandbox` with `sandbox_id`, `status`, `storage_provider_type`, `limits`.
+
+### `GET /api/v1/storage/sandboxes`
+List sandboxes. Query: `status?`, `owner_id?`.
+
+### `GET /api/v1/storage/sandboxes/{sandbox_id}`
+Retrieve a sandbox.
+
+### `PATCH /api/v1/storage/sandboxes/{sandbox_id}`
+Update `name` and/or `metadata`.
+
+### `POST /api/v1/storage/sandboxes/{sandbox_id}/suspend`
+### `POST /api/v1/storage/sandboxes/{sandbox_id}/reactivate`
+### `POST /api/v1/storage/sandboxes/{sandbox_id}/archive`
+Soft lifecycle transitions. All return `StatusResponse`.
+
+### `DELETE /api/v1/storage/sandboxes/{sandbox_id}`
+Destroy sandbox and cascade-delete its data sources and projects.
+
+---
+
+## Storage · Data Sources
+
+Nested under a sandbox. Represent external providers feeding data into the system.
+
+### `POST /api/v1/storage/sandboxes/{sandbox_id}/sources`
+**Request body:**
+```json
 {
-  "text": "string (mutually exclusive with encrypted_text)",
-  "encrypted_text": "string (base64, mutually exclusive with text)",
-  "encryption_iv": "string (base64, required with encrypted_text)",
-  "encryption_tag": "string (base64, required with encrypted_text)",
-  "source_type": "string (optional)",
-  "source_id": "string (optional, for deduplication)",
-  "explicit_root_id": "string (optional)",
-  "canonical_id": "string (optional)",
-  "external_ids": { "email": "...", "github": "..." },
-  "entity_hints": ["string"],
-  "conversation_history": [{ "role": "...", "content": "..." }],
-  "enable_conversation_adaptation": false,
-  "materialize": false,
-  "skip_cache": false,
-  "project_id": "string (optional)"
+  "provider": "slack|github|linear|gmail|gcal|notion|drive|custom",
+  "name": "string",
+  "ingestion_mode": "realtime|polling|batch|manual",
+  "external_account_id": "string (optional)",
+  "adapter_config": { "...": "provider-specific" },
+  "poll_interval_seconds": 300
 }
 ```
 
-**Response:** `ExtractResponse` with `canonical_id`, `behaviors`, `resolution` info.
+### `GET /api/v1/storage/sandboxes/{sandbox_id}/sources`
+Query: `provider?`, `status?`.
 
-### `POST /api/v1/extract/code`
-Process code files.
+### `GET /api/v1/storage/sandboxes/{sandbox_id}/sources/{source_id}`
+### `PATCH /api/v1/storage/sandboxes/{sandbox_id}/sources/{source_id}`
+### `POST /api/v1/storage/sandboxes/{sandbox_id}/sources/{source_id}/pause`
+### `POST /api/v1/storage/sandboxes/{sandbox_id}/sources/{source_id}/resume`
+### `POST /api/v1/storage/sandboxes/{sandbox_id}/sources/{source_id}/disconnect`
+### `DELETE /api/v1/storage/sandboxes/{sandbox_id}/sources/{source_id}`
 
-### `POST /api/v1/extract/file`
-Process an uploaded file (multipart/form-data).
+---
 
-### `POST /api/v1/extract/files`
-Batch file processing (multipart/form-data).
+## Storage · Projects
 
-### `GET /api/v1/extract/jobs/{job_id}`
-Get extraction job status.
+Sandbox-scoped project grouping. Replaces the deprecated `/api/v1/projects/*` indexing API.
 
-**Response:** `{ "job_id", "status": "pending|processing|completed|failed", ... }`
+### `POST /api/v1/storage/sandboxes/{sandbox_id}/projects`
+**Request body:**
+```json
+{ "name": "string", "description": "string?", "data_source_ids": ["..."], "metadata": {} }
+```
 
-### `GET /api/v1/extract/jobs`
-List extraction jobs.
+### `GET /api/v1/storage/sandboxes/{sandbox_id}/projects`
+Query: `status?`.
 
-### `POST /api/v1/extract/jobs/cancel`
-Cancel an extraction job.
+### `GET /api/v1/storage/sandboxes/{sandbox_id}/projects/{project_id}`
+### `PATCH /api/v1/storage/sandboxes/{sandbox_id}/projects/{project_id}`
+### `POST /api/v1/storage/sandboxes/{sandbox_id}/projects/{project_id}/archive`
+### `DELETE /api/v1/storage/sandboxes/{sandbox_id}/projects/{project_id}`
 
-### `POST /api/v1/extract/jobs/retry`
-Retry failed extraction jobs.
+### `POST /api/v1/storage/sandboxes/{sandbox_id}/projects/{project_id}/sources/{source_id}`
+Link a data source to a project.
+
+### `DELETE /api/v1/storage/sandboxes/{sandbox_id}/projects/{project_id}/sources/{source_id}`
+Unlink a data source.
+
+---
+
+## Storage · Vault
+
+Encrypted object storage scoped to a sandbox. Uses raw bytes (not JSON).
+
+### `PUT /api/v1/storage/sandboxes/{sandbox_id}/vault/{key:path}`
+Store raw bytes. The request body is written as-is with the supplied `Content-Type`.
+
+**Query parameters:**
+- `encrypt=true` — encrypt before storing (requires encryption session)
+- `deduplicate=true` — skip the write if identical content already exists
+
+**Response:** `VaultStoreResponse` with `key`, `full_key`, `size_bytes`, `encrypted`, `deduplicated?`, `is_duplicate?`, `content_hash?`.
+
+### `GET /api/v1/storage/sandboxes/{sandbox_id}/vault/{key:path}`
+Retrieve raw bytes. Query: `decrypt=true|false` (default `true`).
+
+### `DELETE /api/v1/storage/sandboxes/{sandbox_id}/vault/{key:path}`
+
+### `GET /api/v1/storage/sandboxes/{sandbox_id}/vault`
+List keys under a prefix. Query: `prefix?`, `max_keys?` (1–10000, default 1000).
+
+---
+
+## Storage · Ingestion
+
+The only supported ingestion path. Dispatches a chunking job that owns downstream ontology ingestion. Returns `202` with a `job_id` for polling.
+
+### Shorthand (auto-resolves primary sandbox + default project)
+
+### `POST /api/v1/storage/ingest`
+**Request body:**
+```json
+{
+  "text": "string",
+  "source_type": "text|conversation|markdown|code|json",
+  "storage_only": false,
+  "project_id": "string (optional)",
+  "data_source_id": "string (optional)"
+}
+```
+**Response:** `{ "job_id", "status": "queued", "encrypted", "sandbox_id", "project_id", "status_url" }`
+
+### `GET /api/v1/storage/ingest/{job_id}`
+Job status. Includes `children` aggregation when the job is a parent chunking job.
+
+### Explicit sandbox
+
+### `POST /api/v1/storage/sandboxes/{sandbox_id}/ingest`
+### `GET /api/v1/storage/sandboxes/{sandbox_id}/ingest/{job_id}`
 
 ---
 
@@ -82,41 +177,8 @@ Score entities by knowledge confidence.
 }
 ```
 
-**Response:**
-```json
-{
-  "aggregate_score": 0.75,
-  "tier": "review",
-  "tier_label": "Review Recommended",
-  "tier_action": "...",
-  "entities": [
-    {
-      "entity_name": "...",
-      "canonical_id": "...",
-      "score": 0.8,
-      "dimensions": { "...": { "name": "...", "score": 0.9, "weight": 0.3 } },
-      "dominant_deficit": "...",
-      "deficit_gap": 0.1
-    }
-  ],
-  "learning_priorities": [...],
-  "computation_time_ms": 42
-}
-```
-
 ### `POST /api/v2/plans/cosync`
 Score a coding plan's knowledge confidence (v2).
-
-**Request body:**
-```json
-{
-  "plan_text": "string",
-  "entities": [{ "name": "...", "hop_distance": 1 }],
-  "project_id": "string (optional)"
-}
-```
-
-**Response:** Tier classification, entity scores, learning priorities, model recommendation.
 
 ---
 
@@ -126,38 +188,26 @@ Score a coding plan's knowledge confidence (v2).
 Natural language search across the knowledge graph.
 
 **Query parameters:**
-- `query` (required) -- Natural language question
-- `project_id` (optional) -- Scope to a project
-- `reference_date` (optional) -- YYYY-MM-DD for temporal resolution
-- `detail_level` -- `"concise"` or `"detailed"`
-- `max_tokens` (optional) -- Override LLM token limit
+- `query` (required), `project_id?`, `reference_date?`, `detail_level?` (`concise|detailed`), `max_tokens?`
 
 **Headers:**
-- `X-Search-Matrix` -- Preset name: `semantic_alignment`, `semantic_path`, `hierarchical`, `temporal_only`, `direct_graph`, `path_discovery`
-- `X-Detail-Instruction` -- Custom LLM instruction
-- `X-Trace-Id` -- Correlation ID for tracing
-
-**Response:**
-```json
-{
-  "answer": "string",
-  "context": "string",
-  "execution_time_ms": 150
-}
-```
+- `X-Search-Matrix` — preset: `semantic_alignment`, `semantic_path`, `hierarchical`, `temporal_only`, `direct_graph`, `path_discovery`
+- `X-Detail-Instruction`, `X-Trace-Id`
 
 ---
 
 ## Canonical Entities
 
 ### `GET /api/v1/users/me/canonical-entities`
-List all canonical entities for the authenticated user.
-
 ### `GET /api/v1/users/me/canonical-entities/{canonical_id}/perspective`
-Get full perspective of a canonical entity (behaviors, metadata, portals, time series).
 
-### `GET /api/v1/users/me/canonical-entities/{canonical_id}/extraction-sources`
-List extraction sources for a canonical entity.
+> Extraction provenance is no longer served from the entities API. To retrieve
+> the sources that produced an entity, query the copass-id storage layer
+> (ingestion jobs under `/api/v1/storage/ingest/{job_id}` and data sources under
+> `/api/v1/storage/sandboxes/{sandbox_id}/sources`).
+
+### `GET /api/v1/users/me/entities/search`
+Query: `q` (required), `limit?`, `record_type?`, `min_similarity?`, `canonical_id?`.
 
 ---
 
@@ -166,65 +216,39 @@ List extraction sources for a canonical entity.
 ### `POST /api/v1/users/me/profile`
 Create or promote a user profile.
 
-**Request body:**
-```json
-{
-  "display_name": "string (for new profile)",
-  "canonical_id": "string (to promote existing entity)"
-}
-```
-
-**Response:** `{ "canonical_id", "display_name", "is_user_root", "semantic_tags" }`
-
----
-
-## Projects
-
-### `POST /api/v1/projects/register`
-Register or upsert a project.
-
-**Request body:**
-```json
-{
-  "project_path": "/path/to/project",
-  "project_name": "my-project",
-  "indexing_mode": "full|incremental"
-}
-```
-
-### `GET /api/v1/projects/status?project_path=...`
-Get project indexing status.
-
-### `PATCH /api/v1/projects/{project_id}/complete`
-Mark project indexing as complete.
+### `GET /api/v1/users/me/profile`
+Get the current profile.
 
 ---
 
 ## API Keys
 
 ### `POST /api/v1/api-keys`
-Create a new API key.
-
-**Request body:** `{ "name": "string", "expires_in_days": 90 }`
-**Response:** `{ "key_id", "key": "olk_... (shown only once)", "name", "created_at" }`
-
 ### `GET /api/v1/api-keys`
-List API keys (masked).
-
 ### `DELETE /api/v1/api-keys/{key_id}`
-Revoke an API key.
 
 ---
 
 ## Usage
 
 ### `GET /api/v1/usage`
-Get token consumption and cost breakdown.
+Token consumption and cost breakdown.
 
-**Response:** `{ "summary", "by_model", "by_call_type" }`
+### `GET /api/v1/usage/credits`
+Token credit balance.
 
-### `GET /api/v1/usage/balance`
-Get token credit balance.
+---
+
+## Deprecated
+
+The following endpoints are deprecated and removed from the SDK. Do not use them for new integrations:
+
+- `POST /api/v1/extract`, `/extract/code`, `/extract/file`, `/extract/files`, `/extract/llm-only`, `/extract/file/llm-only`, `/extract/files/llm-only`
+- `GET /api/v1/extract/jobs`, `GET /api/v1/extract/jobs/{job_id}`
+- `POST /api/v1/extract/jobs/cancel`, `POST /api/v1/extract/jobs/retry-failed`
+- `POST /api/v1/projects/register`, `GET /api/v1/projects/status`, `PATCH /api/v1/projects/{project_id}/complete`, `GET /api/v1/projects`
+
+Use the storage ingest + sandbox-scoped project endpoints above instead.
 
 ---
 
@@ -233,10 +257,7 @@ Get token credit balance.
 All errors follow this format:
 
 ```json
-{
-  "error": "error_type",
-  "detail": "Human readable message"
-}
+{ "error": "error_type", "detail": "Human readable message" }
 ```
 
 **Status codes:** 400 (validation), 401 (auth required), 403 (forbidden), 404 (not found), 409 (conflict), 422 (unprocessable), 500 (internal), 503 (unavailable).
