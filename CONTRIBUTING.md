@@ -4,20 +4,23 @@
 
 ### TypeScript SDK
 
+The TypeScript workspace uses **pnpm** (see `typescript/pnpm-workspace.yaml`).
+Install pnpm once (`npm i -g pnpm` or `corepack enable`) then:
+
 ```bash
 cd typescript
-npm install
-npm run build
-npm test
+pnpm install
+pnpm run build
+pnpm test
 ```
 
 ### Running checks
 
 ```bash
-npm run lint        # ESLint
-npm run format      # Prettier
-npm run typecheck   # tsc --noEmit
-npm run test        # Vitest
+pnpm run lint        # ESLint
+pnpm run format      # Prettier
+pnpm run typecheck   # tsc --noEmit
+pnpm run test        # Vitest
 ```
 
 ## Project Structure
@@ -65,8 +68,8 @@ See [`typescript/RELEASING.md`](./typescript/RELEASING.md). In short:
 
 ```bash
 cd typescript
-npm run version    # bumps, tags, pushes
-npm run release    # builds and publishes
+pnpm run version    # bumps, tags, pushes
+pnpm run release    # builds and publishes
 ```
 
 Or trigger the `release-typescript` GitHub Actions workflow from the Actions

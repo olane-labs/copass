@@ -24,11 +24,6 @@ const result = await client.matrix.query({
   query: 'How does authentication work?',
 });
 
-// Knowledge scoring
-const score = await client.cosync.score({
-  canonical_ids: ['entity-uuid'],
-});
-
 // Ingestion (auto-resolves caller's primary sandbox + default project)
 const job = await client.ingest.text({
   text: 'const x = 1;',

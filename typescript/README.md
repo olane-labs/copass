@@ -1,6 +1,7 @@
 # Copass TypeScript Packages
 
-npm workspaces monorepo for Copass TypeScript packages.
+pnpm workspace monorepo for Copass TypeScript packages. See
+`pnpm-workspace.yaml` for package discovery.
 
 ## Packages
 
@@ -12,11 +13,11 @@ npm workspaces monorepo for Copass TypeScript packages.
 ## Development
 
 ```bash
-npm install          # install all workspaces
-npm run build        # build all packages
-npm run typecheck    # type check all packages
-npm run lint         # lint all packages
-npm test             # test all packages
+pnpm install         # install all workspaces
+pnpm run build       # build all packages
+pnpm run typecheck   # type check all packages
+pnpm run lint        # lint all packages
+pnpm test            # test all packages
 ```
 
 ## Adding a New Package

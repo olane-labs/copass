@@ -33,10 +33,16 @@ jobs:
           fetch-depth: 0
           persist-credentials: true
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
           registry-url: 'https://registry.npmjs.org/'
+          cache: 'pnpm'
+          cache-dependency-path: typescript/pnpm-lock.yaml
 
       - name: Configure git identity
         run: |
@@ -44,44 +50,44 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Install
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Build
-        run: npm run build
+        run: pnpm run build
 
       - name: Test
-        run: npm test
+        run: pnpm test
 
       - name: Bump versions (stable)
         if: ${{ inputs.release_mode == 'stable' }}
-        run: npx lerna version --conventional-commits --yes
+        run: pnpm exec lerna version --conventional-commits --yes
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Bump versions (prerelease)
         if: ${{ inputs.release_mode == 'prerelease' }}
-        run: npx lerna version --conventional-commits --conventional-prerelease --preid next --yes
+        run: pnpm exec lerna version --conventional-commits --conventional-prerelease --preid next --yes
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Bump versions (graduate prereleases)
         if: ${{ inputs.release_mode == 'graduate' }}
-        run: npx lerna version --conventional-commits --conventional-graduate --yes
+        run: pnpm exec lerna version --conventional-commits --conventional-graduate --yes
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Dry-run publish
         if: ${{ inputs.release_mode == 'dry-run' }}
-        run: npx lerna exec --no-bail -- npm publish --dry-run --access public
+        run: pnpm exec lerna exec --no-bail -- pnpm publish --dry-run --access public --no-git-checks
 
       - name: Publish (stable)
         if: ${{ inputs.release_mode == 'stable' || inputs.release_mode == 'graduate' }}
-        run: npx lerna publish from-package --yes
+        run: pnpm exec lerna publish from-package --yes
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish (prerelease)
         if: ${{ inputs.release_mode == 'prerelease' }}
-        run: npx lerna publish from-package --dist-tag next --yes
+        run: pnpm exec lerna publish from-package --dist-tag next --yes
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

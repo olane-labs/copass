@@ -1,7 +1,7 @@
 {
-  "name": "@copass/datasource-fs",
+  "name": "@copass/datasource-olane",
   "version": "0.1.0",
-  "description": "Filesystem data source driver for Copass — scans, watches, and pushes file events through the copass-id storage layer",
+  "description": "Olane OS data source driver for Copass — start/stop/status of local Olane OS instances, address book, worlds, and identity management",
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"
@@ -34,34 +34,40 @@
     "lint": "eslint src/",
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "pnpm run build"
   },
   "keywords": [
     "copass",
-    "knowledge-graph",
-    "filesystem",
-    "watcher",
-    "indexing"
+    "olane",
+    "olane-os",
+    "p2p",
+    "libp2p",
+    "datasource"
   ],
   "author": "Olane Inc.",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/olane-labs/copass-harness.git",
-    "directory": "typescript/packages/datasource-fs"
+    "directory": "typescript/packages/datasource-olane"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.0.0"
   },
   "dependencies": {
-    "chokidar": "^4.0.0",
-    "ignore": "^7.0.0"
+    "@olane/o-client": "^0.8.19",
+    "@olane/o-core": "^0.8.17",
+    "@olane/o-node": "^0.8.17",
+    "@olane/os": "^0.8.17",
+    "fs-extra": "^11.3.3",
+    "portfinder": "^1.0.38"
   },
   "peerDependencies": {
     "@copass/core": "^0.1.0"
   },
   "devDependencies": {
     "@copass/core": "workspace:*",
+    "@types/fs-extra": "^11.0.4",
     "@types/node": "^20.17.0",
     "tsup": "^8.3.0",
     "vitest": "^2.1.0"

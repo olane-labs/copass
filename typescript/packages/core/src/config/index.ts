@@ -69,48 +69,6 @@ export const RetryConfigSchema = z.object({
   backoff_strategy: z.enum(['exponential', 'linear', 'fixed']).default('exponential'),
 });
 
-// -- Ingestion Pipeline --
-
-export const IngestionTransformSchema = z.object({
-  type: z.enum(['strip_comments', 'truncate', 'prepend_context', 'custom_header']),
-  options: z.record(z.unknown()).optional(),
-});
-
-export const PipelineMatchSchema = z.object({
-  extensions: z.array(z.string()).optional(),
-  directories: z.array(z.string()).optional(),
-  glob: z.string().optional(),
-});
-
-export const IngestionPipelineSchema = z.object({
-  name: z.string(),
-  description: z.string().optional(),
-  match: PipelineMatchSchema,
-  source_type: z.string().optional(),
-  language_override: z.string().optional(),
-  entity_hints: z.array(z.string()).optional(),
-  additional_context: z.string().optional(),
-  materialize: z.boolean().default(false),
-  transforms: z.array(IngestionTransformSchema).optional(),
-  max_file_size_kb: z.number().positive().optional(),
-  enabled: z.boolean().default(true),
-});
-
-// -- Retrieval Profiles --
-
-export const RetrievalProfileSchema = z.object({
-  name: z.string(),
-  description: z.string().optional(),
-  query_type: z.enum(['question', 'context', 'score']).default('context'),
-  response_format: z.enum(['natural_language', 'structured', 'raw']).default('natural_language'),
-  max_results: z.number().int().positive().optional(),
-  max_tokens: z.number().int().min(100).max(16000).optional(),
-  detail_level: z.enum(['concise', 'summary', 'detailed', 'full']).optional(),
-  thinking: z.boolean().default(false),
-  skip_cache: z.boolean().default(false),
-  query_all_projects: z.boolean().default(false),
-});
-
 // -- Defaults --
 
 export const DefaultsConfigSchema = z.object({
@@ -130,9 +88,6 @@ export const ProjectConfigSchema = z.object({
   watch: WatchConfigSchema.default({}),
   retry: RetryConfigSchema.default({}),
 
-  pipelines: z.array(IngestionPipelineSchema).default([]),
-  profiles: z.array(RetrievalProfileSchema).default([]),
-
   defaults: DefaultsConfigSchema.default({}),
 });
 
@@ -145,10 +100,6 @@ export type CopassConfig = z.infer<typeof CopassConfigSchema>;
 export type IndexingConfig = z.infer<typeof IndexingConfigSchema>;
 export type WatchConfig = z.infer<typeof WatchConfigSchema>;
 export type ProjectRetryConfig = z.infer<typeof RetryConfigSchema>;
-export type IngestionTransform = z.infer<typeof IngestionTransformSchema>;
-export type PipelineMatch = z.infer<typeof PipelineMatchSchema>;
-export type IngestionPipeline = z.infer<typeof IngestionPipelineSchema>;
-export type RetrievalProfile = z.infer<typeof RetrievalProfileSchema>;
 export type DefaultsConfig = z.infer<typeof DefaultsConfigSchema>;
 export type ProjectConfig = z.infer<typeof ProjectConfigSchema>;
 

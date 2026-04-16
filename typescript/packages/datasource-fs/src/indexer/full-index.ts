@@ -10,9 +10,14 @@ import type { CopassClient } from '@copass/core';
 import {
   defaultProjectConfig,
   detectLanguage,
-  matchPipeline,
-  applyTransforms,
 } from '@copass/core';
+
+function sourceTypeForLanguage(language: string): string {
+  if (language === 'markdown' || language === 'mdx') return 'markdown';
+  if (language === 'json') return 'json';
+  if (language === 'text' || language === 'text-plain') return 'text';
+  return 'code';
+}
 import type { FullIndexOptions, FullIndexSummary } from '../types.js';
 import { scanProjectFiles } from '../scan/files.js';
 
@@ -90,22 +95,13 @@ export async function runFullIndex(
     try {
       const absolutePath = path.join(options.projectPath, relativePath);
       const content = await fs.readFile(absolutePath, 'utf-8');
-
-      // Check for pipeline match
-      const pipeline = matchPipeline(relativePath, config.pipelines);
-      const language = pipeline?.language_override ?? detectLanguage(relativePath, config.indexing.extra_languages);
-      let processedContent = content;
-
-      if (pipeline?.transforms) {
-        processedContent = applyTransforms(content, pipeline.transforms);
-      }
+      const language = detectLanguage(relativePath, config.indexing.extra_languages);
 
       await client.sources.ingest(sandboxId, dataSourceId, {
-        text: processedContent,
-        source_type: pipeline?.source_type ?? 'code',
+        text: content,
+        source_type: sourceTypeForLanguage(language),
         project_id: projectId,
       });
-      void language;
 
       indexed++;
     } catch (error) {

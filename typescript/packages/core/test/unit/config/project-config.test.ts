@@ -20,8 +20,6 @@ describe('ProjectConfigSchema', () => {
     expect(config.watch.debounce_ms).toBe(1500);
     expect(config.retry.max_attempts).toBe(3);
     expect(config.retry.backoff_strategy).toBe('exponential');
-    expect(config.pipelines).toEqual([]);
-    expect(config.profiles).toEqual([]);
     expect(config.defaults.response_format).toBe('natural_language');
   });
 
@@ -39,38 +37,6 @@ describe('ProjectConfigSchema', () => {
     expect(config.indexing.concurrency).toBe(50);
   });
 
-  it('parses pipelines', () => {
-    const config = ProjectConfigSchema.parse({
-      pipelines: [
-        {
-          name: 'docs',
-          match: { extensions: ['.md', '.rst'] },
-          source_type: 'documentation',
-          transforms: [{ type: 'strip_comments' }],
-        },
-      ],
-    });
-    expect(config.pipelines).toHaveLength(1);
-    expect(config.pipelines[0].name).toBe('docs');
-    expect(config.pipelines[0].enabled).toBe(true); // default
-  });
-
-  it('parses profiles', () => {
-    const config = ProjectConfigSchema.parse({
-      profiles: [
-        {
-          name: 'quick',
-          query_type: 'context',
-          max_tokens: 4000,
-          skip_cache: true,
-        },
-      ],
-    });
-    expect(config.profiles).toHaveLength(1);
-    expect(config.profiles[0].query_type).toBe('context');
-    expect(config.profiles[0].skip_cache).toBe(true);
-  });
-
   it('rejects invalid thresholds', () => {
     const result = ProjectConfigSchema.safeParse({
       copass: { silent_threshold: 2.0 },
@@ -83,7 +49,7 @@ describe('defaultProjectConfig', () => {
   it('returns valid config with all defaults', () => {
     const config = defaultProjectConfig();
     expect(config.version).toBe('2.0');
-    expect(config.pipelines).toEqual([]);
+    expect(config.indexing.concurrency).toBe(25);
   });
 });
 
@@ -114,10 +80,10 @@ describe('mergeConfigs', () => {
   });
 
   it('replaces arrays', () => {
-    const target = { pipelines: [{ name: 'a' }] };
-    const source = { pipelines: [{ name: 'b' }] };
+    const target = { indexing: { excluded_patterns: ['a'] } };
+    const source = { indexing: { excluded_patterns: ['b'] } };
     const result = mergeConfigs(target, source);
-    expect(result).toEqual({ pipelines: [{ name: 'b' }] });
+    expect(result).toEqual({ indexing: { excluded_patterns: ['b'] } });
   });
 
   it('adds new keys', () => {

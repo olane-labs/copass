@@ -1,7 +1,5 @@
 export { BaseResource } from './base.js';
 export { EntitiesResource } from './entities.js';
-export { CosyncResource } from './cosync.js';
-export { PlansResource } from './plans.js';
 export { MatrixResource } from './matrix.js';
 export { ProjectsResource } from './projects.js';
 export { UsersResource } from './users.js';

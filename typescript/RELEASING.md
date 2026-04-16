@@ -55,14 +55,14 @@ Everything is orchestrated from `typescript/` (the workspace root).
 
 ```bash
 cd typescript
-npm install              # ensure lerna is installed
-npm run typecheck        # or: npm test
+pnpm install             # ensure lerna is installed
+pnpm run typecheck        # or: pnpm test
 ```
 
 ### Step 1 — bump versions, update changelogs, tag, push
 
 ```bash
-npm run version
+pnpm run version
 ```
 
 This runs `lerna version --conventional-commits`, which:
@@ -85,41 +85,41 @@ if anything looks wrong — no changes are committed until you confirm.
 dist-tag later):
 
 ```bash
-npm run version:prerelease
+pnpm run version:prerelease
 ```
 
 **Graduate pre-releases to stable**:
 
 ```bash
-npm run version:graduate
+pnpm run version:graduate
 ```
 
 ### Step 2 — build and publish
 
 ```bash
-npm run release
+pnpm run release
 ```
 
 This runs:
 
-1. `npm run build` — builds every workspace (each package's `prepublishOnly`
+1. `pnpm run build` — builds every workspace (each package's `prepublishOnly`
    also re-runs `tsup` as a safety net).
 2. `lerna publish from-package` — publishes each package whose version in
    `package.json` is ahead of what's on the registry. This is the safe
    mode: Lerna does not re-compute versions here, it just publishes what
-   `npm run version` already wrote.
+   `pnpm run version` already wrote.
 
 **Pre-release publish** (tags the release as `next` on npm):
 
 ```bash
-npm run release:prerelease
+pnpm run release:prerelease
 ```
 
 **Dry-run** (no commits, no tags, no publishes — just show what would
 happen):
 
 ```bash
-npm run release:dry
+pnpm run release:dry
 ```
 
 ## Combined single-command release
@@ -127,14 +127,14 @@ npm run release:dry
 If you want one command that bumps **and** publishes (useful in CI):
 
 ```bash
-npm run version && npm run release
+pnpm run version && pnpm run release
 ```
 
 ## Inspecting state
 
 ```bash
-npm run changed   # which packages have commits since their last tag
-npm run diff      # file-level diff for changed packages
+pnpm run changed   # which packages have commits since their last tag
+pnpm run diff      # file-level diff for changed packages
 ```
 
 ## What Lerna ignores
@@ -154,7 +154,7 @@ to produce a patch release.
 ## Troubleshooting
 
 - **`EPUBLISHCONFLICT`**: a version was published previously with the same
-  number. Either bump again (`npm run version` / manual edit) or run
+  number. Either bump again (`pnpm run version` / manual edit) or run
   `lerna publish from-package` to skip the already-published one.
 - **`401 Unauthorized`**: run `npm login` again; for CI, set
   `NPM_TOKEN` and use `npm config set //registry.npmjs.org/:_authToken

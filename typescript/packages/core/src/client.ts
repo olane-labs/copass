@@ -5,9 +5,8 @@ import type { SupabaseAuthOptions } from './auth/supabase.js';
 import type { AuthProvider } from './auth/types.js';
 import { HttpClient } from './http/http-client.js';
 import { EntitiesResource } from './resources/entities.js';
-import { CosyncResource } from './resources/cosync.js';
-import { PlansResource } from './resources/plans.js';
 import { MatrixResource } from './resources/matrix.js';
+import { RetrievalResource } from './resources/retrieval.js';
 import { ProjectsResource } from './resources/projects.js';
 import { UsersResource } from './resources/users.js';
 import { ApiKeysResource } from './resources/api-keys.js';
@@ -63,7 +62,6 @@ const DEFAULT_API_URL = 'https://ai.copass.id';
  * });
  *
  * const result = await client.matrix.query({ query: 'How does auth work?' });
- * const score = await client.cosync.score({ canonical_ids: ['...'] });
  * ```
  */
 export class CopassClient {
@@ -73,9 +71,8 @@ export class CopassClient {
   readonly vault: VaultResource;
   readonly ingest: IngestResource;
   readonly entities: EntitiesResource;
-  readonly cosync: CosyncResource;
-  readonly plans: PlansResource;
   readonly matrix: MatrixResource;
+  readonly retrieval: RetrievalResource;
   readonly users: UsersResource;
   readonly apiKeys: ApiKeysResource;
   readonly usage: UsageResource;
@@ -96,9 +93,8 @@ export class CopassClient {
     this.vault = new VaultResource(http);
     this.ingest = new IngestResource(http);
     this.entities = new EntitiesResource(http);
-    this.cosync = new CosyncResource(http);
-    this.plans = new PlansResource(http);
     this.matrix = new MatrixResource(http);
+    this.retrieval = new RetrievalResource(http);
     this.users = new UsersResource(http);
     this.apiKeys = new ApiKeysResource(http);
     this.usage = new UsageResource(http);

@@ -5,5 +5,3 @@ export {
   isIndexableCodePath,
 } from './language-map.js';
 export { buildQueryMetadata } from './metadata.js';
-export { matchPipeline } from './pipeline-resolver.js';
-export { applyTransforms } from './transforms.js';

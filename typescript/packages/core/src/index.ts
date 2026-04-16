@@ -17,6 +17,7 @@ export { deriveDek, deriveWrapKey, createSessionToken } from './crypto/session-t
 
 // HTTP
 export { CopassApiError, CopassNetworkError, CopassValidationError } from './http/errors.js';
+export { retryWithBackoff } from './http/retry.js';
 export type {
   RequestContext,
   ResponseContext,
@@ -40,9 +41,21 @@ export { ProjectsResource } from './resources/projects.js';
 export { VaultResource } from './resources/vault.js';
 export { IngestResource } from './resources/ingest.js';
 export { EntitiesResource } from './resources/entities.js';
-export { CosyncResource } from './resources/cosync.js';
-export { PlansResource } from './resources/plans.js';
 export { MatrixResource } from './resources/matrix.js';
+export { RetrievalResource } from './resources/retrieval.js';
+export type {
+  ChatRole,
+  ChatMessage,
+  DiscoveryItem,
+  DiscoverRequest,
+  DiscoverResponse,
+  InterpretRequest,
+  InterpretCitation,
+  InterpretResponse,
+  SearchRequest,
+  SearchResponse,
+  SearchPreset,
+} from './resources/retrieval.js';
 export { UsersResource } from './resources/users.js';
 export { ApiKeysResource } from './resources/api-keys.js';
 export { UsageResource } from './resources/usage.js';
@@ -54,10 +67,6 @@ export {
   IndexingConfigSchema,
   WatchConfigSchema,
   RetryConfigSchema,
-  IngestionPipelineSchema,
-  IngestionTransformSchema,
-  PipelineMatchSchema,
-  RetrievalProfileSchema,
   DefaultsConfigSchema,
   ScoreThresholdsSchema,
   defaultProjectConfig,
@@ -70,10 +79,6 @@ export type {
   IndexingConfig,
   WatchConfig,
   ProjectRetryConfig,
-  IngestionPipeline,
-  IngestionTransform,
-  PipelineMatch,
-  RetrievalProfile,
   DefaultsConfig,
   ScoreThresholds,
 } from './config/index.js';
@@ -86,8 +91,6 @@ export {
   isIndexableCodePath,
 } from './util/language-map.js';
 export { buildQueryMetadata } from './util/metadata.js';
-export { matchPipeline } from './util/pipeline-resolver.js';
-export { applyTransforms } from './util/transforms.js';
 
 // Types
 export type * from './types/index.js';

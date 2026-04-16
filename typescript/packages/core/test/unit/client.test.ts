@@ -13,8 +13,6 @@ describe('CopassClient', () => {
     expect(client.vault).toBeDefined();
     expect(client.ingest).toBeDefined();
     expect(client.entities).toBeDefined();
-    expect(client.cosync).toBeDefined();
-    expect(client.plans).toBeDefined();
     expect(client.matrix).toBeDefined();
     expect(client.users).toBeDefined();
     expect(client.apiKeys).toBeDefined();

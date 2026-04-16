@@ -6,6 +6,10 @@ export interface CanonicalEntity {
   semantic_tags?: string[];
   node_count?: number;
   behavior_count?: number;
+  /** Search-only: cosine similarity score returned by entity search. */
+  similarity?: number;
+  /** Search-only: record type classifier returned by entity search. */
+  record_type?: string;
 }
 
 /** Full perspective of a canonical entity. */

@@ -1,22 +1,20 @@
 {
   "name": "@copass/typescript",
   "private": true,
-  "workspaces": [
-    "packages/*"
-  ],
+  "packageManager": "pnpm@10.23.0",
   "scripts": {
-    "build": "npm run build --workspaces",
-    "typecheck": "npm run typecheck --workspaces",
-    "lint": "npm run lint --workspaces",
-    "test": "npm run test --workspaces",
+    "build": "pnpm -r run build",
+    "typecheck": "pnpm -r run typecheck",
+    "lint": "pnpm -r run lint",
+    "test": "pnpm -r run test",
     "format": "prettier --write 'packages/*/src/**/*.ts'",
     "format:check": "prettier --check 'packages/*/src/**/*.ts'",
     "version": "lerna version --conventional-commits",
     "version:graduate": "lerna version --conventional-commits --conventional-graduate",
     "version:prerelease": "lerna version --conventional-commits --conventional-prerelease --preid next",
-    "release": "npm run build && lerna publish from-package",
-    "release:prerelease": "npm run build && lerna publish from-package --dist-tag next",
-    "release:dry": "npm run build && lerna exec --no-bail -- npm publish --dry-run --access public",
+    "release": "pnpm run build && lerna publish from-package",
+    "release:prerelease": "pnpm run build && lerna publish from-package --dist-tag next",
+    "release:dry": "pnpm run build && lerna exec --no-bail -- pnpm publish --dry-run --access public --no-git-checks",
     "changed": "lerna changed",
     "diff": "lerna diff"
   },
@@ -28,5 +26,11 @@
     "lerna": "^8.2.4",
     "prettier": "^3.4.0",
     "typescript": "^5.6.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "nx"
+    ]
   }
 }
