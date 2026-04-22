@@ -32,11 +32,11 @@ importers:
   packages/ai-sdk:
     dependencies:
       '@copass/config':
-        specifier: workspace:^0.2.1
+        specifier: ^0.2.2
         version: link:../config
     devDependencies:
       '@copass/core':
-        specifier: workspace:*
+        specifier: ^0.2.2
         version: link:../core
       '@types/node':
         specifier: ^20.17.0
@@ -104,7 +104,7 @@ importers:
         version: 7.0.5
     devDependencies:
       '@copass/core':
-        specifier: workspace:*
+        specifier: ^0.2.2
         version: link:../core
       '@types/node':
         specifier: ^20.17.0
@@ -138,7 +138,7 @@ importers:
         version: 1.0.38
     devDependencies:
       '@copass/core':
-        specifier: workspace:*
+        specifier: ^0.2.2
         version: link:../core
       '@types/fs-extra':
         specifier: ^11.0.4
@@ -156,11 +156,11 @@ importers:
   packages/langchain:
     dependencies:
       '@copass/config':
-        specifier: workspace:^0.2.1
+        specifier: ^0.2.2
         version: link:../config
     devDependencies:
       '@copass/core':
-        specifier: workspace:*
+        specifier: ^0.2.2
         version: link:../core
       '@langchain/core':
         specifier: ^0.3.0
@@ -184,11 +184,11 @@ importers:
   packages/mastra:
     dependencies:
       '@copass/config':
-        specifier: workspace:^0.2.1
+        specifier: ^0.2.2
         version: link:../config
     devDependencies:
       '@copass/core':
-        specifier: workspace:*
+        specifier: ^0.2.2
         version: link:../core
       '@mastra/core':
         specifier: ^0.10.0
@@ -209,7 +209,7 @@ importers:
   packages/mcp:
     dependencies:
       '@copass/config':
-        specifier: workspace:^0.2.1
+        specifier: ^0.2.2
         version: link:../config
       '@modelcontextprotocol/sdk':
         specifier: ^1.27.1
@@ -219,7 +219,7 @@ importers:
         version: 3.25.76
     devDependencies:
       '@copass/core':
-        specifier: workspace:*
+        specifier: ^0.2.2
         version: link:../core
       '@types/node':
         specifier: ^20.17.0

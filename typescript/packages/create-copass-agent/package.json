@@ -1,6 +1,6 @@
 {
   "name": "create-copass-agent",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Scaffold a Copass-backed agent: Hono + Vercel AI SDK + Claude + Context Window, ready to edit and deploy.",
   "publishConfig": {
     "access": "public",
