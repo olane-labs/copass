@@ -4,27 +4,29 @@
 
 ## Quick start
 
-### 1. Bootstrap Copass (once, ~30 s)
+### 1. Bootstrap Copass (once, ~60 s)
 
 ```bash
 npm install -g @copass/cli
-copass login        # email OTP
-copass setup        # writes .olane/refs.json to your current directory
-copass ingest README.md   # give retrieval something real to work with
+copass login                             # email OTP
+copass setup                             # writes .olane/refs.json to your current directory
+copass apikey create --name my-app       # prints an olk_... key — shown once, save it
+copass ingest README.md                  # give retrieval something real to work with
 ```
 
-`copass setup` creates a sandbox and drops `.olane/refs.json` next to wherever you ran it — remember this location, the scaffolder walks up to find it.
+`copass setup` creates a sandbox and drops `.olane/refs.json` next to wherever you ran it — remember this location, the scaffolder walks up to find it. `copass apikey create` prints a long-lived `olk_...` key that the agent uses to authenticate to Copass; copy it somewhere safe, it's only shown once.
 
 ### 2. Scaffold + start (~60 s)
 
 ```bash
 npx create-copass-agent my-app
 cd my-app
-# .env is auto-populated from ~/.olane/config.json + ../.olane/refs.json.
-# Add your ANTHROPIC_API_KEY (https://console.anthropic.com) and go:
-echo "ANTHROPIC_API_KEY=sk-ant-your-key" >> .env
+# .env is auto-populated with COPASS_SANDBOX_ID + COPASS_PROJECT_ID from
+# ../.olane/refs.json. You fill in the two secrets by hand:
+echo "COPASS_API_KEY=olk_your_key_from_step_1" >> .env
+echo "ANTHROPIC_API_KEY=sk-ant-your-key" >> .env   # https://console.anthropic.com
 npm install
-npm dev
+npm run dev
 ```
 
 ### 3. Chat
@@ -107,16 +109,20 @@ Browser (embedded chat UI)
 
 The scaffold pins `@copass/core@^0.2.0` and `@copass/mcp@^0.1.0`. If those aren't on npm yet, install fails with `ETARGET`. Until they publish, work from a local checkout — `pnpm link` against a cloned `copass-harness` repo.
 
-### `.env` is empty or still has placeholders
+### `.env` is missing `COPASS_SANDBOX_ID` / `COPASS_PROJECT_ID`
 
-The scaffolder walks **up** from your project dir looking for `.olane/refs.json`. If you scaffolded into a directory whose ancestors don't contain one, auto-populate fails silently.
+The scaffolder walks **up** from your project dir looking for `.olane/refs.json` to auto-populate sandbox + project ids. If you scaffolded into a directory whose ancestors don't contain one, auto-populate fails silently.
 
 Fix: run `copass login && copass setup` in the directory **above** your scaffolded project, then either rerun the scaffolder or manually paste:
 
 ```bash
-copass config get access_token                  # → COPASS_API_KEY
 jq -r .sandbox_id ../.olane/refs.json           # → COPASS_SANDBOX_ID
+jq -r .project_id ../.olane/refs.json           # → COPASS_PROJECT_ID (optional)
 ```
+
+### `401 Unauthorized` / auth errors from Copass
+
+Your `COPASS_API_KEY` is invalid or missing. The scaffold never auto-populates this — it's a long-lived `olk_...` token you create explicitly with `copass apikey create --name my-app` and paste into `.env`. If you lost the key, create a new one (keys are only shown once at creation time).
 
 ### Agent returns "I don't have information about that"
 

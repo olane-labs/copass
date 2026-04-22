@@ -8,16 +8,17 @@ Install the Copass CLI and bootstrap your account:
 
 ```bash
 npm install -g @copass/cli
-copass login       # email OTP
-copass setup       # creates a sandbox, writes .olane/refs.json
+copass login                             # email OTP
+copass setup                             # creates a sandbox, writes .olane/refs.json
+copass apikey create --name my-mcp       # prints an olk_... key — shown once, save it
 ```
 
-Pull the two values your MCP client needs into scope:
+Two values feed the MCP server config:
 
-| File | Contains | Use as |
-|---|---|---|
-| `~/.olane/config.json` | `access_token` | `COPASS_API_KEY` |
-| `./.olane/refs.json` | `sandbox_id` | `COPASS_SANDBOX_ID` |
+| Output | Use as |
+|---|---|
+| `olk_...` key printed by `copass apikey create` | `COPASS_API_KEY` |
+| `sandbox_id` in `./.olane/refs.json` | `COPASS_SANDBOX_ID` |
 
 Ingest some content so the tools have something to return:
 
@@ -27,7 +28,7 @@ copass ingest path/to/file.md
 
 ## Connect your MCP client
 
-Drop this into your client's MCP config. Paste `access_token` and `sandbox_id` from the two files above:
+Drop this into your client's MCP config, pasting the two values from the previous step:
 
 ```json
 {
@@ -36,8 +37,8 @@ Drop this into your client's MCP config. Paste `access_token` and `sandbox_id` f
       "command": "npx",
       "args": ["-y", "@copass/mcp"],
       "env": {
-        "COPASS_API_KEY": "<access_token from ~/.olane/config.json>",
-        "COPASS_SANDBOX_ID": "<sandbox_id from .olane/refs.json>"
+        "COPASS_API_KEY": "olk_your_api_key",
+        "COPASS_SANDBOX_ID": "sb_your_sandbox_id"
       }
     }
   }

@@ -22,7 +22,6 @@ function slugify(input: string): string {
 
 interface AutoPopulateResult {
   found: {
-    apiKey: boolean;
     sandboxId: boolean;
     projectId: boolean;
     apiUrl: boolean;
@@ -30,15 +29,20 @@ interface AutoPopulateResult {
 }
 
 /**
- * Best-effort populate `.env` from the Copass CLI's stored config.
- * - `~/.olane/config.json` → `access_token` (as `COPASS_API_KEY`), `api_url`
+ * Best-effort populate `.env` from the Copass CLI's stored state.
  * - nearest ancestor `.olane/refs.json` → `sandbox_id`, `project_id`
+ * - `~/.olane/config.json` → `api_url` (if the user is on a non-default host)
+ *
+ * `COPASS_API_KEY` is NEVER auto-populated. The user creates one explicitly
+ * with `copass apikey create --name <name>` (the key is shown once, printed
+ * to stdout, and they paste it into `.env`). Reading the CLI's session
+ * `access_token` as the API key is wrong — it's a short-lived Supabase JWT,
+ * not the long-lived `olk_...` credential the SDK expects.
  *
  * `ANTHROPIC_API_KEY` is always left blank — the user must supply it.
  * Missing values are left as placeholders so the file is always usable.
  */
 async function autoPopulateEnv(dest: string): Promise<AutoPopulateResult> {
-  let apiKey: string | null = null;
   let apiUrl: string | null = null;
   let sandboxId: string | null = null;
   let projectId: string | null = null;
@@ -47,9 +51,6 @@ async function autoPopulateEnv(dest: string): Promise<AutoPopulateResult> {
   if (existsSync(cliConfigPath)) {
     try {
       const raw = JSON.parse(await readFile(cliConfigPath, 'utf8'));
-      if (typeof raw?.access_token === 'string' && raw.access_token.length > 0) {
-        apiKey = raw.access_token;
-      }
       if (typeof raw?.api_url === 'string' && raw.api_url.length > 0) {
         apiUrl = raw.api_url;
       }
@@ -80,10 +81,9 @@ async function autoPopulateEnv(dest: string): Promise<AutoPopulateResult> {
   const lines: string[] = [];
   lines.push('# Copass — required');
   lines.push(
-    apiKey
-      ? `COPASS_API_KEY=${apiKey}`
-      : 'COPASS_API_KEY=  # from ~/.olane/config.json (run `copass login`)',
+    '# Create a long-lived key (shown once):  copass apikey create --name my-app',
   );
+  lines.push('COPASS_API_KEY=');
   lines.push(
     sandboxId
       ? `COPASS_SANDBOX_ID=${sandboxId}`
@@ -107,7 +107,6 @@ async function autoPopulateEnv(dest: string): Promise<AutoPopulateResult> {
 
   return {
     found: {
-      apiKey: Boolean(apiKey),
       sandboxId: Boolean(sandboxId),
       projectId: Boolean(projectId),
       apiUrl: Boolean(apiUrl),
@@ -162,21 +161,22 @@ async function main(): Promise<void> {
   const { found } = await autoPopulateEnv(dest);
 
   const populated: string[] = [];
-  if (found.apiKey) populated.push('COPASS_API_KEY');
   if (found.sandboxId) populated.push('COPASS_SANDBOX_ID');
   if (found.projectId) populated.push('COPASS_PROJECT_ID');
 
   process.stdout.write('\n');
   if (populated.length > 0) {
-    process.stdout.write(`Auto-populated from the Copass CLI: ${populated.join(', ')}\n`);
+    process.stdout.write(`Auto-populated from .olane/refs.json: ${populated.join(', ')}\n`);
   } else {
     process.stdout.write(
-      'No Copass CLI config found. Install the CLI and run `copass login && copass setup` to auto-populate your .env.\n',
+      'No .olane/refs.json found in a parent directory. Run `copass setup` to create one.\n',
     );
   }
   process.stdout.write('\nNext steps:\n');
   process.stdout.write(`  cd ${nameArg}\n`);
-  process.stdout.write('  # Open .env and add your ANTHROPIC_API_KEY (https://console.anthropic.com)\n');
+  process.stdout.write('  # Two secrets still need to go into .env by hand:\n');
+  process.stdout.write('  #   COPASS_API_KEY    — run `copass apikey create --name my-app` (shown once)\n');
+  process.stdout.write('  #   ANTHROPIC_API_KEY — https://console.anthropic.com\n');
   process.stdout.write('  pnpm install     # or npm install\n');
   process.stdout.write('  pnpm dev         # then open http://localhost:3000\n');
 }

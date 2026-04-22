@@ -8,16 +8,16 @@ Install the Copass CLI and bootstrap your account:
 
 ```bash
 npm install -g @copass/cli
-copass login       # email OTP
-copass setup       # creates a sandbox, writes .olane/refs.json
+copass login                             # email OTP
+copass setup                             # creates a sandbox, writes .olane/refs.json
+copass apikey create --name my-app       # prints an olk_... key — shown once, save it
 ```
 
-Your credentials land in two files:
-
-| File | Contains | Use as |
-|---|---|---|
-| `~/.olane/config.json` | `access_token` | `COPASS_API_KEY` |
-| `./.olane/refs.json` | `sandbox_id`, `project_id` | `COPASS_SANDBOX_ID`, `COPASS_PROJECT_ID` |
+| Output | Use as |
+|---|---|
+| `olk_...` key printed by `copass apikey create` | `COPASS_API_KEY` |
+| `sandbox_id` in `./.olane/refs.json` | `COPASS_SANDBOX_ID` |
+| `project_id` in `./.olane/refs.json` (optional) | `COPASS_PROJECT_ID` |
 
 Ingest some content so retrieval has something to return:
 
