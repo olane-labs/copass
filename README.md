@@ -39,16 +39,17 @@ See [`create-copass-agent`](./typescript/packages/create-copass-agent).
 
 ```bash
 npm install -g @copass/cli
-copass login       # email OTP
-copass setup       # creates a sandbox, writes .olane/refs.json
+copass login                             # email OTP
+copass setup                             # creates a sandbox, writes .olane/refs.json
+copass apikey create --name my-app       # prints an olk_... key — shown once, save it
 ```
 
-Credentials land in two files — every adapter reads them:
+You end up with two things every adapter needs:
 
-| File | Contents |
+| Output | Use as |
 |---|---|
-| `~/.olane/config.json` | `access_token` (bearer), `api_url` |
-| `./.olane/refs.json` | `sandbox_id`, `project_id`, `data_source_id` |
+| `olk_...` key printed by `copass apikey create` | `COPASS_API_KEY` |
+| `./.olane/refs.json` (`sandbox_id`, `project_id`, `data_source_id`) | `COPASS_SANDBOX_ID`, `COPASS_PROJECT_ID` |
 
 Ingest something so retrieval has material to work with:
 

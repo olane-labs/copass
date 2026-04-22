@@ -8,16 +8,15 @@ Install the Copass CLI and bootstrap your account:
 
 ```bash
 npm install -g @copass/cli
-copass login       # email OTP
-copass setup       # creates a sandbox, writes .olane/refs.json
+copass login                             # email OTP
+copass setup                             # creates a sandbox, writes .olane/refs.json
+copass apikey create --name my-app       # prints an olk_... key — shown once, save it
 ```
 
-Your credentials land in two files:
-
-| File | Contains | Use as |
-|---|---|---|
-| `~/.olane/config.json` | `access_token` | pass as `api_key` to `CopassRetrievalClient` |
-| `./.olane/refs.json` | `sandbox_id` | pass as `sandbox_id` to `copass_tools` |
+| Output | Use as |
+|---|---|
+| `olk_...` key printed by `copass apikey create` | `api_key` on `CopassRetrievalClient` (typically via `COPASS_API_KEY` env) |
+| `sandbox_id` in `./.olane/refs.json` | `sandbox_id` on `copass_tools` (typically via `COPASS_SANDBOX_ID` env) |
 
 Ingest some content so retrieval has something to return:
 
@@ -36,22 +35,19 @@ Requires Python 3.10+.
 ## Quickstart
 
 ```python
-import json
 import os
-from pathlib import Path
 from pydantic_ai import Agent
 from copass_pydantic_ai import CopassRetrievalClient, copass_tools
 
-cli_config = json.loads((Path.home() / ".olane" / "config.json").read_text())
-project_refs = json.loads(Path(".olane/refs.json").read_text())
-
+# COPASS_API_KEY is the olk_... token from `copass apikey create`.
+# COPASS_SANDBOX_ID is from .olane/refs.json (written by `copass setup`).
 client = CopassRetrievalClient(
-    api_url=cli_config.get("api_url") or "https://ai.copass.id",
-    api_key=cli_config["access_token"],
+    api_url=os.environ.get("COPASS_API_URL", "https://ai.copass.id"),
+    api_key=os.environ["COPASS_API_KEY"],
 )
 discover, interpret, search = copass_tools(
     client=client,
-    sandbox_id=project_refs["sandbox_id"],
+    sandbox_id=os.environ["COPASS_SANDBOX_ID"],
 )
 
 agent = Agent(
