@@ -1,4 +1,5 @@
 packages:
   - packages/*
+  - local_testing
 
 onlyBuiltDependencies: '["esbuild","nx"]'

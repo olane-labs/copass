@@ -67,9 +67,9 @@ export function copassTools(options: CopassToolsOptions) {
     inputSchema: z.object({
       query: z.string().describe(DISCOVER_QUERY_PARAM),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ query }) => {
       const response = await client.retrieval.discover(sandbox_id, {
-        query: context.query,
+        query,
         project_id,
         window,
       });
@@ -92,10 +92,10 @@ export function copassTools(options: CopassToolsOptions) {
       query: z.string().describe(INTERPRET_QUERY_PARAM),
       items: z.array(z.array(z.string())).min(1).describe(INTERPRET_ITEMS_PARAM),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ query, items }) => {
       const response = await client.retrieval.interpret(sandbox_id, {
-        query: context.query,
-        items: context.items,
+        query,
+        items,
         project_id,
         window,
         preset,
@@ -110,9 +110,9 @@ export function copassTools(options: CopassToolsOptions) {
     inputSchema: z.object({
       query: z.string().describe(SEARCH_QUERY_PARAM),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ query }) => {
       const response = await client.retrieval.search(sandbox_id, {
-        query: context.query,
+        query,
         project_id,
         window,
         preset,

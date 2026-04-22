@@ -32,7 +32,7 @@ export const CopassConfigSchema = z.object({
   silent_threshold: z.number().min(0).max(1).default(0.85),
   ask_threshold: z.number().min(0).max(1).default(0.6),
   block_threshold: z.number().min(0).max(1).default(0.3),
-  model_routing: CopassModelRoutingSchema.default({}),
+  model_routing: CopassModelRoutingSchema.prefault({}),
   score_thresholds: ScoreThresholdsSchema.optional(),
 });
 
@@ -83,12 +83,12 @@ export const ProjectConfigSchema = z.object({
   version: z.string().default('2.0'),
   project_id: z.string().optional(),
 
-  copass: CopassConfigSchema.default({}),
-  indexing: IndexingConfigSchema.default({}),
-  watch: WatchConfigSchema.default({}),
-  retry: RetryConfigSchema.default({}),
+  copass: CopassConfigSchema.prefault({}),
+  indexing: IndexingConfigSchema.prefault({}),
+  watch: WatchConfigSchema.prefault({}),
+  retry: RetryConfigSchema.prefault({}),
 
-  defaults: DefaultsConfigSchema.default({}),
+  defaults: DefaultsConfigSchema.prefault({}),
 });
 
 // -- Inferred Types --

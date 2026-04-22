@@ -34,47 +34,74 @@ npm install @copass/ai-sdk @copass/core ai @ai-sdk/anthropic zod
 
 ## Quickstart
 
+The Copass-specific code is four lines. Everything else is vanilla Vercel AI SDK you'd write even without Copass.
+
 ```ts
 import { CopassClient } from '@copass/core';
-import { copassTools, createWindowTracker } from '@copass/ai-sdk';
+import { copassTools } from '@copass/ai-sdk';
 import { generateText } from 'ai';
 import { anthropic } from '@ai-sdk/anthropic';
 
+// ── Copass (the entire integration) ──
 const copass = new CopassClient({
-  auth: { type: 'bearer', token: process.env.COPASS_API_KEY! },
+  auth: { type: 'api-key', key: process.env.COPASS_API_KEY! },
 });
-const sandbox_id = process.env.COPASS_SANDBOX_ID!;
-const window = await copass.contextWindow.create({ sandbox_id });
-const tracker = createWindowTracker({ window });
+const window = await copass.contextWindow.create({
+  sandbox_id: process.env.COPASS_SANDBOX_ID!,
+});
 
-const userMessage = 'what do we know about checkout retry behavior?';
-await tracker.recordUserTurn(userMessage);
-
+// ── Standard Vercel AI SDK call — only `tools:` is new ──
 const { text } = await generateText({
   model: anthropic('claude-opus-4-7'),
-  tools: copassTools({ client: copass, sandbox_id, window }),
-  onStepFinish: tracker.onStepFinish,
+  tools: copassTools({ client: copass, sandbox_id: window.sandboxId, window }),
   maxSteps: 5,
-  prompt: userMessage,
+  prompt: 'what do we know about checkout retry behavior?',
 });
 
 console.log(text);
 ```
 
-If it worked, the answer cites concepts from whatever you ingested. Keep the same `window` and `tracker` across turns — follow-up calls won't re-surface items the agent already used.
+**What Copass is actually doing:**
 
-## Window auto-tracking
+- `new CopassClient({ auth })` — authenticated REST client.
+- `contextWindow.create(...)` — opens an ephemeral data source for this conversation.
+- `copassTools({ ... })` — returns `discover` / `interpret` / `search` tools Claude can invoke autonomously. The `window` argument makes each retrieval window-aware at the server level.
 
-Vercel AI SDK's `onStepFinish` fires after each internal agent step with `response.messages` — the assistant and tool messages generated during that step. `createWindowTracker(...)` returns a handler that mirrors those into the `ContextWindow`, de-duplicated against what's already there.
+Everything else — `generateText`, `model:`, `maxSteps:`, `prompt:` — is vanilla Vercel AI SDK.
 
-The user's initial message isn't in `onStepFinish` (it's in `prompt` / `messages` going *into* the call), so capture it explicitly with `tracker.recordUserTurn(text)` before you call `generateText`. Safe to call repeatedly — the tracker de-duplicates.
+## Multi-turn: `createWindowTracker`
 
-Tool results (`role: 'tool'`) are skipped by default since they're usually retrieval noise; opt in with `createWindowTracker({ window, includeToolMessages: true })` if you want them tracked.
+The quickstart above runs one turn. For a multi-turn conversation where turn 2 retrieval should know what turn 1 surfaced, wrap with `createWindowTracker`:
+
+```ts
+import { copassTools, createWindowTracker } from '@copass/ai-sdk';
+
+const tracker = createWindowTracker({ window });
+
+// Per turn:
+const userMessage = '...';
+await tracker.recordUserTurn(userMessage);
+
+const { text } = await generateText({
+  model,
+  tools: copassTools({ client: copass, sandbox_id: window.sandboxId, window }),
+  onStepFinish: tracker.onStepFinish,   // auto-mirror assistant + tool messages
+  prompt: userMessage,
+});
+```
+
+Three additions:
+
+1. `const tracker = createWindowTracker({ window })` at setup.
+2. `tracker.recordUserTurn(msg)` before each `generateText` — the user's message isn't in `onStepFinish` (it's the input), so capture it explicitly. Idempotent; safe to call redundantly.
+3. `onStepFinish: tracker.onStepFinish` on the `generateText` call — Vercel AI SDK's standard step-finish hook; the tracker mirrors each step's `response.messages` into the window, deduplicated.
+
+Tool messages (role: `'tool'`) are skipped by default since they're usually retrieval noise. Opt in with `createWindowTracker({ window, includeToolMessages: true })` if you want them tracked.
 
 ## Why this, not the raw API
 
 - **LLM chooses the retrieval shape.** You expose three tools; Claude picks `discover` for exploration, `interpret` for drilling into picked items, or `search` for a direct answer.
-- **Window-aware automatically** — when you pair `copassTools` with `createWindowTracker`. Without the tracker, retrieval sees an empty history.
+- **Window-aware retrieval.** Each retrieval call carries the `window` argument so the server knows which items have already been surfaced in this conversation. Add `createWindowTracker` (above) to get automatic cross-turn awareness.
 - **Trimmed response shapes.** Tools return only what the model needs (`{header, items, next_steps}` / `{brief}` / `{answer}`) — no sandbox/project echoes that waste tokens.
 
 ## Tools

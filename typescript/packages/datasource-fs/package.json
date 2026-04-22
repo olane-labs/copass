@@ -54,17 +54,17 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "chokidar": "^4.0.0",
-    "ignore": "^7.0.0"
+    "chokidar": "^5.0.0",
+    "ignore": "^7.0.5"
   },
   "peerDependencies": {
     "@copass/core": "^0.2.0"
   },
   "devDependencies": {
     "@copass/core": "^0.2.2",
-    "@types/node": "^20.17.0",
-    "tsup": "^8.3.0",
-    "vitest": "^2.1.0"
+    "@types/node": "^25.0.0",
+    "tsup": "^8.5.0",
+    "vitest": "^4.1.0"
   },
   "gitHead": "fb7984c723588558b5fb81ff3651cfa84d12da5d"
 }

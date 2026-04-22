@@ -59,7 +59,7 @@
     "@olane/o-core": "^0.8.18",
     "@olane/o-node": "^0.8.18",
     "@olane/os": "^0.8.18",
-    "fs-extra": "^11.3.3",
+    "fs-extra": "^11.3.4",
     "portfinder": "^1.0.38"
   },
   "peerDependencies": {
@@ -68,9 +68,9 @@
   "devDependencies": {
     "@copass/core": "^0.2.2",
     "@types/fs-extra": "^11.0.4",
-    "@types/node": "^20.17.0",
-    "tsup": "^8.3.0",
-    "vitest": "^2.1.0"
+    "@types/node": "^25.0.0",
+    "tsup": "^8.5.0",
+    "vitest": "^4.1.0"
   },
   "gitHead": "fb7984c723588558b5fb81ff3651cfa84d12da5d"
 }

@@ -60,7 +60,7 @@ export function copassTools(options: CopassToolsOptions) {
   return {
     discover: tool({
       description: DISCOVER_DESCRIPTION,
-      parameters: z.object({
+      inputSchema: z.object({
         query: z.string().describe(DISCOVER_QUERY_PARAM),
       }),
       execute: async ({ query }) => {
@@ -83,7 +83,7 @@ export function copassTools(options: CopassToolsOptions) {
 
     interpret: tool({
       description: INTERPRET_DESCRIPTION,
-      parameters: z.object({
+      inputSchema: z.object({
         query: z.string().describe(INTERPRET_QUERY_PARAM),
         items: z.array(z.array(z.string())).min(1).describe(INTERPRET_ITEMS_PARAM),
       }),
@@ -101,7 +101,7 @@ export function copassTools(options: CopassToolsOptions) {
 
     search: tool({
       description: SEARCH_DESCRIPTION,
-      parameters: z.object({
+      inputSchema: z.object({
         query: z.string().describe(SEARCH_QUERY_PARAM),
       }),
       execute: async ({ query }) => {

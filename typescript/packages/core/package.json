@@ -54,12 +54,12 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "zod": "^3.24.0"
+    "zod": "^4.3.0"
   },
   "devDependencies": {
-    "@types/node": "^20.17.0",
-    "tsup": "^8.3.0",
-    "vitest": "^2.1.0"
+    "@types/node": "^25.0.0",
+    "tsup": "^8.5.0",
+    "vitest": "^4.1.0"
   },
   "gitHead": "fb7984c723588558b5fb81ff3651cfa84d12da5d"
 }
