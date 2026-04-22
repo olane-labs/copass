@@ -47,5 +47,6 @@
     "@types/node": "^20.17.0",
     "tsup": "^8.3.0",
     "vitest": "^2.1.0"
-  }
+  },
+  "gitHead": "fb7984c723588558b5fb81ff3651cfa84d12da5d"
 }

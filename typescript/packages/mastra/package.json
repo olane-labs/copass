@@ -55,7 +55,7 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "@copass/config": "workspace:^0.2.1"
+    "@copass/config": "^0.2.1"
   },
   "peerDependencies": {
     "@copass/core": "^0.2.0",
@@ -63,11 +63,12 @@
     "zod": "^3.23.0"
   },
   "devDependencies": {
-    "@copass/core": "workspace:*",
+    "@copass/core": "0.2.1",
     "@mastra/core": "^0.10.0",
     "@types/node": "^20.17.0",
     "tsup": "^8.3.0",
     "vitest": "^2.1.0",
     "zod": "^3.24.0"
-  }
+  },
+  "gitHead": "fb7984c723588558b5fb81ff3651cfa84d12da5d"
 }
