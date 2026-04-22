@@ -1,6 +1,6 @@
 {
   "name": "@copass/langchain",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "LangChain tool adapters for Copass — drop-in discover/interpret/search tools for LangChain agents",
   "publishConfig": {
     "access": "public",
@@ -55,7 +55,7 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "@copass/config": "workspace:^0.2.0"
+    "@copass/config": "workspace:^0.2.1"
   },
   "peerDependencies": {
     "@copass/core": "^0.2.0",
@@ -64,7 +64,9 @@
     "zod": "^3.23.0"
   },
   "peerDependenciesMeta": {
-    "@langchain/langgraph": { "optional": true }
+    "@langchain/langgraph": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@copass/core": "workspace:*",

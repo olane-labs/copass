@@ -1,6 +1,6 @@
 {
   "name": "@copass/datasource-olane",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Olane OS data source driver for Copass — start/stop/status of local Olane OS instances, address book, worlds, and identity management",
   "publishConfig": {
     "access": "public",

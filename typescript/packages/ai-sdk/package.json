@@ -1,6 +1,6 @@
 {
   "name": "@copass/ai-sdk",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Vercel AI SDK tool adapters for Copass — drop-in discover/interpret/search tools for LLM agents",
   "publishConfig": {
     "access": "public",
@@ -56,7 +56,7 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "@copass/config": "workspace:^0.2.0"
+    "@copass/config": "workspace:^0.2.1"
   },
   "peerDependencies": {
     "@copass/core": "^0.2.0",
