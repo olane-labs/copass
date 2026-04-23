@@ -60,7 +60,10 @@ from copass_core_agents.events import (
 )
 from copass_core_agents.invocation_context import AgentInvocationContext
 from copass_core_agents.scope import AgentScope
-from copass_google_agents.events import adk_event_to_agent_events
+from copass_google_agents.events import (
+    adk_event_to_agent_events,
+    extract_usage_metadata,
+)
 
 if TYPE_CHECKING:
     from google.auth.credentials import Credentials
@@ -312,17 +315,22 @@ class GoogleAgentBackend(AgentBackend):
                 },
             )
 
+        usage_accumulator: dict = {}
         try:
             async for adk_event in adk_app.async_stream_query(
                 user_id=user_id,
                 session_id=session_id,
                 message=message,
             ):
+                event_usage = extract_usage_metadata(adk_event)
+                for key, value in event_usage.items():
+                    if isinstance(value, int):
+                        usage_accumulator[key] = usage_accumulator.get(key, 0) + value
                 for neutral in adk_event_to_agent_events(adk_event):
                     yield neutral
             yield AgentFinish(
                 stop_reason="end_turn",
-                usage={},
+                usage=dict(usage_accumulator),
                 session_id=session_id,
             )
         finally:
