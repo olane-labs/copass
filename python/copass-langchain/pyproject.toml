@@ -1,0 +1,59 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "copass-langchain"
+version = "0.1.0"
+description = "LangChain tool adapters for Copass — drop-in discover/interpret/search tools for LangChain agents"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Olane Inc." }]
+requires-python = ">=3.10"
+keywords = ["copass", "knowledge-graph", "langchain", "langgraph", "agent", "tools", "rag"]
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "copass-core>=0.1.0",
+    "copass-config>=0.1.0",
+    "langchain-core>=0.3",
+    "pydantic>=2.7",
+]
+
+[project.optional-dependencies]
+agent = [
+    "langgraph>=0.2",
+]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "respx>=0.21",
+    "mypy>=1.10",
+    "ruff>=0.5",
+    "langgraph>=0.2",
+]
+
+[project.urls]
+Homepage = "https://github.com/olane-labs/copass-harness"
+Repository = "https://github.com/olane-labs/copass-harness.git"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/copass_langchain"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+packages = ["copass_langchain"]

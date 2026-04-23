@@ -1,8 +1,17 @@
 # copass-anthropic-agents
 
-Copass agent primitives for the [Anthropic Managed Agents API](https://platform.claude.com/docs/en/managed-agents/overview). A provider-specific adapter peer of [`copass-pydantic-ai`](../copass-pydantic-ai).
+Anthropic Managed Agents backend for Copass. Depends on [`copass-core-agents`](../copass-core-agents), which owns the vendor-neutral primitives (`BaseAgent`, `AgentTool`, `AgentBackend` ABC, events, `AgentScope`, registries, etc.) shared across every provider-specific Copass SDK.
 
-Pairs with Copass's server-side router — both sides import this package so the agent runtime is a single codepath, whether the agent runs in the dev's process (deep-integration) or server-side via Copass's Router endpoint (thin client).
+This package owns the Anthropic-specific piece — `ManagedAgentBackend` and the `CopassManagedAgent` convenience subclass — and re-exports the core primitives for one-line dev imports. Either of these works for consumers:
+
+```python
+from copass_anthropic_agents import BaseAgent, CopassManagedAgent  # convenient
+# or
+from copass_core_agents import BaseAgent                           # explicit boundary
+from copass_anthropic_agents import CopassManagedAgent
+```
+
+Pairs with Copass's server-side router — both sides import the same code so the agent runtime is a single codepath, whether the agent runs in the dev's process (deep-integration) or server-side via Copass's Router endpoint (thin client).
 
 ## Install
 

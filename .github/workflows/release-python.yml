@@ -1,0 +1,154 @@
+name: release-python
+
+# Manual-dispatch release mirroring `release-typescript.yml`.
+#
+# Version bumps are NOT automated — edit `pyproject.toml::version` in
+# the target package(s) BEFORE running this workflow, commit, merge to
+# main, then trigger from the Actions tab. The workflow builds sdist +
+# wheel, runs the tests, and publishes via PyPI Trusted Publishing
+# (OIDC — no long-lived PyPI tokens).
+#
+# Prerequisites (done once per package on pypi.org):
+#   1. Reserve the package name.
+#   2. Project -> Publishing -> Add a new publisher (GitHub).
+#      - Owner:       olane-labs
+#      - Repository:  copass-harness
+#      - Workflow:    release-python.yml
+#      - Environment: pypi
+#
+# The `pypi` environment below is referenced by both the PyPI
+# trusted-publisher config and the GitHub-side environment. Use it to
+# add approvals or branch gates if desired.
+
+on:
+  workflow_dispatch:
+    inputs:
+      package:
+        description: 'Package to release'
+        required: true
+        default: 'both'
+        type: choice
+        options:
+          - copass-core-agents
+          - copass-anthropic-agents
+          - both
+      release_mode:
+        description: 'Release mode'
+        required: true
+        default: 'stable'
+        type: choice
+        options:
+          - stable
+          - dry-run
+
+concurrency:
+  group: release-python
+  cancel-in-progress: false
+
+jobs:
+  release-core:
+    if: ${{ inputs.package == 'copass-core-agents' || inputs.package == 'both' }}
+    name: Release copass-core-agents
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+      contents: read
+    defaults:
+      run:
+        working-directory: python/copass-core-agents
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install build tooling
+        run: pip install build
+
+      - name: Install + test
+        run: |
+          pip install -e ".[dev]"
+          pytest -q
+
+      - name: Show version
+        id: version
+        run: |
+          v=$(python -c 'import tomllib; print(tomllib.loads(open("pyproject.toml","rb").read().decode())["project"]["version"])')
+          echo "value=$v" >> "$GITHUB_OUTPUT"
+          echo "Releasing copass-core-agents $v (mode=${{ inputs.release_mode }})"
+
+      - name: Build (sdist + wheel)
+        run: python -m build
+
+      - name: Publish to PyPI
+        if: ${{ inputs.release_mode == 'stable' }}
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: python/copass-core-agents/dist/
+
+      - name: Dry-run summary
+        if: ${{ inputs.release_mode == 'dry-run' }}
+        run: |
+          echo "Dry run — built but skipped publish."
+          ls -la dist/
+
+  release-anthropic:
+    name: Release copass-anthropic-agents
+    runs-on: ubuntu-latest
+    needs: [release-core]
+    # Run when (a) the user asked for this package and (b) the core
+    # job either succeeded OR was skipped (i.e., user asked for
+    # anthropic only). `always()` lets us inspect `needs.*.result`.
+    if: >-
+      always()
+      && (inputs.package == 'copass-anthropic-agents' || inputs.package == 'both')
+      && (needs.release-core.result == 'success' || needs.release-core.result == 'skipped')
+    environment: pypi
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install build tooling
+        run: pip install build
+
+      - name: Install copass-core-agents (from this checkout, for test)
+        run: pip install -e ./python/copass-core-agents
+
+      - name: Install + test
+        working-directory: python/copass-anthropic-agents
+        run: |
+          pip install -e ".[dev]"
+          pytest -q
+
+      - name: Show version
+        id: version
+        working-directory: python/copass-anthropic-agents
+        run: |
+          v=$(python -c 'import tomllib; print(tomllib.loads(open("pyproject.toml","rb").read().decode())["project"]["version"])')
+          echo "value=$v" >> "$GITHUB_OUTPUT"
+          echo "Releasing copass-anthropic-agents $v (mode=${{ inputs.release_mode }})"
+
+      - name: Build (sdist + wheel)
+        working-directory: python/copass-anthropic-agents
+        run: python -m build
+
+      - name: Publish to PyPI
+        if: ${{ inputs.release_mode == 'stable' }}
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: python/copass-anthropic-agents/dist/
+
+      - name: Dry-run summary
+        if: ${{ inputs.release_mode == 'dry-run' }}
+        working-directory: python/copass-anthropic-agents
+        run: |
+          echo "Dry run — built but skipped publish."
+          ls -la dist/

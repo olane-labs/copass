@@ -449,7 +449,10 @@ class ManagedAgentBackend(AgentBackend):
         self._environment_id = env.id
         logger.info(
             "ManagedAgentBackend: created managed environment",
-            extra={"environment_id": env.id, "name": self._environment_name},
+            extra={
+                "environment_id": env.id,
+                "environment_name": self._environment_name,
+            },
         )
         return env.id
 
