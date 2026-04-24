@@ -68,6 +68,21 @@ export type {
 export { UsersResource } from './resources/users.js';
 export { ApiKeysResource } from './resources/api-keys.js';
 export { UsageResource } from './resources/usage.js';
+export { IntegrationsResource } from './resources/integrations.js';
+export type {
+  AppCatalogItem,
+  AppCatalogResponse,
+  CatalogOptions,
+  ConnectionItem,
+  ConnectionsListResponse,
+  ConnectRequest,
+  ConnectResponse,
+  IntegrationScope,
+  ListConnectionsOptions,
+  ReconcileRequest,
+  ReconcileReportItem,
+  ReconcileResponse,
+} from './types/integrations.js';
 
 // Config
 export {

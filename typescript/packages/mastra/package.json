@@ -1,6 +1,6 @@
 {
   "name": "@copass/mastra",
-  "version": "0.2.4",
+  "version": "0.2.6",
   "description": "Mastra tool adapters for Copass — drop-in discover/interpret/search tools for Mastra agents",
   "publishConfig": {
     "access": "public",
@@ -63,7 +63,7 @@
     "zod": ">=3.23.0"
   },
   "devDependencies": {
-    "@copass/core": "^0.2.4",
+    "@copass/core": "^0.2.6",
     "@mastra/core": "^1.26.0",
     "@types/node": "^25.0.0",
     "tsup": "^8.5.0",

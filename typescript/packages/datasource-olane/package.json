@@ -1,6 +1,6 @@
 {
   "name": "@copass/datasource-olane",
-  "version": "0.2.4",
+  "version": "0.2.6",
   "description": "Olane OS data source driver for Copass — start/stop/status of local Olane OS instances, address book, worlds, and identity management",
   "publishConfig": {
     "access": "public",
@@ -66,7 +66,7 @@
     "@copass/core": "^0.2.0"
   },
   "devDependencies": {
-    "@copass/core": "^0.2.4",
+    "@copass/core": "^0.2.6",
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^25.0.0",
     "tsup": "^8.5.0",

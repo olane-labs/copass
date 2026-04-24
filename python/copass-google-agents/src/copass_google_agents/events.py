@@ -140,4 +140,36 @@ def adk_event_to_agent_events(adk_event: Any) -> List[AgentEvent]:
     return out
 
 
-__all__ = ["adk_event_to_agent_events"]
+def extract_usage_metadata(adk_event: Any) -> dict:
+    """Extract token usage from an ADK event's ``usage_metadata``.
+
+    ADK emits ``usage_metadata`` on events that involved a model call.
+    Its native keys (``prompt_token_count``, ``candidates_token_count``,
+    ``thoughts_token_count``) are remapped to the provider-neutral keys
+    the Anthropic backend already uses (``input_tokens``,
+    ``output_tokens``, ``thinking_tokens``) so consumers can read one
+    shape regardless of provider.
+
+    Returns an empty dict when the event has no usage_metadata (non-model
+    events, tool-only events).
+    """
+    meta = _get(adk_event, "usage_metadata")
+    if meta is None:
+        return {}
+    out: dict = {}
+    prompt = _get(meta, "prompt_token_count")
+    if isinstance(prompt, int):
+        out["input_tokens"] = prompt
+    candidates = _get(meta, "candidates_token_count")
+    if isinstance(candidates, int):
+        out["output_tokens"] = candidates
+    thoughts = _get(meta, "thoughts_token_count")
+    if isinstance(thoughts, int):
+        out["thinking_tokens"] = thoughts
+    total = _get(meta, "total_token_count")
+    if isinstance(total, int):
+        out["total_tokens"] = total
+    return out
+
+
+__all__ = ["adk_event_to_agent_events", "extract_usage_metadata"]

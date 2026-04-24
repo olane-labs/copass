@@ -60,7 +60,10 @@ logger = logging.getLogger(__name__)
 
 
 DEFAULT_REQUIREMENTS = [
-    "google-cloud-aiplatform[agent_engines,adk]>=1.148.1",
+    "google-cloud-aiplatform[agent_engines,adk]==1.148.1",
+    "google-adk==1.31.1",
+    "cloudpickle>=3.1.2",
+    "pydantic>=2.0.0",
     "httpx>=0.27",
 ]
 """Minimum pip requirements baked into a deployed Copass agent.
@@ -150,17 +153,37 @@ def deploy_adk_agent(
         )
 
     from google.adk import Agent
+    from vertexai.agent_engines import AdkApp
+
+    # AdkApp reads project/location from vertexai's global config in its
+    # constructor, so we must initialize the legacy aiplatform/vertexai
+    # entry point BEFORE instantiating the app. The `vertexai.Client`
+    # built further down is the newer surface used for `agent_engines.
+    # create`, but it doesn't populate `initializer.global_config`.
+    import vertexai as _vertexai
+
+    _init_kwargs: dict = {"project": project, "location": location}
+    if credentials is not None:
+        _init_kwargs["credentials"] = credentials
+    _vertexai.init(**_init_kwargs)
 
     tools: list[Any] = [copass_dispatch]
     if extra_tools:
         tools.extend(extra_tools)
 
-    local_agent = Agent(
+    raw_agent = Agent(
         name="copass_agent",
         model=model,
         instruction=system_prompt,
         tools=tools,
     )
+    # Vertex Agent Engine's `agent_engines.create` validates that the
+    # supplied agent exposes one of `query`/`async_query`/`stream_query`/
+    # `async_stream_query`/`bidi_stream_query`/`register_operations`.
+    # `google.adk.Agent` itself doesn't — it's just the tool/instruction
+    # graph. AdkApp wraps it into a runnable with `async_stream_query`,
+    # which is what `GoogleAgentBackend.stream` calls at invocation time.
+    local_agent = AdkApp(agent=raw_agent)
 
     client = vertex_client
     if client is None:
@@ -198,4 +221,185 @@ def deploy_adk_agent(
     return engine
 
 
-__all__ = ["deploy_adk_agent", "DEFAULT_REQUIREMENTS"]
+DEFAULT_MCP_PROXY_REQUIREMENTS = [
+    "google-cloud-aiplatform[agent_engines,adk]==1.148.1",
+    "google-adk==1.31.1",
+    "cloudpickle>=3.1.2",
+    "pydantic>=2.0.0",
+    "httpx>=0.27",
+    "mcp>=1.0.0",
+]
+"""Pip requirements baked into a Copass MCP-proxy-backed agent.
+Supersets :data:`DEFAULT_REQUIREMENTS` with ``mcp`` (needed by
+``google.adk.tools.mcp_tool.McpToolset`` at runtime to open the
+streamable-http client to the Copass MCP server)."""
+
+
+def deploy_adk_agent_with_mcp_proxy(
+    *,
+    display_name: str,
+    project: str,
+    system_prompt: str,
+    copass_mcp_url: str,
+    copass_api_key: str,
+    location: str = DEFAULT_LOCATION,
+    model: str = "gemini-3.1-pro-preview",
+    staging_bucket: Optional[str] = None,
+    credentials: "Optional[Credentials]" = None,
+    extra_tools: Optional[list[Any]] = None,
+    requirements: Optional[list[str]] = None,
+    vertex_client: Any = None,
+) -> Any:
+    """Deploy an ADK agent wired to the Copass Remote MCP proxy.
+
+    Alternate shape to :func:`deploy_adk_agent` for deployments that
+    prefer native MCP tooling over the ``copass_dispatch`` function-tool
+    proxy. Instead of baking a custom HTTP-to-dispatch Python function
+    into the reasoning engine, this variant baks an
+    :class:`google.adk.tools.mcp_tool.McpToolset` that opens a
+    streamable-http connection to the Copass MCP server
+    (``olane-copass-remote``) on every session.
+
+    The MCP server exposes exactly one tool,
+    ``invoke_integration_tool(user_scope, tool_name, arguments)``,
+    which forwards back to the Copass backend's
+    ``/api/v1/agents/dispatch`` endpoint. The deployed agent's system
+    prompt must instruct the model to always pass
+    ``user_scope=<tool_context.user_id>`` — that per-session identity
+    comes from Vertex Agent Engine's session metadata (which our own
+    backend mints at ``/agents/run`` time via
+    ``scope_to_user_id(scope)``).
+
+    Args:
+        display_name: Human-readable name.
+        project: GCP project id.
+        system_prompt: System prompt baked into the deployed agent.
+            Must describe the ``invoke_integration_tool`` calling
+            convention (scope-prefixed user id, pd_<app>_<tool>
+            tool-name shape). See the script shipped under
+            ``scripts/deploy_generalist_adk_agent.py`` for a working
+            template.
+        copass_mcp_url: Full URL of the Copass MCP streamable-http
+            endpoint (e.g. ``https://mcp.copass.com/mcp``). Pass the
+            exact ``/mcp`` suffix — ADK doesn't append it.
+        copass_api_key: Service ``olk_{env}_{user_hex}_{random}`` key
+            the deployed agent uses to authenticate against the MCP
+            server. The MCP server's
+            :class:`CopassApiKeyVerifier` accepts these; the backend
+            dispatch endpoint re-validates on every downstream call.
+        location: GCP region.
+        model: Gemini model id.
+        staging_bucket: GCS bucket for ADK artifacts (``gs://...``).
+        credentials: Optional pre-resolved credentials.
+        extra_tools: Optional additional ADK tools baked in alongside
+            the MCP toolset. Rarely needed — the MCP server is the
+            single tool surface by design.
+        requirements: Optional pip requirements override. Defaults to
+            :data:`DEFAULT_MCP_PROXY_REQUIREMENTS`.
+        vertex_client: Pre-built ``vertexai.Client`` (injectable for
+            tests).
+
+    Returns:
+        The created ``vertexai.agent_engines.AgentEngine`` resource.
+    """
+    if not display_name:
+        raise ValueError("deploy_adk_agent_with_mcp_proxy: `display_name` is required")
+    if not project:
+        raise ValueError("deploy_adk_agent_with_mcp_proxy: `project` is required")
+    if not system_prompt:
+        raise ValueError("deploy_adk_agent_with_mcp_proxy: `system_prompt` is required")
+    if not copass_mcp_url:
+        raise ValueError("deploy_adk_agent_with_mcp_proxy: `copass_mcp_url` is required")
+    if not copass_api_key:
+        raise ValueError("deploy_adk_agent_with_mcp_proxy: `copass_api_key` is required")
+    if not staging_bucket or not staging_bucket.startswith("gs://"):
+        raise ValueError(
+            "deploy_adk_agent_with_mcp_proxy: `staging_bucket` is required and must "
+            "start with 'gs://' (Agent Engine API constraint)"
+        )
+
+    from google.adk import Agent
+    from google.adk.tools.mcp_tool.mcp_session_manager import (
+        StreamableHTTPConnectionParams,
+    )
+    from google.adk.tools.mcp_tool.mcp_toolset import McpToolset
+    from vertexai.agent_engines import AdkApp
+
+    # Initialize vertexai globals before AdkApp construction — see
+    # the matching comment in :func:`deploy_adk_agent`.
+    import vertexai as _vertexai
+
+    _init_kwargs: dict = {"project": project, "location": location}
+    if credentials is not None:
+        _init_kwargs["credentials"] = credentials
+    _vertexai.init(**_init_kwargs)
+
+    # Build the MCP toolset that connects to the Copass MCP server on
+    # each deployed-agent session. We pass the service API key as a
+    # static Authorization header; the MCP server's
+    # CopassApiKeyVerifier parses it and surfaces the owner UUID via
+    # AccessToken.claims. The `user_scope` that actually routes the
+    # downstream Pipedream call is supplied by the model as a tool
+    # argument (from `tool_context.user_id`), NOT from this header.
+    mcp_toolset = McpToolset(
+        connection_params=StreamableHTTPConnectionParams(
+            url=copass_mcp_url,
+            headers={"Authorization": f"Bearer {copass_api_key}"},
+            timeout=30.0,
+        ),
+    )
+
+    tools: list[Any] = [mcp_toolset]
+    if extra_tools:
+        tools.extend(extra_tools)
+
+    raw_agent = Agent(
+        name="copass_agent",
+        model=model,
+        instruction=system_prompt,
+        tools=tools,
+    )
+    local_agent = AdkApp(agent=raw_agent)
+
+    client = vertex_client
+    if client is None:
+        import vertexai
+
+        client_kwargs: dict = {"project": project, "location": location}
+        if credentials is not None:
+            client_kwargs["credentials"] = credentials
+        client = vertexai.Client(**client_kwargs)
+
+    # No env_vars needed — this variant has no `_proxy_tool` looking
+    # up COPASS_API_URL / COPASS_API_KEY. The MCP toolset already
+    # carries its URL + bearer baked into the toolset object's
+    # connection_params, which cloudpickles into the deployed engine.
+    config: dict = {
+        "display_name": display_name,
+        "staging_bucket": staging_bucket,
+        "requirements": (
+            list(requirements) if requirements else list(DEFAULT_MCP_PROXY_REQUIREMENTS)
+        ),
+        "env_vars": {},
+        "agent_framework": "google-adk",
+    }
+
+    engine = client.agent_engines.create(agent=local_agent, config=config)
+    logger.info(
+        "deploy_adk_agent_with_mcp_proxy: created Agent Engine resource",
+        extra={
+            "display_name": display_name,
+            "project": project,
+            "region": location,
+            "copass_mcp_url": copass_mcp_url,
+        },
+    )
+    return engine
+
+
+__all__ = [
+    "deploy_adk_agent",
+    "deploy_adk_agent_with_mcp_proxy",
+    "DEFAULT_REQUIREMENTS",
+    "DEFAULT_MCP_PROXY_REQUIREMENTS",
+]
