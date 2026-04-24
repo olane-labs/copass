@@ -6,6 +6,8 @@ import type {
   ConnectRequest,
   ConnectResponse,
   ListConnectionsOptions,
+  ReconcileRequest,
+  ReconcileResponse,
 } from '../types/integrations.js';
 
 const base = (sandboxId: string) =>
@@ -71,5 +73,17 @@ export class IntegrationsResource extends BaseResource {
    * DataSource locally. Idempotent in both directions. */
   async disconnect(sandboxId: string, sourceId: string): Promise<void> {
     await this.delete(`${base(sandboxId)}/connections/${sourceId}`);
+  }
+
+  /** Query the provider for the caller's connected accounts and
+   * idempotently backfill missing DataSources. Safety net for dropped
+   * webhook deliveries — call during a poll loop after
+   * {@link connect} so a missed CONNECTION_SUCCESS doesn't leave the
+   * user stuck. Always returns the post-reconcile state. */
+  async reconcile(
+    sandboxId: string,
+    request: ReconcileRequest = {},
+  ): Promise<ReconcileResponse> {
+    return this.post<ReconcileResponse>(`${base(sandboxId)}/reconcile`, request);
   }
 }

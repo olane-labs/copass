@@ -91,3 +91,35 @@ export interface ListConnectionsOptions {
   /** Filter by app slug. */
   app?: string;
 }
+
+/** Body for POST /sources/integrations/reconcile. Force a sync pass
+ * against the underlying provider's accounts and backfill missing
+ * DataSources. Safety net for dropped webhooks. */
+export interface ReconcileRequest {
+  /** Default `'user'`. Must match the scope the connect flow used. */
+  scope?: IntegrationScope;
+  /** Optional app slug filter. */
+  app?: string;
+  /** Project override. */
+  project_id?: string;
+}
+
+export interface ReconcileReportItem {
+  app: string;
+  account_id: string;
+  /** 'created' | 'already_existed' | 'unsupported_app' | 'tier_limit' */
+  outcome: string;
+  source_id?: string | null;
+  error?: string | null;
+}
+
+export interface ReconcileResponse {
+  /** Number of brand-new DataSources created this pass. Non-zero means
+   * at least one provider account existed upstream but wasn't in Copass
+   * — typically due to a missed webhook delivery. */
+  created_count: number;
+  /** Per-account detail for diagnostics. */
+  items: ReconcileReportItem[];
+  /** Post-reconcile state — same shape as `listConnections`. */
+  connections: ConnectionItem[];
+}

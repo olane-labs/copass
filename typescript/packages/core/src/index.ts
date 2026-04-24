@@ -79,6 +79,9 @@ export type {
   ConnectResponse,
   IntegrationScope,
   ListConnectionsOptions,
+  ReconcileRequest,
+  ReconcileReportItem,
+  ReconcileResponse,
 } from './types/integrations.js';
 
 // Config
