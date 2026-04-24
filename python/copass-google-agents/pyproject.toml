@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "copass-google-agents"
-version = "0.3.0"
+version = "0.3.1"
 description = "Copass agent primitives for Google Vertex AI Agent Engine (ADK)"
 readme = "README.md"
 license = { text = "MIT" }

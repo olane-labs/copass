@@ -187,8 +187,21 @@ class GoogleAgentBackend(AgentBackend):
         delete_session_on_finish: bool = False,
         vertex_client: Any = None,
         adk_app: Any = None,
+        scope_to_user_id_fn: Optional[Any] = None,
         config: Optional[dict] = None,
     ) -> None:
+        """
+        Args:
+            scope_to_user_id_fn: Optional override for the
+                ``AgentScope → Agent Engine user_id`` mapping. When
+                omitted, defaults to :func:`scope_to_user_id` (most-
+                specific scope wins). Callers that need to match a
+                specific external identity shape downstream (e.g. a
+                Pipedream ``external_user_id`` provisioned as
+                ``u_<user_id>``) should pass a function that produces
+                that exact shape so the ADK session's ``user_id``
+                flows through unchanged into MCP-served tools.
+        """
         super().__init__(config=config)
         if not project:
             raise ValueError("GoogleAgentBackend: `project` is required")
@@ -206,6 +219,7 @@ class GoogleAgentBackend(AgentBackend):
         self._delete_session_on_finish = delete_session_on_finish
         self._vertex_client: Any = vertex_client
         self._adk_app: Any = adk_app
+        self._scope_to_user_id_fn = scope_to_user_id_fn or scope_to_user_id
 
     @property
     def resource_name(self) -> str:
@@ -294,7 +308,7 @@ class GoogleAgentBackend(AgentBackend):
             )
 
         adk_app = self._ensure_adk_app()
-        user_id = scope_to_user_id(context.scope)
+        user_id = self._scope_to_user_id_fn(context.scope)
 
         supplied_session_id = (
             context.handles.get(SESSION_ID_HANDLE) if context and context.handles else None

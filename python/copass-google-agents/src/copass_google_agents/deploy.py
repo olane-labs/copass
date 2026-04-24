@@ -261,14 +261,17 @@ def deploy_adk_agent_with_mcp_proxy(
     (``olane-copass-remote``) on every session.
 
     The MCP server exposes exactly one tool,
-    ``invoke_integration_tool(user_scope, tool_name, arguments)``,
-    which forwards back to the Copass backend's
-    ``/api/v1/agents/dispatch`` endpoint. The deployed agent's system
-    prompt must instruct the model to always pass
-    ``user_scope=<tool_context.user_id>`` — that per-session identity
-    comes from Vertex Agent Engine's session metadata (which our own
-    backend mints at ``/agents/run`` time via
-    ``scope_to_user_id(scope)``).
+    ``invoke_integration_tool(tool_name, arguments)``, which forwards
+    back to the Copass backend's ``/api/v1/agents/dispatch`` endpoint.
+    The per-session identity (``user_scope``) is carried as an HTTP
+    header — **not** as a tool argument — populated by ADK's
+    ``header_provider`` from ``ReadonlyContext.user_id`` on every tool
+    execution. That value is the scope-prefixed string our backend
+    mints at ``/agents/run`` time via ``scope_to_user_id(scope)`` and
+    passes to ``async_create_session(user_id=...)``. Keeping the scope
+    in a header (set by ADK runtime, not by the model) removes the
+    prompt-injection risk that a static-header + tool-argument layout
+    would have exposed.
 
     Args:
         display_name: Human-readable name.
@@ -335,18 +338,56 @@ def deploy_adk_agent_with_mcp_proxy(
     _vertexai.init(**_init_kwargs)
 
     # Build the MCP toolset that connects to the Copass MCP server on
-    # each deployed-agent session. We pass the service API key as a
-    # static Authorization header; the MCP server's
-    # CopassApiKeyVerifier parses it and surfaces the owner UUID via
-    # AccessToken.claims. The `user_scope` that actually routes the
-    # downstream Pipedream call is supplied by the model as a tool
-    # argument (from `tool_context.user_id`), NOT from this header.
+    # each deployed-agent session.
+    #
+    # Auth + scope propagation via `header_provider` — a callable ADK
+    # invokes per tool execution with the session's
+    # :class:`ReadonlyContext`. We return:
+    #
+    #     {
+    #       "Authorization": f"Bearer {service_olk_key}",
+    #       "x-copass-user-scope": ctx.user_id,   # set by async_create_session
+    #     }
+    #
+    # The service API key authenticates the ENGINE to the MCP server;
+    # ``x-copass-user-scope`` carries the per-session identity the
+    # Copass backend minted at ``/agents/run`` time. Because ADK
+    # populates the header from ``ReadonlyContext.user_id`` (not from
+    # model output), the model cannot forge a different scope via
+    # prompt injection or a confused tool-call — the value is outside
+    # the LLM's control surface entirely.
+    #
+    # See https://github.com/google/adk-python/discussions/2482 for the
+    # canonical "per-user tokens to MCP" pattern this follows.
+    _service_key = copass_api_key
+
+    def _header_provider(readonly_context: Any) -> dict:
+        # Closure over `_service_key` captures the olk_ at deploy time;
+        # ``ctx.user_id`` is read per invocation from the ADK session.
+        headers = {"Authorization": f"Bearer {_service_key}"}
+        user_id = getattr(readonly_context, "user_id", None)
+        if user_id:
+            headers["x-copass-user-scope"] = str(user_id)
+        # Optional: pass a backend-minted signature alongside for
+        # HMAC-based defense-in-depth once the backend stashes it in
+        # session state at ``async_create_session`` time.
+        try:
+            state = readonly_context.state  # MappingProxyType → supports .get
+            sig = state.get("scope_sig") if hasattr(state, "get") else None
+            if sig:
+                headers["x-copass-scope-sig"] = str(sig)
+        except Exception:
+            pass
+        return headers
+
     mcp_toolset = McpToolset(
         connection_params=StreamableHTTPConnectionParams(
             url=copass_mcp_url,
-            headers={"Authorization": f"Bearer {copass_api_key}"},
+            # No static headers — header_provider owns the full set.
+            headers=None,
             timeout=30.0,
         ),
+        header_provider=_header_provider,
     )
 
     tools: list[Any] = [mcp_toolset]
