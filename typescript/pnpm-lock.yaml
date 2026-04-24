@@ -90,7 +90,7 @@ importers:
   packages/agent-router:
     devDependencies:
       '@copass/core':
-        specifier: ^0.2.6
+        specifier: ^0.2.7
         version: link:../core
       '@types/node':
         specifier: ^25.0.0
@@ -109,7 +109,7 @@ importers:
         version: link:../config
     devDependencies:
       '@copass/core':
-        specifier: ^0.2.6
+        specifier: ^0.2.7
         version: link:../core
       '@types/node':
         specifier: ^25.0.0
@@ -177,7 +177,7 @@ importers:
         version: 7.0.5
     devDependencies:
       '@copass/core':
-        specifier: ^0.2.6
+        specifier: ^0.2.7
         version: link:../core
       '@types/node':
         specifier: ^25.0.0
@@ -211,7 +211,7 @@ importers:
         version: 1.0.38
     devDependencies:
       '@copass/core':
-        specifier: ^0.2.6
+        specifier: ^0.2.7
         version: link:../core
       '@types/fs-extra':
         specifier: ^11.0.4
@@ -233,7 +233,7 @@ importers:
         version: link:../config
     devDependencies:
       '@copass/core':
-        specifier: ^0.2.6
+        specifier: ^0.2.7
         version: link:../core
       '@langchain/core':
         specifier: ^1.1.0
@@ -261,7 +261,7 @@ importers:
         version: link:../config
     devDependencies:
       '@copass/core':
-        specifier: ^0.2.6
+        specifier: ^0.2.7
         version: link:../core
       '@mastra/core':
         specifier: ^1.26.0
@@ -292,7 +292,7 @@ importers:
         version: 4.3.6
     devDependencies:
       '@copass/core':
-        specifier: ^0.2.6
+        specifier: ^0.2.7
         version: link:../core
       '@types/node':
         specifier: ^25.0.0
