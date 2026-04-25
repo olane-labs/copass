@@ -40,6 +40,17 @@ export interface DataSource {
   adapter_config: Record<string, unknown>;
   poll_interval_seconds?: number;
   webhook_url?: string;
+  /**
+   * TRANSIENT — populated ONLY in the response from `register()` (when
+   * the source's provider has a registered ingestor and `ingestion_mode`
+   * is `'realtime'`) and from `rotateWebhookSecret()`. NEVER present on
+   * `retrieve()` or `list()` responses. Plaintext signing secret the
+   * caller pastes into their provider's HTTP step's
+   * `Authorization: Bearer <secret>` header. After the response the
+   * server only stores the sha256 hash — losing the plaintext means
+   * rotating.
+   */
+  webhook_signing_secret?: string | null;
   last_sync_at?: string;
   created_at?: string;
 }

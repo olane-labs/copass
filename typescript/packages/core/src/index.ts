@@ -84,6 +84,31 @@ export type {
   ReconcileResponse,
 } from './types/integrations.js';
 
+// Reactive Agents (OLANE-1532)
+export type {
+  Agent,
+  AgentBackend,
+  AgentListResponse,
+  AgentModelSettings,
+  AgentRun,
+  AgentRunListResponse,
+  AgentStatus,
+  AgentToolCatalogResponse,
+  AgentToolDescriptor,
+  AgentTrigger,
+  CreateAgentRequest,
+  CreateTriggerRequest,
+  ListAgentRunsOptions,
+  ListAgentsOptions,
+  ListTriggersOptions,
+  RunStatus,
+  TestFireRequest,
+  TriggerListResponse,
+  TriggerStatus,
+  UpdateAgentRequest,
+  UpdateTriggerRequest,
+} from './types/agents.js';
+
 // Config
 export {
   ProjectConfigSchema,

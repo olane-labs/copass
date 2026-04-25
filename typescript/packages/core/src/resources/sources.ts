@@ -104,4 +104,21 @@ export class SourcesResource extends BaseResource {
     });
   }
 
+  /**
+   * Mint a fresh webhook signing secret for a `realtime` data source whose
+   * provider has a registered ingestor (Pipedream today). The plaintext
+   * `webhook_signing_secret` is returned ONCE on the response — paste it
+   * into your provider's HTTP step as `Authorization: Bearer <secret>`.
+   * After this call the server only stores the sha256 hash; lose the
+   * plaintext and you must rotate again.
+   *
+   * The previous active webhook flips to `rotating` so in-flight events
+   * keep authenticating during the grace window; new events use the new
+   * secret.
+   */
+  async rotateWebhookSecret(sandboxId: string, sourceId: string): Promise<DataSource> {
+    return this.post<DataSource>(
+      `${base(sandboxId)}/${sourceId}/rotate-webhook-secret`,
+    );
+  }
 }

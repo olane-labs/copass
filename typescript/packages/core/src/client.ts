@@ -16,6 +16,7 @@ import { SourcesResource } from './resources/sources.js';
 import { VaultResource } from './resources/vault.js';
 import { IngestResource } from './resources/ingest.js';
 import { IntegrationsResource } from './resources/integrations.js';
+import { AgentsResource } from './resources/agents.js';
 import { ContextWindowResource } from './context-window/index.js';
 import type { RequestMiddleware, ResponseMiddleware } from './http/http-client.js';
 import type { RetryConfig } from './types/common.js';
@@ -79,6 +80,8 @@ export class CopassClient {
   readonly apiKeys: ApiKeysResource;
   readonly usage: UsageResource;
   readonly integrations: IntegrationsResource;
+  /** Reactive Agents — persisted agent CRUD + triggers + runs + test-fire. */
+  readonly agents: AgentsResource;
   readonly contextWindow: ContextWindowResource;
 
   constructor(options: CopassClientOptions) {
@@ -103,6 +106,7 @@ export class CopassClient {
     this.apiKeys = new ApiKeysResource(http);
     this.usage = new UsageResource(http);
     this.integrations = new IntegrationsResource(http);
+    this.agents = new AgentsResource(http);
     // Depends on `this.sources` for register/retrieve — initialize last.
     this.contextWindow = new ContextWindowResource(this);
   }
