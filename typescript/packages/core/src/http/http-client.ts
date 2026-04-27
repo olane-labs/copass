@@ -58,6 +58,14 @@ export interface RequestOptions {
   encryptedPayload?: EncryptedPayload;
   query?: Record<string, string | undefined>;
   headers?: Record<string, string>;
+  /**
+   * Cancellation signal. When aborted, the underlying `fetch` is
+   * cancelled — for streaming requests this closes the SSE connection,
+   * which the server detects and uses to mark the run cancelled.
+   * Without a signal, breaking out of the iterator only releases the
+   * reader lock; the TCP connection stays open until GC.
+   */
+  signal?: AbortSignal;
 }
 
 export class HttpClient {
@@ -76,7 +84,7 @@ export class HttpClient {
   }
 
   async request<T = unknown>(path: string, options: RequestOptions = {}): Promise<T> {
-    const { method = 'GET', body, rawBody, rawResponse, encryptedPayload, query, headers: extraHeaders } = options;
+    const { method = 'GET', body, rawBody, rawResponse, encryptedPayload, query, headers: extraHeaders, signal } = options;
 
     const session = await this.authProvider.getSession();
 
@@ -125,6 +133,7 @@ export class HttpClient {
         method: ctx.method,
         headers: ctx.headers,
         body: (requestBody ?? undefined) as BodyInit | undefined,
+        signal,
       });
 
       if (!response.ok) {
@@ -177,7 +186,7 @@ export class HttpClient {
     path: string,
     options: RequestOptions = {},
   ): Promise<Response> {
-    const { method = 'POST', body, rawBody, query, headers: extraHeaders } = options;
+    const { method = 'POST', body, rawBody, query, headers: extraHeaders, signal } = options;
 
     const session = await this.authProvider.getSession();
     const headers: Record<string, string> = {
@@ -221,6 +230,7 @@ export class HttpClient {
       method: ctx.method,
       headers: ctx.headers,
       body: (requestBody ?? undefined) as BodyInit | undefined,
+      signal,
     });
 
     if (!response.ok) {

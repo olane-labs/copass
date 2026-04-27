@@ -90,9 +90,17 @@ export async function* parseSSE(response: Response): AsyncIterable<SSEEvent> {
       }
     }
   } finally {
-    // Release the reader regardless of how we exit (normal end,
-    // caller break, exception). The underlying fetch task is the
-    // browser/runtime's responsibility to cancel.
+    // Cancel the underlying stream so that breaking out of the
+    // for-await loop closes the connection. Without this, the SSE
+    // socket stays open until GC, the server doesn't see a
+    // disconnect, and any long-running work (e.g. an LLM stream)
+    // keeps consuming resources. Cancellation propagates to the
+    // server as `asyncio.CancelledError` on FastAPI's side.
+    try {
+      await reader.cancel();
+    } catch {
+      // Already closed / cancelled — ignore.
+    }
     try {
       reader.releaseLock();
     } catch {

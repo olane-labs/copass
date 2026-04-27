@@ -63,16 +63,24 @@ export class ConciergeResource extends BaseResource {
   /**
    * Multi-turn streaming chat. Yields one `ConciergeEvent` per SSE
    * frame the server emits. Loop until you see `agent_finish` (or
-   * `agent_error` — terminal). Break out early to cancel the
-   * stream; the server marks the run `cancelled`.
+   * `agent_error` — terminal).
+   *
+   * Cancellation: pass an `AbortSignal` via `options.signal` and call
+   * `controller.abort()` to interrupt. The signal aborts the
+   * underlying `fetch`, the server detects the disconnect via
+   * `asyncio.CancelledError`, and the run row is marked `cancelled`.
+   * Breaking out of the iterator alone is not enough — without a
+   * signal, the TCP connection stays open and the agent keeps running
+   * server-side.
    */
   async *chat(
     sandboxId: string,
     request: ConciergeChatRequest,
+    options: { signal?: AbortSignal } = {},
   ): AsyncIterable<ConciergeEvent> {
     const response = await this.http.streamRequest(
       `${conciergeBase(sandboxId)}/chat`,
-      { method: 'POST', body: request },
+      { method: 'POST', body: request, signal: options.signal },
     );
     for await (const frame of parseSSE(response)) {
       yield narrowConciergeEvent(frame);
