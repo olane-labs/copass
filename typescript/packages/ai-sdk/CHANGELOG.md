@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.3.3](https://github.com/olane-labs/copass-harness/compare/@copass/ai-sdk@0.3.2...@copass/ai-sdk@0.3.3) (2026-04-27)
+
+**Note:** Version bump only for package @copass/ai-sdk
+
 ## [0.3.2](https://github.com/olane-labs/copass-harness/compare/@copass/ai-sdk@0.3.1...@copass/ai-sdk@0.3.2) (2026-04-26)
 
 **Note:** Version bump only for package @copass/ai-sdk
