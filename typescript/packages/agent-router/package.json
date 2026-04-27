@@ -1,6 +1,6 @@
 {
   "name": "@copass/agent-router",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "High-level Copass agent SDK — hosted agent-runtime routing + integrations + one-liner OAuth flow",
   "publishConfig": {
     "access": "public",
@@ -57,7 +57,7 @@
     "@copass/core": "^0.3.0"
   },
   "devDependencies": {
-    "@copass/core": "^0.3.3",
+    "@copass/core": "^0.3.4",
     "@types/node": "^25.0.0",
     "tsup": "^8.5.0",
     "vitest": "^4.1.0"
