@@ -250,10 +250,43 @@ class ManagedAgentBackend(AgentBackend):
                                 yield AgentTextDelta(text=text)
 
                 elif evt_type == "agent.custom_tool_use":
+                    # Per Anthropic's SDK contract, `event.id` here is the
+                    # same id that surfaces later in
+                    # `requires_action.event_ids` and that we send back as
+                    # `custom_tool_use_id` on `user.custom_tool_result`.
+                    # If `id` is missing the buffer key collides with any
+                    # other id-less event ("") and the lookup at execute
+                    # time produces "tool event not found" — log loudly so
+                    # we catch this in the field rather than rely on the
+                    # silent overwrite.
+                    if not evt_id:
+                        logger.warning(
+                            "ManagedAgentBackend: agent.custom_tool_use missing id",
+                            extra={
+                                "session_id": session_id,
+                                "name": getattr(sdk_event, "name", None),
+                                "event_repr": repr(sdk_event)[:500],
+                            },
+                        )
                     call_id = evt_id or ""
                     name = getattr(sdk_event, "name", "") or ""
                     raw_input = getattr(sdk_event, "input", None) or {}
                     arguments = dict(raw_input) if isinstance(raw_input, dict) else {}
+                    if call_id in pending_tool_events:
+                        # Same key arriving twice means the previous entry
+                        # is being silently overwritten — almost certainly
+                        # the missing-id collision above. Surface it.
+                        logger.error(
+                            "ManagedAgentBackend: duplicate buffer key — overwriting prior tool event",
+                            extra={
+                                "session_id": session_id,
+                                "call_id": call_id,
+                                "incoming_name": name,
+                                "buffered_name": getattr(
+                                    pending_tool_events[call_id], "name", None
+                                ),
+                            },
+                        )
                     pending_tool_events[call_id] = sdk_event
                     yield AgentToolCall(
                         call_id=call_id,
@@ -267,6 +300,25 @@ class ManagedAgentBackend(AgentBackend):
 
                     if stop_type == "requires_action":
                         event_ids = list(getattr(stop, "event_ids", None) or [])
+                        # Diagnostic: log the requested vs buffered ids so
+                        # we can see exactly which lookups will miss in
+                        # `_execute_pending_tools` rather than just seeing
+                        # "tool event not found" downstream.
+                        missing = [eid for eid in event_ids if eid not in pending_tool_events]
+                        if missing:
+                            logger.error(
+                                "ManagedAgentBackend: requires_action ids not buffered",
+                                extra={
+                                    "session_id": session_id,
+                                    "requested_ids": event_ids,
+                                    "buffered_ids": list(pending_tool_events.keys()),
+                                    "missing_ids": missing,
+                                    "buffered_names": {
+                                        k: getattr(v, "name", None)
+                                        for k, v in pending_tool_events.items()
+                                    },
+                                },
+                            )
                         results = await self._execute_pending_tools(
                             effective_tools=effective_tools,
                             context=context,
@@ -377,9 +429,17 @@ class ManagedAgentBackend(AgentBackend):
         for eid in event_ids:
             tool_event = pending.get(eid)
             if tool_event is None:
+                # The upstream `requires_action` log already captured the
+                # full buffer state; here we just record the per-id miss
+                # plus the empty-string-collision case explicitly because
+                # it's the most likely root cause when this fires.
                 logger.error(
                     "ManagedAgentBackend: required tool event not buffered",
-                    extra={"event_id": eid},
+                    extra={
+                        "event_id": eid,
+                        "buffered_keys": list(pending.keys()),
+                        "empty_key_collision": "" in pending,
+                    },
                 )
                 results.append((eid, "<unknown>", {}, "tool event not found"))
                 continue
