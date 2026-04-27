@@ -12,6 +12,7 @@ import { UsersResource } from './resources/users.js';
 import { ApiKeysResource } from './resources/api-keys.js';
 import { UsageResource } from './resources/usage.js';
 import { SandboxesResource } from './resources/sandboxes.js';
+import { SandboxConnectionsResource } from './resources/sandbox-connections.js';
 import { SourcesResource } from './resources/sources.js';
 import { VaultResource } from './resources/vault.js';
 import { IngestResource } from './resources/ingest.js';
@@ -70,6 +71,8 @@ const DEFAULT_API_URL = 'https://ai.copass.id';
  */
 export class CopassClient {
   readonly sandboxes: SandboxesResource;
+  /** Cross-user sandbox grants — invite teammates into a sandbox you own. */
+  readonly sandboxConnections: SandboxConnectionsResource;
   readonly sources: SourcesResource;
   readonly projects: ProjectsResource;
   readonly vault: VaultResource;
@@ -102,6 +105,7 @@ export class CopassClient {
     });
 
     this.sandboxes = new SandboxesResource(http);
+    this.sandboxConnections = new SandboxConnectionsResource(http);
     this.sources = new SourcesResource(http);
     this.projects = new ProjectsResource(http);
     this.vault = new VaultResource(http);

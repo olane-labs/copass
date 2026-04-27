@@ -45,6 +45,7 @@ export type {
 // Resources
 export { BaseResource } from './resources/base.js';
 export { SandboxesResource } from './resources/sandboxes.js';
+export { SandboxConnectionsResource } from './resources/sandbox-connections.js';
 export { SourcesResource } from './resources/sources.js';
 export { ProjectsResource } from './resources/projects.js';
 export { VaultResource } from './resources/vault.js';

@@ -5,6 +5,7 @@ export type * from './users.js';
 export type * from './api-keys.js';
 export type * from './usage.js';
 export type * from './sandboxes.js';
+export type * from './sandbox-connections.js';
 export type * from './sources.js';
 export type * from './storage-projects.js';
 export type * from './vault.js';
