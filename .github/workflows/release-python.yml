@@ -29,6 +29,7 @@ on:
         default: 'all'
         type: choice
         options:
+          - copass-core
           - copass-core-agents
           - copass-context-agents
           - copass-anthropic-agents
@@ -49,8 +50,70 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  release-copass-core:
+    # The Python SDK that mirrors `@copass/core`. Lands BEFORE the
+    # *-agents jobs so when ``all`` is selected, downstream packages
+    # that depend on ``copass-core`` (e.g. copass-context-agents at
+    # ``copass-core>=0.1.0``) install against the freshly-published
+    # SDK rather than the previous PyPI release. When the user picks
+    # only an *-agents package, this job is skipped — the agent jobs
+    # then resolve ``copass-core`` from whatever's already on PyPI.
+    if: ${{ inputs.package == 'copass-core' || inputs.package == 'all' }}
+    name: Release copass-core
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+      contents: read
+    defaults:
+      run:
+        working-directory: python/copass-core
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install build tooling
+        run: pip install build
+
+      - name: Install + test
+        run: |
+          pip install -e ".[dev]"
+          pytest -q
+
+      - name: Show version
+        id: version
+        run: |
+          v=$(python -c 'import tomllib; print(tomllib.loads(open("pyproject.toml","rb").read().decode())["project"]["version"])')
+          echo "value=$v" >> "$GITHUB_OUTPUT"
+          echo "Releasing copass-core $v (mode=${{ inputs.release_mode }})"
+
+      - name: Build (sdist + wheel)
+        run: python -m build
+
+      - name: Publish to PyPI
+        if: ${{ inputs.release_mode == 'stable' }}
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: python/copass-core/dist/
+
+      - name: Dry-run summary
+        if: ${{ inputs.release_mode == 'dry-run' }}
+        run: |
+          echo "Dry run — built but skipped publish."
+          ls -la dist/
+
   release-core:
-    if: ${{ inputs.package == 'copass-core-agents' || inputs.package == 'both' || inputs.package == 'all' }}
+    needs: [release-copass-core]
+    # Run when (a) the user asked for this package and (b) the upstream
+    # SDK job either succeeded OR was skipped (user asked for an
+    # *-agents package alone). ``always()`` lets us inspect needs.*.result.
+    if: >-
+      always()
+      && (inputs.package == 'copass-core-agents' || inputs.package == 'both' || inputs.package == 'all')
+      && (needs.release-copass-core.result == 'success' || needs.release-copass-core.result == 'skipped')
     name: Release copass-core-agents
     runs-on: ubuntu-latest
     environment: pypi
