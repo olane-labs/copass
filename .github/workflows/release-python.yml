@@ -33,10 +33,10 @@ name: release-python
 on:
   push:
     branches: [production]
-    paths:
-      - 'python/VERSION'
-      - 'python/**'
-      - '.github/workflows/release-python.yml'
+    # No ``paths:`` filter — GitHub doesn't fire path-filtered pushes
+    # on initial branch creation, and the internal
+    # ``check-lockstep-version`` job already gates on whether
+    # ``python/VERSION`` actually changed in the pushed commit.
   workflow_dispatch:
     inputs:
       package:
