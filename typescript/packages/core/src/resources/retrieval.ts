@@ -75,6 +75,8 @@ export interface InterpretRequest {
   project_id?: string;
   reference_date?: string;
   preset?: SearchPreset;
+  /** Cap on brief length. Accepts 100–16000; omit for the server default. */
+  max_tokens?: number;
 }
 
 export interface InterpretCitation {

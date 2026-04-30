@@ -51,6 +51,12 @@ _SOURCE_TYPE_PARAM = (
     "user_input. Defaults to the tool's configured default_source_type when omitted."
 )
 _STORAGE_ONLY_PARAM = "If true, chunk and store but skip ontology ingestion."
+_OCCURRED_AT_PARAM = (
+    "Optional ISO 8601 timestamp anchoring the content to a real-world moment "
+    "(e.g. when the user said it, when the decision was made). Used as the "
+    "default occurred_at for any composed event whose own LLM-extracted "
+    "timestamp is None, so temporal queries can find this content."
+)
 
 
 class _CopassIngestTool(AgentTool):
@@ -92,6 +98,10 @@ class _CopassIngestTool(AgentTool):
                         "type": "boolean",
                         "description": _STORAGE_ONLY_PARAM,
                     },
+                    "occurred_at": {
+                        "type": "string",
+                        "description": _OCCURRED_AT_PARAM,
+                    },
                 },
                 "required": ["content"],
                 "additionalProperties": False,
@@ -117,6 +127,7 @@ class _CopassIngestTool(AgentTool):
 
         source_type = arguments.get("source_type") or self._default_source_type
         storage_only = arguments.get("storage_only")
+        occurred_at = arguments.get("occurred_at")
 
         response = await self._client.sources.ingest(
             self._sandbox_id,
@@ -125,6 +136,7 @@ class _CopassIngestTool(AgentTool):
             source_type=source_type,
             storage_only=storage_only,
             project_id=self._project_id,
+            occurred_at=occurred_at,
         )
         return {
             "job_id": response.get("job_id"),

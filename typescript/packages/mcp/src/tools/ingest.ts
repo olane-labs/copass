@@ -55,9 +55,18 @@ export function registerIngestTool(server: McpServer, deps: IngestDeps): void {
           .boolean()
           .optional()
           .describe('If true, chunk and store but skip ontology ingestion.'),
+        occurred_at: z
+          .string()
+          .optional()
+          .describe(
+            'Optional ISO 8601 timestamp anchoring the content to a real-world moment ' +
+              '(e.g. when this decision was made, when the user said it). Used as the ' +
+              'default occurred_at for any composed event whose own timestamp is null, ' +
+              'so temporal queries can find it.',
+          ),
       },
     },
-    async ({ content, source_type, data_source_id, project_id, storage_only }) => {
+    async ({ content, source_type, data_source_id, project_id, storage_only, occurred_at }) => {
       try {
         const sourceId = data_source_id ?? config.ingest_data_source_id;
         if (!sourceId) {
@@ -72,6 +81,7 @@ export function registerIngestTool(server: McpServer, deps: IngestDeps): void {
           source_type: source_type ?? 'text',
           project_id: project_id ?? config.project_id,
           storage_only,
+          occurred_at,
         });
 
         return mcpResult({

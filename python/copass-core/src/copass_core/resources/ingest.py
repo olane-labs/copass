@@ -43,6 +43,7 @@ class IngestResource(BaseResource):
         storage_only: Optional[bool] = None,
         project_id: Optional[str] = None,
         data_source_id: Optional[str] = None,
+        occurred_at: Optional[str] = None,
     ) -> Dict[str, Any]:
         body = _build_ingest_body(
             text=text,
@@ -50,6 +51,7 @@ class IngestResource(BaseResource):
             storage_only=storage_only,
             project_id=project_id,
             data_source_id=data_source_id,
+            occurred_at=occurred_at,
         )
         return await self._post(_SHORTHAND, body)
 
@@ -65,6 +67,7 @@ class IngestResource(BaseResource):
         storage_only: Optional[bool] = None,
         project_id: Optional[str] = None,
         data_source_id: Optional[str] = None,
+        occurred_at: Optional[str] = None,
     ) -> Dict[str, Any]:
         body = _build_ingest_body(
             text=text,
@@ -72,6 +75,7 @@ class IngestResource(BaseResource):
             storage_only=storage_only,
             project_id=project_id,
             data_source_id=data_source_id,
+            occurred_at=occurred_at,
         )
         return await self._post(_explicit_base(sandbox_id), body)
 
@@ -86,6 +90,7 @@ def _build_ingest_body(
     storage_only: Optional[bool],
     project_id: Optional[str],
     data_source_id: Optional[str],
+    occurred_at: Optional[str] = None,
 ) -> Dict[str, Any]:
     body: Dict[str, Any] = {"text": text}
     if source_type is not None:
@@ -96,6 +101,8 @@ def _build_ingest_body(
         body["project_id"] = project_id
     if data_source_id is not None:
         body["data_source_id"] = data_source_id
+    if occurred_at is not None:
+        body["occurred_at"] = occurred_at
     return body
 
 

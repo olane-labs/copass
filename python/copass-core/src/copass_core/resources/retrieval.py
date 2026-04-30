@@ -91,6 +91,7 @@ class RetrievalResource(BaseResource):
         project_id: Optional[str] = None,
         reference_date: Optional[str] = None,
         preset: Optional[SearchPreset] = None,
+        max_tokens: Optional[int] = None,
     ) -> Dict[str, Any]:
         """Synthesized 1–2 paragraph brief pinned to specific
         ``items`` picked from a prior ``discover`` call."""
@@ -105,6 +106,8 @@ class RetrievalResource(BaseResource):
             body["reference_date"] = reference_date
         if preset is not None:
             body["preset"] = preset
+        if max_tokens is not None:
+            body["max_tokens"] = max_tokens
         return await self._post(
             f"/api/v1/query/sandboxes/{sandbox_id}/interpret",
             body,

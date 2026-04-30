@@ -252,10 +252,17 @@ class SourcesResource(BaseResource):
         source_type: Optional[str] = None,
         storage_only: Optional[bool] = None,
         project_id: Optional[str] = None,
+        occurred_at: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Primary ingestion path — pushes ``text`` through this
         data source. Equivalent to calling
         ``client.ingest.text_in_sandbox(sandbox_id, text=..., data_source_id=source_id)``.
+
+        ``occurred_at`` anchors the payload to a real-world timestamp
+        (ISO 8601). The backend uses it as the default ``occurred_at``
+        for any composed event whose own LLM-extracted occurred_at is
+        None — so temporal queries can find the content even when the
+        upstream extractor doesn't pull dates out of the body.
         """
         body: Dict[str, Any] = {"text": text, "data_source_id": source_id}
         if source_type is not None:
@@ -264,6 +271,8 @@ class SourcesResource(BaseResource):
             body["storage_only"] = storage_only
         if project_id is not None:
             body["project_id"] = project_id
+        if occurred_at is not None:
+            body["occurred_at"] = occurred_at
         return await self._post(_ingest_base(sandbox_id), body)
 
 

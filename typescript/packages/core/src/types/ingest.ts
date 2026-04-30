@@ -18,6 +18,15 @@ export interface IngestTextRequest {
   project_id?: string;
   /** Optional data source association. */
   data_source_id?: string;
+  /**
+   * Optional ISO 8601 timestamp anchoring this payload to a real-world
+   * moment (e.g. the conversation date for a chat session). When set,
+   * every ontology event composed from this ingestion that doesn't
+   * carry its own LLM-extracted occurred_at falls back to this value.
+   * Lets temporal reasoning work even when the upstream LLM extractor
+   * doesn't pull dates out of the text body.
+   */
+  occurred_at?: string;
 }
 
 export interface IngestJobResponse {
