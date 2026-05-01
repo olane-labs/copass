@@ -9,7 +9,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const sourceSpecDir = resolve(here, '..', '..', '..', '..', 'spec', 'management', 'v1');
 
 describe('registerManagementTools', () => {
-  it('registers the 14 Phase 1 read tools (Phase 2A specs are loaded but lack handlers until Phase 2B)', () => {
+  it('registers all 20 tools (14 Phase 1 reads + 6 Phase 2 writes) with handlers bound', () => {
     const client = new CopassClient({
       apiUrl: 'http://test',
       auth: { type: 'api-key', key: 'olk_test' },
@@ -22,15 +22,15 @@ describe('registerManagementTools', () => {
       {
         sandboxId: 'sb_test',
         specDir: sourceSpecDir,
-        allowMissingHandlers: true,
       },
     );
 
-    // 14 read tools in Phase 2A — Phase 2B fans out to all 20.
-    expect(registered.length).toBe(14);
+    expect(registered.length).toBe(20);
     const names = registered.map((r) => r.name).sort();
     expect(names).toEqual(
       [
+        'add_user_mcp_source',
+        'create_agent',
         'get_agent',
         'get_run_trace',
         'get_source',
@@ -45,6 +45,10 @@ describe('registerManagementTools', () => {
         'list_sources',
         'list_trigger_components',
         'list_triggers',
+        'update_agent_prompt',
+        'update_agent_tool_sources',
+        'update_agent_tools',
+        'wire_integration_to_agent',
       ].sort(),
     );
 
@@ -78,7 +82,6 @@ describe('registerManagementTools', () => {
       {
         sandboxId: 'sb_test',
         specDir: sourceSpecDir,
-        allowMissingHandlers: true,
       },
     );
 
@@ -90,20 +93,5 @@ describe('registerManagementTools', () => {
     expect(fakeFetch).toHaveBeenCalled();
 
     vi.unstubAllGlobals();
-  });
-
-  it('throws when a spec has no handler and allowMissingHandlers is not set', () => {
-    const client = new CopassClient({
-      apiUrl: 'http://test',
-      auth: { type: 'api-key', key: 'olk_test' },
-    });
-
-    expect(() =>
-      registerManagementTools(
-        () => undefined,
-        client,
-        { sandboxId: 'sb_test', specDir: sourceSpecDir },
-      ),
-    ).toThrow(/no handler implementation for tool/);
   });
 });

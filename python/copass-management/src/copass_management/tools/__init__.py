@@ -8,6 +8,8 @@ if TYPE_CHECKING:
 
 ToolHandler = Callable[["ToolContext", Dict[str, Any]], Awaitable[Any]]
 
+from copass_management.tools.add_user_mcp_source import add_user_mcp_source
+from copass_management.tools.create_agent import create_agent
 from copass_management.tools.get_agent import get_agent
 from copass_management.tools.get_run_trace import get_run_trace
 from copass_management.tools.get_source import get_source
@@ -22,6 +24,10 @@ from copass_management.tools.list_sandboxes import list_sandboxes
 from copass_management.tools.list_sources import list_sources
 from copass_management.tools.list_trigger_components import list_trigger_components
 from copass_management.tools.list_triggers import list_triggers
+from copass_management.tools.update_agent_prompt import update_agent_prompt
+from copass_management.tools.update_agent_tool_sources import update_agent_tool_sources
+from copass_management.tools.update_agent_tools import update_agent_tools
+from copass_management.tools.wire_integration_to_agent import wire_integration_to_agent
 
 
 TOOL_HANDLERS: Dict[str, ToolHandler] = {
@@ -39,12 +45,20 @@ TOOL_HANDLERS: Dict[str, ToolHandler] = {
     "list_api_keys": list_api_keys,
     "list_agent_tools": list_agent_tools,
     "list_sandbox_connections": list_sandbox_connections,
+    "create_agent": create_agent,
+    "update_agent_prompt": update_agent_prompt,
+    "update_agent_tools": update_agent_tools,
+    "update_agent_tool_sources": update_agent_tool_sources,
+    "add_user_mcp_source": add_user_mcp_source,
+    "wire_integration_to_agent": wire_integration_to_agent,
 }
 
 
 __all__ = [
     "TOOL_HANDLERS",
     "ToolHandler",
+    "add_user_mcp_source",
+    "create_agent",
     "get_agent",
     "get_run_trace",
     "get_source",
@@ -59,4 +73,8 @@ __all__ = [
     "list_sources",
     "list_trigger_components",
     "list_triggers",
+    "update_agent_prompt",
+    "update_agent_tool_sources",
+    "update_agent_tools",
+    "wire_integration_to_agent",
 ]

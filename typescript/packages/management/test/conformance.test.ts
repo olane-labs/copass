@@ -64,7 +64,7 @@ describe('@copass/management conformance', () => {
     expect(MAX_SPEC_VERSION).toBe('v1');
   });
 
-  it('loads the 14 Phase 1 read tools and the 6 Phase 2A write specs', () => {
+  it('loads the 14 Phase 1 read tools and the 6 Phase 2 write specs', () => {
     const names = Object.keys(corpus.specs).sort();
     expect(names).toEqual(
       [
@@ -83,7 +83,7 @@ describe('@copass/management conformance', () => {
         'list_sources',
         'list_trigger_components',
         'list_triggers',
-        // Phase 2A write specs (since: "v1.1"). Handlers land in Phase 2B.
+        // Phase 2 write tools (since: "v1.1").
         'add_user_mcp_source',
         'create_agent',
         'update_agent_prompt',
@@ -101,23 +101,8 @@ describe('@copass/management conformance', () => {
     }
   });
 
-  // Phase 2A intentionally ships specs + fixtures for the 6 write
-  // tools but defers TS / Python handler implementations to Phase 2B.
-  // The handler-binding assertion stays pinned to the Phase 1 read
-  // surface; once Phase 2B lands, this set extends to the full 20-tool
-  // corpus without any test scaffolding change.
-  const PHASE_2B_PENDING_HANDLERS = new Set<string>([
-    'add_user_mcp_source',
-    'create_agent',
-    'update_agent_prompt',
-    'update_agent_tool_sources',
-    'update_agent_tools',
-    'wire_integration_to_agent',
-  ]);
-
-  it('has a TS handler bound for every Phase 1 read tool', () => {
+  it('has a TS handler bound for every tool', () => {
     for (const name of Object.keys(corpus.specs)) {
-      if (PHASE_2B_PENDING_HANDLERS.has(name)) continue;
       expect(TOOL_HANDLERS[name], `missing handler for ${name}`).toBeTypeOf('function');
     }
   });

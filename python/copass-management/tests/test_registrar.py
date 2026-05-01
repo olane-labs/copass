@@ -30,24 +30,21 @@ def client() -> CopassClient:
     return CopassClient(auth=ApiKeyAuth(key="olk_test"), api_url="http://test")
 
 
-def test_registers_phase1_read_tools_with_spec_names(client: CopassClient) -> None:
-    """Phase 2A intentionally ships specs for 6 new write tools but
-    defers their handlers to Phase 2B; ``allow_missing_handlers``
-    keeps the registrar functional in that interim state."""
+def test_registers_all_tools_with_spec_names(client: CopassClient) -> None:
+    """Every spec entry must bind to a handler — production wiring
+    leaves ``allow_missing_handlers`` off."""
     registered: List[ToolRegistration] = []
     register_management_tools(
         registered.append,
         client,
-        RegistrarOptions(
-            sandbox_id="sb_test",
-            spec_dir=SPEC_DIR,
-            allow_missing_handlers=True,
-        ),
+        RegistrarOptions(sandbox_id="sb_test", spec_dir=SPEC_DIR),
     )
-    assert len(registered) == 14
+    assert len(registered) == 20
     names = sorted(r.name for r in registered)
     assert names == sorted(
         [
+            "add_user_mcp_source",
+            "create_agent",
             "get_agent",
             "get_run_trace",
             "get_source",
@@ -62,6 +59,10 @@ def test_registers_phase1_read_tools_with_spec_names(client: CopassClient) -> No
             "list_sources",
             "list_trigger_components",
             "list_triggers",
+            "update_agent_prompt",
+            "update_agent_tool_sources",
+            "update_agent_tools",
+            "wire_integration_to_agent",
         ]
     )
     for reg in registered:
@@ -81,11 +82,7 @@ async def test_registered_handler_invokes_core_client(client: CopassClient) -> N
     register_management_tools(
         registered.append,
         client,
-        RegistrarOptions(
-            sandbox_id="sb_test",
-            spec_dir=SPEC_DIR,
-            allow_missing_handlers=True,
-        ),
+        RegistrarOptions(sandbox_id="sb_test", spec_dir=SPEC_DIR),
     )
 
     list_sandboxes = next(r for r in registered if r.name == "list_sandboxes")
@@ -98,11 +95,7 @@ def test_registrar_validates_input_against_schema(client: CopassClient) -> None:
     register_management_tools(
         registered.append,
         client,
-        RegistrarOptions(
-            sandbox_id="sb_test",
-            spec_dir=SPEC_DIR,
-            allow_missing_handlers=True,
-        ),
+        RegistrarOptions(sandbox_id="sb_test", spec_dir=SPEC_DIR),
     )
 
     get_agent = next(r for r in registered if r.name == "get_agent")
@@ -113,17 +106,3 @@ def test_registrar_validates_input_against_schema(client: CopassClient) -> None:
 
     with pytest.raises(ValidationError):
         asyncio.run(get_agent.handler({}))
-
-
-def test_registrar_raises_when_handler_missing_and_flag_unset(
-    client: CopassClient,
-) -> None:
-    """Production wiring leaves ``allow_missing_handlers`` off so a
-    spec without a handler fails loudly. This guard makes sure the
-    Phase 2A escape hatch is opt-in."""
-    with pytest.raises(RuntimeError, match="no handler implementation for tool"):
-        register_management_tools(
-            lambda _r: None,
-            client,
-            RegistrarOptions(sandbox_id="sb_test", spec_dir=SPEC_DIR),
-        )

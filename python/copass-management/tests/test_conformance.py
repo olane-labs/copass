@@ -77,7 +77,7 @@ def test_supported_spec_versions() -> None:
     assert MAX_SPEC_VERSION == "v1"
 
 
-def test_corpus_loads_phase1_reads_and_phase2a_writes(corpus) -> None:
+def test_corpus_loads_phase1_reads_and_phase2_writes(corpus) -> None:
     expected = {
         # Phase 1 read tools.
         "get_agent",
@@ -94,7 +94,7 @@ def test_corpus_loads_phase1_reads_and_phase2a_writes(corpus) -> None:
         "list_sources",
         "list_trigger_components",
         "list_triggers",
-        # Phase 2A write specs (handlers land in Phase 2B).
+        # Phase 2 write tools.
         "add_user_mcp_source",
         "create_agent",
         "update_agent_prompt",
@@ -106,24 +106,8 @@ def test_corpus_loads_phase1_reads_and_phase2a_writes(corpus) -> None:
     assert len(corpus.specs) == 20
 
 
-# Phase 2A intentionally ships specs + fixtures for the 6 write tools
-# but defers per-tool handler implementations to Phase 2B. Once the
-# Phase 2B tool modules land they'll register themselves and this set
-# can shrink to {} without any other test scaffolding change.
-_PHASE_2B_PENDING_HANDLERS = frozenset({
-    "add_user_mcp_source",
-    "create_agent",
-    "update_agent_prompt",
-    "update_agent_tool_sources",
-    "update_agent_tools",
-    "wire_integration_to_agent",
-})
-
-
-def test_handler_bound_for_every_phase1_read_tool(corpus) -> None:
+def test_handler_bound_for_every_tool(corpus) -> None:
     for name in corpus.specs:
-        if name in _PHASE_2B_PENDING_HANDLERS:
-            continue
         assert name in TOOL_HANDLERS, f"missing handler for {name!r}"
 
 
