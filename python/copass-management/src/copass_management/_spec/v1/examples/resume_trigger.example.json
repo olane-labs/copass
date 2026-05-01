@@ -1,0 +1,12 @@
+{
+  "input": {
+    "trigger_id": "tr_01HZTRIG234567890SYNTH001"
+  },
+  "output": {
+    "trigger": {
+      "trigger_id": "tr_01HZTRIG234567890SYNTH001",
+      "status": "active",
+      "updated_at": "2026-04-30T15:05:22.000000+00:00"
+    }
+  }
+}

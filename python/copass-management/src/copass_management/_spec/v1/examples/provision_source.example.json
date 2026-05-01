@@ -1,0 +1,30 @@
+{
+  "input": {
+    "name": "slack-fanout",
+    "provider": "slack",
+    "ingestion_mode": "realtime",
+    "kind": "durable",
+    "adapter_config": {
+      "trigger": {
+        "component_id": "slack-new-message-in-channels",
+        "configured_props": {
+          "channel": "C0123ABCDEF"
+        }
+      }
+    },
+    "ingest_to_graph": false
+  },
+  "output": {
+    "source": {
+      "data_source_id": "ds_01HZABCD234567890123ABCDEX",
+      "name": "slack-fanout",
+      "provider": "slack",
+      "ingestion_mode": "realtime",
+      "status": "active",
+      "kind": "durable",
+      "webhook_url": "https://api.example.test/webhooks/inbound/synthetic",
+      "created_at": "2026-04-30T14:25:18.000000+00:00"
+    },
+    "webhook_signing_secret": "wh_synthetic_secret_redacted"
+  }
+}

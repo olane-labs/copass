@@ -45,6 +45,14 @@ max_spec_version = "v1"
 packages = ["src/copass_management"]
 artifacts = ["src/copass_management/_spec/**/*.json"]
 
+# NOTE: ``src/copass_management/_spec/v1/`` is a hand-synced mirror of
+# ``copass-harness/spec/management/v1/`` (the source of truth). The
+# release workflow runs ``python/copass-management/scripts/sync_spec.py``
+# BEFORE every build so the wheel always carries the latest corpus.
+# Drift between the harness source and this directory would silently
+# publish stale specs (the cause of the 14-vs-33 incident on 0.5.0
+# before the workflow sync was added).
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]

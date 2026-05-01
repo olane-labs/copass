@@ -1,9 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "name": "list_trigger_components",
-  "description": "Search the active trigger-provider registry. Required before recommending a trigger component to the user — discover the right slug + its configurable_props schema. Filter by `app` slug (e.g. 'slack', 'gmail') and/or free-text `q`. Returns components the user can deploy through `provision_source`.",
+  "description": "Search the active trigger-provider registry. Required before recommending a trigger component to the user \u2014 discover the right slug + its configurable_props schema. Filter by `app` slug (e.g. 'slack', 'gmail') and/or free-text `q`. Returns components the user can deploy through `provision_source`.",
   "inputSchema": {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
     "properties": {
       "app": {
@@ -23,29 +22,54 @@
     "additionalProperties": false
   },
   "outputSchema": {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
-    "required": ["components", "count"],
+    "required": [
+      "components",
+      "count"
+    ],
     "properties": {
       "components": {
         "type": "array",
         "items": {
           "type": "object",
-          "required": ["component_id", "name"],
+          "required": [
+            "component_id",
+            "name"
+          ],
           "properties": {
-            "component_id": { "type": "string" },
-            "name": { "type": "string" },
-            "description": { "type": ["string", "null"] },
-            "version": { "type": ["string", "null"] },
+            "component_id": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "description": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "version": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
             "configurable_props": {
               "type": "array",
-              "items": { "type": "object", "additionalProperties": true }
+              "items": {
+                "type": "object",
+                "additionalProperties": true
+              }
             }
           },
           "additionalProperties": true
         }
       },
-      "count": { "type": "integer", "minimum": 0 }
+      "count": {
+        "type": "integer",
+        "minimum": 0
+      }
     },
     "additionalProperties": false
   },

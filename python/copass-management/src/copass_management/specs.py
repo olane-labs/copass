@@ -48,10 +48,30 @@ class ManagementSpec:
         return cls(
             name=data["name"],
             description=data["description"],
-            input_schema=data["inputSchema"],
-            output_schema=data["outputSchema"],
+            input_schema=_strip_json_schema_meta(data["inputSchema"]),
+            output_schema=_strip_json_schema_meta(data["outputSchema"]),
             since=data["since"],
         )
+
+
+_JSON_SCHEMA_META_KEYS = frozenset({"$schema", "$id", "$defs", "$ref", "$comment"})
+
+
+def _strip_json_schema_meta(value: Any) -> Any:
+    """Strip JSON-Schema metadata keys from inputSchema / outputSchema
+    before they reach LLM tool registries (Anthropic). Spec files declare
+    ``$schema`` for tooling/lint purposes; provider APIs reject the wire
+    shape with HTTP 400 ``Extra inputs are not permitted``.
+    """
+    if isinstance(value, dict):
+        return {
+            k: _strip_json_schema_meta(v)
+            for k, v in value.items()
+            if k not in _JSON_SCHEMA_META_KEYS
+        }
+    if isinstance(value, list):
+        return [_strip_json_schema_meta(v) for v in value]
+    return value
 
 
 @dataclass(frozen=True)

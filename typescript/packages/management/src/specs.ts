@@ -83,6 +83,29 @@ function assertSpecShape(name: string, raw: unknown): asserts raw is ManagementS
   }
 }
 
+const JSON_SCHEMA_META_KEYS = new Set([
+  '$schema',
+  '$id',
+  '$defs',
+  '$ref',
+  '$comment',
+]);
+
+function stripJsonSchemaMeta(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(stripJsonSchemaMeta);
+  }
+  if (value && typeof value === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      if (JSON_SCHEMA_META_KEYS.has(k)) continue;
+      out[k] = stripJsonSchemaMeta(v);
+    }
+    return out;
+  }
+  return value;
+}
+
 function readJson(path: string): unknown {
   return JSON.parse(readFileSync(path, 'utf-8'));
 }
@@ -111,7 +134,12 @@ export function loadManagementSpecs(options: LoadOptions = {}): LoadedManagement
     if (!statSync(file).isFile()) continue;
     const raw = readJson(file);
     assertSpecShape(entry, raw);
-    specs[raw.name] = raw;
+    const cleaned: ManagementSpec = {
+      ...raw,
+      inputSchema: stripJsonSchemaMeta(raw.inputSchema) as Record<string, unknown>,
+      outputSchema: stripJsonSchemaMeta(raw.outputSchema) as Record<string, unknown>,
+    };
+    specs[cleaned.name] = cleaned;
   }
 
   const fixtures: Record<string, ManagementFixture> = {};

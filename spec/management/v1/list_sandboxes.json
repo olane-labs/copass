@@ -3,32 +3,65 @@
   "name": "list_sandboxes",
   "description": "List the sandboxes this user has. Returns each sandbox's id, name, tier, status, and creation time. Use this when the user asks about their accounts, or before answering questions that depend on which sandbox they're working in.",
   "inputSchema": {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
     "properties": {},
     "additionalProperties": false
   },
   "outputSchema": {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
-    "required": ["sandboxes", "count"],
+    "required": [
+      "sandboxes",
+      "count"
+    ],
     "properties": {
       "sandboxes": {
         "type": "array",
         "items": {
           "type": "object",
-          "required": ["sandbox_id", "name", "tier", "status"],
+          "required": [
+            "sandbox_id",
+            "name",
+            "tier",
+            "status"
+          ],
           "properties": {
-            "sandbox_id": { "type": "string" },
-            "name": { "type": "string" },
-            "tier": { "type": "string", "enum": ["free", "pro", "enterprise"] },
-            "status": { "type": "string", "enum": ["active", "suspended", "archived"] },
-            "created_at": { "type": ["string", "null"], "format": "date-time" }
+            "sandbox_id": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "tier": {
+              "type": "string",
+              "enum": [
+                "free",
+                "pro",
+                "enterprise"
+              ]
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "active",
+                "suspended",
+                "archived"
+              ]
+            },
+            "created_at": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            }
           },
           "additionalProperties": true
         }
       },
-      "count": { "type": "integer", "minimum": 0 }
+      "count": {
+        "type": "integer",
+        "minimum": 0
+      }
     },
     "additionalProperties": false
   },

@@ -1,0 +1,15 @@
+{
+  "input": {
+    "app_slug": "slack",
+    "success_redirect_uri": "https://app.example.test/oauth/success",
+    "error_redirect_uri": "https://app.example.test/oauth/error"
+  },
+  "output": {
+    "app_slug": "slack",
+    "provider": "upstream-integration-provider",
+    "connect_url": "https://connect.example.test/oauth/synthetic-token",
+    "session_id": "sess_synthetic_01",
+    "expires_at": "2026-04-30T18:25:18.000000+00:00",
+    "instructions": "Share this URL with the user — opening it walks them through OAuth for the requested app via the active provider's hosted UI. After they finish, call `list_sources` to confirm the new connection appears, then `provision_source` to wire it to an agent."
+  }
+}

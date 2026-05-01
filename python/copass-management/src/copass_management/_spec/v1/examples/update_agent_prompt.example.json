@@ -1,0 +1,14 @@
+{
+  "input": {
+    "slug": "gtm-marketing",
+    "system_prompt": "You triage marketing-channel events. When a mention arrives, summarise the request, tag severity, and react with a thumbs-up before drafting a reply."
+  },
+  "output": {
+    "agent": {
+      "agent_id": "ag_01HXYZAB1234567890123ABCDE",
+      "slug": "gtm-marketing",
+      "version": 8,
+      "updated_at": "2026-04-30T14:05:42.000000+00:00"
+    }
+  }
+}

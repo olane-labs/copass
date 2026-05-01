@@ -1,0 +1,24 @@
+{
+  "input": {
+    "slug": "gtm-marketing",
+    "model": "claude-sonnet-4-6",
+    "temperature": 0.4,
+    "max_turns": 12
+  },
+  "output": {
+    "agent": {
+      "agent_id": "ag_01HXYZAB1234567890123ABCDE",
+      "slug": "gtm-marketing",
+      "version": 11,
+      "updated_at": "2026-04-30T14:18:01.000000+00:00",
+      "model_settings": {
+        "backend": "anthropic",
+        "model": "claude-sonnet-4-6",
+        "temperature": 0.4,
+        "max_tokens": 4096,
+        "max_turns": 12,
+        "timeout_s": 120
+      }
+    }
+  }
+}

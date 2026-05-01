@@ -1,16 +1,17 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "name": "list_apps",
-  "description": "Browse the active integration provider(s)' app catalog. Multi-provider deployments merge each upstream catalog (Slack, Gmail, GitHub, Notion, Linear, BigQuery, Twitter / X, …) into one list — each entry is tagged with its `provider`. Use when the user asks 'what can I connect?'. Returns app slugs + names — feed a slug to `list_trigger_components` (where supported) or to `start_integration_connect` (any provider). `q` is a free-text search; pagination via `cursor` (single-provider only — multi-provider mode returns the full merged catalog).",
+  "description": "Browse the active integration provider(s)' app catalog. Multi-provider deployments merge each upstream catalog (Slack, Gmail, GitHub, Notion, Linear, BigQuery, Twitter / X, \u2026) into one list \u2014 each entry is tagged with its `provider`. Use when the user asks 'what can I connect?'. Returns app slugs + names \u2014 feed a slug to `list_trigger_components` (where supported) or to `start_integration_connect` (any provider). `q` is a free-text search; pagination via `cursor` (single-provider only \u2014 multi-provider mode returns the full merged catalog).",
   "inputSchema": {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
     "properties": {
       "q": {
         "type": "string",
         "description": "Free-text search."
       },
-      "cursor": { "type": "string" },
+      "cursor": {
+        "type": "string"
+      },
       "limit": {
         "type": "integer",
         "minimum": 1,
@@ -20,41 +21,70 @@
     "additionalProperties": false
   },
   "outputSchema": {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
     "oneOf": [
       {
         "type": "object",
-        "required": ["apps"],
+        "required": [
+          "apps"
+        ],
         "properties": {
           "apps": {
             "type": "array",
             "items": {
               "type": "object",
-              "required": ["app_slug", "name", "provider"],
+              "required": [
+                "app_slug",
+                "name",
+                "provider"
+              ],
               "properties": {
-                "app_slug": { "type": "string" },
-                "name": { "type": "string" },
-                "description": { "type": ["string", "null"] },
+                "app_slug": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
                 "categories": {
                   "type": "array",
-                  "items": { "type": "string" }
+                  "items": {
+                    "type": "string"
+                  }
                 },
-                "provider": { "type": "string" }
+                "provider": {
+                  "type": "string"
+                }
               },
               "additionalProperties": true
             }
           },
-          "next_cursor": { "type": ["string", "null"] }
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
         },
         "additionalProperties": false
       },
       {
         "type": "object",
-        "required": ["error"],
+        "required": [
+          "error"
+        ],
         "properties": {
-          "error": { "type": "string" },
-          "detail": { "type": "string" }
+          "error": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          }
         },
         "additionalProperties": false
       }

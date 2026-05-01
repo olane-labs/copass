@@ -1,54 +1,112 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "name": "list_triggers",
-  "description": "List the triggers attached to one agent (lookup by slug). Returns event_type_filter, filter_config, fire_count, and last_fired_at — useful for diagnosing whether an agent has been firing.",
+  "description": "List the triggers attached to one agent (lookup by slug). Returns event_type_filter, filter_config, fire_count, and last_fired_at \u2014 useful for diagnosing whether an agent has been firing.",
   "inputSchema": {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
-    "required": ["agent_slug"],
+    "required": [
+      "agent_slug"
+    ],
     "properties": {
-      "agent_slug": { "type": "string" }
+      "agent_slug": {
+        "type": "string"
+      }
     },
     "additionalProperties": false
   },
   "outputSchema": {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
     "oneOf": [
       {
         "type": "object",
-        "required": ["agent_slug", "triggers", "count"],
+        "required": [
+          "agent_slug",
+          "triggers",
+          "count"
+        ],
         "properties": {
-          "agent_slug": { "type": "string" },
+          "agent_slug": {
+            "type": "string"
+          },
           "triggers": {
             "type": "array",
             "items": {
               "type": "object",
-              "required": ["trigger_id", "data_source_id", "event_type_filter", "status"],
+              "required": [
+                "trigger_id",
+                "data_source_id",
+                "event_type_filter",
+                "status"
+              ],
               "properties": {
-                "trigger_id": { "type": "string" },
-                "data_source_id": { "type": "string" },
-                "event_type_filter": { "type": "string" },
-                "filter_config": { "type": ["object", "null"], "additionalProperties": true },
-                "status": { "type": "string" },
-                "rate_limit_per_hour": { "type": ["integer", "null"] },
-                "fire_count": { "type": ["integer", "null"] },
-                "last_fired_at": { "type": ["string", "null"], "format": "date-time" },
-                "created_at": { "type": ["string", "null"], "format": "date-time" }
+                "trigger_id": {
+                  "type": "string"
+                },
+                "data_source_id": {
+                  "type": "string"
+                },
+                "event_type_filter": {
+                  "type": "string"
+                },
+                "filter_config": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "additionalProperties": true
+                },
+                "status": {
+                  "type": "string"
+                },
+                "rate_limit_per_hour": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "fire_count": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "last_fired_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "created_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                }
               },
               "additionalProperties": true
             }
           },
-          "count": { "type": "integer", "minimum": 0 }
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          }
         },
         "additionalProperties": false
       },
       {
         "type": "object",
-        "required": ["error"],
+        "required": [
+          "error"
+        ],
         "properties": {
-          "error": { "type": "string" },
-          "detail": { "type": "string" }
+          "error": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          }
         },
         "additionalProperties": false
       }

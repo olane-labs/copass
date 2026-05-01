@@ -3,11 +3,14 @@
   "name": "list_runs",
   "description": "List recent runs for one agent (most recent first). Returns each run's status, token counts, duration, and error_message (if any). Use this to diagnose 'what's broken?' questions. Default limit 10, max 50. For the full tool-resolution audit on a specific run, follow up with `get_run_trace`.",
   "inputSchema": {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
-    "required": ["agent_slug"],
+    "required": [
+      "agent_slug"
+    ],
     "properties": {
-      "agent_slug": { "type": "string" },
+      "agent_slug": {
+        "type": "string"
+      },
       "limit": {
         "type": "integer",
         "minimum": 1,
@@ -17,43 +20,101 @@
     "additionalProperties": false
   },
   "outputSchema": {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
     "oneOf": [
       {
         "type": "object",
-        "required": ["agent_slug", "runs", "count"],
+        "required": [
+          "agent_slug",
+          "runs",
+          "count"
+        ],
         "properties": {
-          "agent_slug": { "type": "string" },
+          "agent_slug": {
+            "type": "string"
+          },
           "runs": {
             "type": "array",
             "items": {
               "type": "object",
-              "required": ["run_id", "status"],
+              "required": [
+                "run_id",
+                "status"
+              ],
               "properties": {
-                "run_id": { "type": "string" },
-                "status": { "type": "string" },
-                "trigger_id": { "type": ["string", "null"] },
-                "tokens_in": { "type": ["integer", "null"] },
-                "tokens_out": { "type": ["integer", "null"] },
-                "duration_ms": { "type": ["integer", "null"] },
-                "error_message": { "type": ["string", "null"] },
-                "started_at": { "type": ["string", "null"], "format": "date-time" },
-                "finished_at": { "type": ["string", "null"], "format": "date-time" }
+                "run_id": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "trigger_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "tokens_in": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "tokens_out": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "duration_ms": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "error_message": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "started_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "finished_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                }
               },
               "additionalProperties": true
             }
           },
-          "count": { "type": "integer", "minimum": 0 }
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          }
         },
         "additionalProperties": false
       },
       {
         "type": "object",
-        "required": ["error"],
+        "required": [
+          "error"
+        ],
         "properties": {
-          "error": { "type": "string" },
-          "detail": { "type": "string" }
+          "error": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          }
         },
         "additionalProperties": false
       }

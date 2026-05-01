@@ -3,40 +3,82 @@
   "name": "list_agents",
   "description": "List the user's agents in the current sandbox. Optionally filter by `status` ('active' | 'archived'). Excludes system agents (the Concierge itself).",
   "inputSchema": {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
     "properties": {
       "status": {
         "type": "string",
-        "enum": ["active", "archived"]
+        "enum": [
+          "active",
+          "archived"
+        ]
       }
     },
     "additionalProperties": false
   },
   "outputSchema": {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
-    "required": ["agents", "count"],
+    "required": [
+      "agents",
+      "count"
+    ],
     "properties": {
       "agents": {
         "type": "array",
         "items": {
           "type": "object",
-          "required": ["agent_id", "slug", "name", "status"],
+          "required": [
+            "agent_id",
+            "slug",
+            "name",
+            "status"
+          ],
           "properties": {
-            "agent_id": { "type": "string" },
-            "slug": { "type": "string" },
-            "name": { "type": "string" },
-            "description": { "type": ["string", "null"] },
-            "status": { "type": "string" },
-            "version": { "type": ["integer", "null"] },
-            "created_at": { "type": ["string", "null"], "format": "date-time" },
-            "updated_at": { "type": ["string", "null"], "format": "date-time" }
+            "agent_id": {
+              "type": "string"
+            },
+            "slug": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "description": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "status": {
+              "type": "string"
+            },
+            "version": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "created_at": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "updated_at": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            }
           },
           "additionalProperties": true
         }
       },
-      "count": { "type": "integer", "minimum": 0 }
+      "count": {
+        "type": "integer",
+        "minimum": 0
+      }
     },
     "additionalProperties": false
   },

@@ -1,0 +1,19 @@
+{
+  "input": {
+    "agent_slug": "gtm-marketing",
+    "data_source_id": "ds_01HZABCD234567890123ABCDEX",
+    "event_type_filter": "slack.message.new",
+    "rate_limit_per_hour": 60
+  },
+  "output": {
+    "trigger": {
+      "trigger_id": "tr_01HZTRIG234567890SYNTH001",
+      "agent_id": "ag_01HXYZAB1234567890123ABCDE",
+      "data_source_id": "ds_01HZABCD234567890123ABCDEX",
+      "event_type_filter": "slack.message.new",
+      "status": "active",
+      "rate_limit_per_hour": 60,
+      "created_at": "2026-04-30T14:50:11.000000+00:00"
+    }
+  }
+}

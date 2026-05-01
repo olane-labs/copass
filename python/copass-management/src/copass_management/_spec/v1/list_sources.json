@@ -3,7 +3,6 @@
   "name": "list_sources",
   "description": "List the data sources in the current sandbox. Optionally filter by `provider` (e.g. the active tool-source provider's slug, or 'custom'). Returns each source's id, name, provider, ingestion_mode, status, and last_sync_at. Use this to ground answers about what's connected before recommending changes.",
   "inputSchema": {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
     "properties": {
       "provider": {
@@ -14,31 +13,81 @@
     "additionalProperties": false
   },
   "outputSchema": {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
-    "required": ["sources", "count"],
+    "required": [
+      "sources",
+      "count"
+    ],
     "properties": {
       "sources": {
         "type": "array",
         "items": {
           "type": "object",
-          "required": ["data_source_id", "name", "provider", "status"],
+          "required": [
+            "data_source_id",
+            "name",
+            "provider",
+            "status"
+          ],
           "properties": {
-            "data_source_id": { "type": "string" },
-            "name": { "type": "string" },
-            "provider": { "type": "string" },
-            "ingestion_mode": { "type": ["string", "null"] },
-            "status": { "type": "string" },
-            "kind": { "type": ["string", "null"] },
-            "external_account_id": { "type": ["string", "null"] },
-            "webhook_url": { "type": ["string", "null"] },
-            "last_sync_at": { "type": ["string", "null"], "format": "date-time" },
-            "created_at": { "type": ["string", "null"], "format": "date-time" }
+            "data_source_id": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "provider": {
+              "type": "string"
+            },
+            "ingestion_mode": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "status": {
+              "type": "string"
+            },
+            "kind": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "external_account_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "webhook_url": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "last_sync_at": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            },
+            "created_at": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            }
           },
           "additionalProperties": true
         }
       },
-      "count": { "type": "integer", "minimum": 0 }
+      "count": {
+        "type": "integer",
+        "minimum": 0
+      }
     },
     "additionalProperties": false
   },

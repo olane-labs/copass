@@ -1,0 +1,11 @@
+{
+  "input": {
+    "data_source_id": "ds_01HZUMCP234567890SYNTHEST"
+  },
+  "output": {
+    "data_source_id": "ds_01HZUMCP234567890SYNTHEST",
+    "status": "disconnected",
+    "name": "internal-docs-mcp",
+    "ingestion_mode": "user_mcp"
+  }
+}

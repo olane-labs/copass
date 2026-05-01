@@ -181,3 +181,27 @@ def test_fixture_round_trip_byte_equivalent(corpus, spec_name: str) -> None:
             "output": _stable_canonical(fixture.output),
         }
         target.write_text(json.dumps(payload, indent=2, ensure_ascii=False))
+
+
+def test_input_and_output_schemas_have_no_json_schema_meta_keys() -> None:
+    """Anthropic's tool-registration API rejects ``$schema`` (and other
+    JSON-Schema metadata keys) on tool input shapes with HTTP 400.
+    Spec files declare ``$schema`` for tooling/lint purposes; the loader
+    must strip it before tools land at the wire.
+    """
+    forbidden = {"$schema", "$id", "$defs", "$ref", "$comment"}
+    corpus = load_management_specs()
+
+    def walk(node, path):
+        if isinstance(node, dict):
+            leaked = forbidden & set(node)
+            assert not leaked, f"{path}: leaked {leaked}"
+            for k, v in node.items():
+                walk(v, f"{path}.{k}")
+        elif isinstance(node, list):
+            for i, v in enumerate(node):
+                walk(v, f"{path}[{i}]")
+
+    for name, spec in corpus.specs.items():
+        walk(spec.input_schema, f"{name}.inputSchema")
+        walk(spec.output_schema, f"{name}.outputSchema")

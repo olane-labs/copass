@@ -1,9 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "name": "list_connected_accounts",
-  "description": "List the user's connected OAuth accounts (distinct from data sources — accounts are the raw OAuth connections; sources are the configured trigger/poller bindings on top). Use after `start_integration_connect` to verify the user completed the OAuth dance, and to enumerate which apps they've already connected. Filter by `app_slug` to check a specific provider.",
+  "description": "List the user's connected OAuth accounts (distinct from data sources \u2014 accounts are the raw OAuth connections; sources are the configured trigger/poller bindings on top). Use after `start_integration_connect` to verify the user completed the OAuth dance, and to enumerate which apps they've already connected. Filter by `app_slug` to check a specific provider.",
   "inputSchema": {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
     "properties": {
       "app_slug": {
@@ -14,38 +13,67 @@
     "additionalProperties": false
   },
   "outputSchema": {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
     "oneOf": [
       {
         "type": "object",
-        "required": ["accounts", "count"],
+        "required": [
+          "accounts",
+          "count"
+        ],
         "properties": {
           "accounts": {
             "type": "array",
             "items": {
               "type": "object",
-              "required": ["id", "app_slug", "name", "provider"],
+              "required": [
+                "id",
+                "app_slug",
+                "name",
+                "provider"
+              ],
               "properties": {
-                "id": { "type": "string" },
-                "app_slug": { "type": "string" },
-                "name": { "type": "string" },
-                "created_at": { "type": ["string", "null"] },
-                "provider": { "type": "string" }
+                "id": {
+                  "type": "string"
+                },
+                "app_slug": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "created_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "provider": {
+                  "type": "string"
+                }
               },
               "additionalProperties": true
             }
           },
-          "count": { "type": "integer", "minimum": 0 }
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          }
         },
         "additionalProperties": false
       },
       {
         "type": "object",
-        "required": ["error"],
+        "required": [
+          "error"
+        ],
         "properties": {
-          "error": { "type": "string" },
-          "detail": { "type": "string" }
+          "error": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          }
         },
         "additionalProperties": false
       }

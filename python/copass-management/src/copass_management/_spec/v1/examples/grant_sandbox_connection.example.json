@@ -1,0 +1,19 @@
+{
+  "input": {
+    "copass_id": "alice",
+    "role": "editor",
+    "label": "GTM teammate"
+  },
+  "output": {
+    "connection_id": "cn_01HZCONN234567890SYNTH001",
+    "sandbox_id": "sb_01HZSAND234567890SYNTH001",
+    "user_id": "11111111-2222-3333-4444-555555555555",
+    "copass_id": "alice",
+    "role": "editor",
+    "project_id": null,
+    "label": "GTM teammate",
+    "expires_at": null,
+    "created_at": "2026-04-30T15:20:11.000000+00:00",
+    "next_step": "To give the grantee programmatic access, call `spawn_connection_api_key` with connection_id 'cn_01HZCONN234567890SYNTH001'."
+  }
+}

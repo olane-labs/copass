@@ -153,6 +153,10 @@ jobs:
       - name: Install build tooling
         run: pip install build
 
+      - name: Sync bundled spec corpus from harness source
+        if: matrix.package == 'copass-management'
+        run: python3 python/copass-management/scripts/sync_spec.py
+
       - name: Stamp version into pyproject.toml + __version__
         env:
           NEW_VERSION: ${{ needs.check-lockstep-version.outputs.version }}

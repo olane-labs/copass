@@ -1,40 +1,102 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "name": "get_run_trace",
-  "description": "Fetch the tool-resolution audit for one run: which sources contributed, which tools were advertised, which were filtered out by the agent's tool_allowlist, and which allowlist entries didn't match any real tool (`allowlist_missing_entries` — the stale-allowlist drift signal). The answer to 'why did this agent silently do nothing?' lives here. Returns NULL trace for older runs and for ad-hoc /agents/run invocations that bypass the persisted-agent runtime.",
+  "description": "Fetch the tool-resolution audit for one run: which sources contributed, which tools were advertised, which were filtered out by the agent's tool_allowlist, and which allowlist entries didn't match any real tool (`allowlist_missing_entries` \u2014 the stale-allowlist drift signal). The answer to 'why did this agent silently do nothing?' lives here. Returns NULL trace for older runs and for ad-hoc /agents/run invocations that bypass the persisted-agent runtime.",
   "inputSchema": {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
-    "required": ["run_id"],
+    "required": [
+      "run_id"
+    ],
     "properties": {
-      "run_id": { "type": "string" }
+      "run_id": {
+        "type": "string"
+      }
     },
     "additionalProperties": false
   },
   "outputSchema": {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
     "oneOf": [
       {
         "type": "object",
-        "required": ["run_id", "agent_id", "status"],
+        "required": [
+          "run_id",
+          "agent_id",
+          "status"
+        ],
         "properties": {
-          "run_id": { "type": "string" },
-          "agent_id": { "type": "string" },
-          "status": { "type": "string" },
-          "started_at": { "type": ["string", "null"], "format": "date-time" },
-          "finished_at": { "type": ["string", "null"], "format": "date-time" },
-          "error_message": { "type": ["string", "null"] },
+          "run_id": {
+            "type": "string"
+          },
+          "agent_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "started_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "finished_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "error_message": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "tool_resolution_trace": {
-            "type": ["object", "null"],
+            "type": [
+              "object",
+              "null"
+            ],
             "additionalProperties": true,
             "properties": {
-              "sources_resolved": { "type": "array", "items": { "type": "string" } },
-              "sources_skipped": { "type": "array", "items": { "type": "string" } },
-              "tool_names_advertised": { "type": "array", "items": { "type": "string" } },
-              "allowlist_filtered_out": { "type": "array", "items": { "type": "string" } },
-              "allowlist_missing_entries": { "type": "array", "items": { "type": "string" } },
-              "duration_ms": { "type": ["integer", "null"] }
+              "sources_resolved": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "sources_skipped": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "tool_names_advertised": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "allowlist_filtered_out": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "allowlist_missing_entries": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "duration_ms": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              }
             }
           }
         },
@@ -42,10 +104,16 @@
       },
       {
         "type": "object",
-        "required": ["error"],
+        "required": [
+          "error"
+        ],
         "properties": {
-          "error": { "type": "string" },
-          "detail": { "type": "string" }
+          "error": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          }
         },
         "additionalProperties": false
       }

@@ -177,3 +177,32 @@ function sortKeys(value: unknown): unknown {
   }
   return value;
 }
+
+describe('JSON-Schema meta-key stripping', () => {
+  it('inputSchema and outputSchema are free of $schema / $id / $defs / $ref / $comment after load', () => {
+    const META = ['$schema', '$id', '$defs', '$ref', '$comment'];
+    const corpus = loadManagementSpecs();
+    for (const spec of Object.values(corpus.specs)) {
+      for (const [field, schema] of [
+        ['inputSchema', spec.inputSchema],
+        ['outputSchema', spec.outputSchema],
+      ] as const) {
+        const walk = (node: unknown, path: string): void => {
+          if (Array.isArray(node)) {
+            node.forEach((v, i) => walk(v, `${path}[${i}]`));
+          } else if (node && typeof node === 'object') {
+            for (const [k, v] of Object.entries(node)) {
+              if (META.includes(k)) {
+                throw new Error(
+                  `${spec.name}.${field}${path}: leaked meta key "${k}" — Anthropic will reject`,
+                );
+              }
+              walk(v, `${path}.${k}`);
+            }
+          }
+        };
+        walk(schema, '');
+      }
+    }
+  });
+});

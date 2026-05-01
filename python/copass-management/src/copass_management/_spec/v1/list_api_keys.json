@@ -1,59 +1,117 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "name": "list_api_keys",
-  "description": "Inventory the user's API keys — `general` (personal platform keys), `agent_invoke` (single-agent invoke keys minted via `mint_agent_invoke_key`), and `agent_delegate` (single-agent delegate keys minted via `mint_agent_delegate_key`). Plaintext is never returned (only the `key_prefix` for identification). Use to audit what's been minted before issuing more, or to find a key the user wants to revoke (revoke itself is CLI-only by design).",
+  "description": "Inventory the user's API keys \u2014 `general` (personal platform keys), `agent_invoke` (single-agent invoke keys minted via `mint_agent_invoke_key`), and `agent_delegate` (single-agent delegate keys minted via `mint_agent_delegate_key`). Plaintext is never returned (only the `key_prefix` for identification). Use to audit what's been minted before issuing more, or to find a key the user wants to revoke (revoke itself is CLI-only by design).",
   "inputSchema": {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
     "properties": {
       "kinds": {
         "type": "array",
         "items": {
           "type": "string",
-          "enum": ["general", "agent_invoke", "agent_delegate"]
+          "enum": [
+            "general",
+            "agent_invoke",
+            "agent_delegate"
+          ]
         },
         "description": "Optional kind filter; defaults to all three user-visible kinds. Internal kinds are never surfaced."
       },
-      "include_revoked": { "type": "boolean" }
+      "include_revoked": {
+        "type": "boolean"
+      }
     },
     "additionalProperties": false
   },
   "outputSchema": {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
     "oneOf": [
       {
         "type": "object",
-        "required": ["keys", "count"],
+        "required": [
+          "keys",
+          "count"
+        ],
         "properties": {
           "keys": {
             "type": "array",
             "items": {
               "type": "object",
-              "required": ["api_key_id"],
+              "required": [
+                "api_key_id"
+              ],
               "properties": {
-                "api_key_id": { "type": "string" },
-                "kind": { "type": ["string", "null"] },
-                "label": { "type": ["string", "null"] },
-                "key_prefix": { "type": ["string", "null"] },
-                "agent_id": { "type": ["string", "null"] },
-                "created_at": { "type": ["string", "null"], "format": "date-time" },
-                "expires_at": { "type": ["string", "null"], "format": "date-time" },
-                "revoked_at": { "type": ["string", "null"], "format": "date-time" }
+                "api_key_id": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "label": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "key_prefix": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "agent_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "created_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "expires_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "revoked_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                }
               },
               "additionalProperties": true
             }
           },
-          "count": { "type": "integer", "minimum": 0 }
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          }
         },
         "additionalProperties": false
       },
       {
         "type": "object",
-        "required": ["error"],
+        "required": [
+          "error"
+        ],
         "properties": {
-          "error": { "type": "string" },
-          "detail": { "type": "string" }
+          "error": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          }
         },
         "additionalProperties": false
       }

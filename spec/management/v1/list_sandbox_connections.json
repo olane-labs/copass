@@ -3,7 +3,6 @@
   "name": "list_sandbox_connections",
   "description": "Owner-only. List teammates with active grants on this sandbox (cross-user `sandbox_connections` rows). Returns each grantee's current Copass handle (re-resolved at read time), role (viewer/editor), optional project scope, label, and status. Pass `include_revoked: true` to also see previously-revoked or expired grants.",
   "inputSchema": {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
     "properties": {
       "include_revoked": {
@@ -14,43 +13,109 @@
     "additionalProperties": false
   },
   "outputSchema": {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
     "oneOf": [
       {
         "type": "object",
-        "required": ["connections", "count"],
+        "required": [
+          "connections",
+          "count"
+        ],
         "properties": {
           "connections": {
             "type": "array",
             "items": {
               "type": "object",
-              "required": ["connection_id", "user_id", "role", "status"],
+              "required": [
+                "connection_id",
+                "user_id",
+                "role",
+                "status"
+              ],
               "properties": {
-                "connection_id": { "type": "string" },
-                "user_id": { "type": "string" },
-                "copass_id": { "type": ["string", "null"] },
-                "role": { "type": "string", "enum": ["viewer", "editor"] },
-                "project_id": { "type": ["string", "null"] },
-                "label": { "type": ["string", "null"] },
-                "status": { "type": "string", "enum": ["active", "revoked", "expired"] },
-                "expires_at": { "type": ["string", "null"], "format": "date-time" },
-                "revoked_at": { "type": ["string", "null"], "format": "date-time" },
-                "created_at": { "type": ["string", "null"], "format": "date-time" }
+                "connection_id": {
+                  "type": "string"
+                },
+                "user_id": {
+                  "type": "string"
+                },
+                "copass_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "role": {
+                  "type": "string",
+                  "enum": [
+                    "viewer",
+                    "editor"
+                  ]
+                },
+                "project_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "label": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "active",
+                    "revoked",
+                    "expired"
+                  ]
+                },
+                "expires_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "revoked_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "created_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                }
               },
               "additionalProperties": true
             }
           },
-          "count": { "type": "integer", "minimum": 0 }
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          }
         },
         "additionalProperties": false
       },
       {
         "type": "object",
-        "required": ["error"],
+        "required": [
+          "error"
+        ],
         "properties": {
-          "error": { "type": "string" },
-          "detail": { "type": "string" }
+          "error": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          }
         },
         "additionalProperties": false
       }

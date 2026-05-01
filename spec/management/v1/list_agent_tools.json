@@ -1,32 +1,46 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "name": "list_agent_tools",
-  "description": "Return the EXACT, callable tool names available to agents in this sandbox right now — built from the user's connected integrations + always-on Copass retrieval tools (`discover` / `interpret` / `search`). **Mandatory** before writing `tool_allowlist` on `create_agent` / `update_agent_tools` — integration tools follow a prefixed shape (e.g. `pd_<app_slug>_<remote_tool_name>`); short forms like `slack_add_reaction` will not match. The enforcement layer drops any allowlist entry that doesn't match a real tool — agents with hallucinated names run tool-less. Filter by `app_slug` to narrow to one provider.",
+  "description": "Return the EXACT, callable tool names available to agents in this sandbox right now \u2014 built from the user's connected integrations + always-on Copass retrieval tools (`discover` / `interpret` / `search`). **Mandatory** before writing `tool_allowlist` on `create_agent` / `update_agent_tools` \u2014 integration tools follow a prefixed shape (e.g. `pd_<app_slug>_<remote_tool_name>`); short forms like `slack_add_reaction` will not match. The enforcement layer drops any allowlist entry that doesn't match a real tool \u2014 agents with hallucinated names run tool-less. Filter by `app_slug` to narrow to one provider.",
   "inputSchema": {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
     "properties": {
       "app_slug": {
         "type": "string",
-        "description": "Optional — narrow to one provider (e.g. 'slack_v2', 'gmail')."
+        "description": "Optional \u2014 narrow to one provider (e.g. 'slack_v2', 'gmail')."
       }
     },
     "additionalProperties": false
   },
   "outputSchema": {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
-    "required": ["tools", "by_app", "count"],
+    "required": [
+      "tools",
+      "by_app",
+      "count"
+    ],
     "properties": {
       "tools": {
         "type": "array",
         "items": {
           "type": "object",
-          "required": ["name", "app_slug"],
+          "required": [
+            "name",
+            "app_slug"
+          ],
           "properties": {
-            "name": { "type": "string" },
-            "app_slug": { "type": "string" },
-            "description": { "type": ["string", "null"] }
+            "name": {
+              "type": "string"
+            },
+            "app_slug": {
+              "type": "string"
+            },
+            "description": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
           },
           "additionalProperties": true
         }
@@ -37,16 +51,28 @@
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["name"],
+            "required": [
+              "name"
+            ],
             "properties": {
-              "name": { "type": "string" },
-              "description": { "type": ["string", "null"] }
+              "name": {
+                "type": "string"
+              },
+              "description": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
             },
             "additionalProperties": true
           }
         }
       },
-      "count": { "type": "integer", "minimum": 0 }
+      "count": {
+        "type": "integer",
+        "minimum": 0
+      }
     },
     "additionalProperties": false
   },

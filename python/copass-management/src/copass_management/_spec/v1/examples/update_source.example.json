@@ -1,0 +1,23 @@
+{
+  "input": {
+    "data_source_id": "ds_01HZABCD234567890123ABCDEX",
+    "name": "slack-fanout-renamed",
+    "ingest_to_graph": true
+  },
+  "output": {
+    "source": {
+      "data_source_id": "ds_01HZABCD234567890123ABCDEX",
+      "name": "slack-fanout-renamed",
+      "provider": "slack",
+      "ingestion_mode": "realtime",
+      "status": "active",
+      "kind": "durable",
+      "adapter_config": {
+        "ingest_to_graph": true
+      },
+      "external_account_id": null,
+      "poll_interval_seconds": null,
+      "updated_at": "2026-04-30T14:32:11.000000+00:00"
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "input": {
+    "trigger_id": "tr_01HZTRIG234567890SYNTH001",
+    "event_type_filter": "slack.message.new",
+    "rate_limit_per_hour": 30,
+    "filter_config": { "channel": "C0123ABCDEF" }
+  },
+  "output": {
+    "trigger": {
+      "trigger_id": "tr_01HZTRIG234567890SYNTH001",
+      "agent_id": "ag_01HXYZAB1234567890123ABCDE",
+      "data_source_id": "ds_01HZABCD234567890123ABCDEX",
+      "status": "active",
+      "event_type_filter": "slack.message.new",
+      "rate_limit_per_hour": 30,
+      "filter_config": { "channel": "C0123ABCDEF" },
+      "updated_at": "2026-04-30T15:11:55.000000+00:00"
+    }
+  }
+}

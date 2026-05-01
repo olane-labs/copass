@@ -1,0 +1,25 @@
+{
+  "input": {
+    "slug": "support-firefighter",
+    "name": "Support Firefighter",
+    "description": "Reacts to high-severity support pings.",
+    "system_prompt": "You triage incoming support events. Summarise the request, tag severity, and react with a thumbs-up.",
+    "tool_allowlist": ["discover", "interpret", "search"],
+    "backend": "anthropic",
+    "model": "claude-sonnet-4-6",
+    "temperature": 0.3,
+    "max_tokens": 4096,
+    "max_turns": 8,
+    "timeout_s": 60
+  },
+  "output": {
+    "agent": {
+      "agent_id": "ag_01HZABC1234567890123ABCDE",
+      "slug": "support-firefighter",
+      "name": "Support Firefighter",
+      "status": "active",
+      "version": 1,
+      "created_at": "2026-04-30T14:02:11.000000+00:00"
+    }
+  }
+}

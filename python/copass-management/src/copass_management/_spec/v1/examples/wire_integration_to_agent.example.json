@@ -1,0 +1,15 @@
+{
+  "input": {
+    "agent_slug": "gtm-marketing",
+    "app_slug": "slack"
+  },
+  "output": {
+    "wired": true,
+    "agent_slug": "gtm-marketing",
+    "app_slug": "slack",
+    "sources_added": ["user_mcp"],
+    "tool_count": 12,
+    "mode": "explicit",
+    "message": "Slack is now wired to gtm-marketing — 12 tools available."
+  }
+}
