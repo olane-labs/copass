@@ -55,6 +55,10 @@ from copass_core_agents.events import (
 from copass_core_agents.invocation_context import AgentInvocationContext
 from copass_core_agents.tool_registry import AgentToolRegistry
 
+from copass_anthropic_agents.backends._input_schema import (
+    sanitize_anthropic_input_schema as _sanitize_anthropic_input_schema,
+)
+
 if TYPE_CHECKING:
     from anthropic import AsyncAnthropic
 
@@ -558,7 +562,9 @@ class ManagedAgentBackend(AgentBackend):
                     "type": "custom",
                     "name": spec.name,
                     "description": spec.description,
-                    "input_schema": dict(spec.input_schema),
+                    "input_schema": _sanitize_anthropic_input_schema(
+                        spec.input_schema,
+                    ),
                 }
             )
         return tools
