@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "name": "create_agent",
+  "description": "Create a new Reactive Agent in the current sandbox. Required: `slug` (lowercase, [a-z0-9-]+), `name`, `system_prompt`. Optional: `description`, `tool_allowlist` (resolve via `list_trigger_components` or by asking the user), `backend`, `model`, temperature/max_tokens/max_turns/timeout_s. ALWAYS confirm the slug + system_prompt with the user before calling — agents can be updated but not renamed.",
+  "inputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "required": ["slug", "name", "system_prompt"],
+    "properties": {
+      "slug": {
+        "type": "string",
+        "pattern": "^[a-z0-9-]+$",
+        "description": "User-facing handle: [a-z0-9-]+, unique per sandbox."
+      },
+      "name": {
+        "type": "string",
+        "description": "Human-readable agent name."
+      },
+      "description": {
+        "type": "string",
+        "description": "Optional one-line description of what this agent does."
+      },
+      "system_prompt": {
+        "type": "string",
+        "description": "Author-supplied agent instructions. Server scans for secrets on write — keys / tokens / private-key blobs are rejected outright."
+      },
+      "tool_allowlist": {
+        "type": "array",
+        "items": { "type": "string" },
+        "description": "List of tool keys the agent may call. Empty defaults to no tool gating at the allowlist layer."
+      },
+      "backend": {
+        "type": "string",
+        "enum": ["anthropic", "google"],
+        "description": "Which shared agent runtime services this agent."
+      },
+      "model": {
+        "type": "string",
+        "description": "Backend-specific model id, e.g. 'claude-sonnet-4-6'."
+      },
+      "temperature": { "type": "number", "minimum": 0, "maximum": 2 },
+      "max_tokens": { "type": "integer", "minimum": 1 },
+      "max_turns": { "type": "integer", "minimum": 1 },
+      "timeout_s": { "type": "integer", "minimum": 1 }
+    },
+    "additionalProperties": false
+  },
+  "outputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "oneOf": [
+      {
+        "type": "object",
+        "required": ["agent"],
+        "properties": {
+          "agent": {
+            "type": "object",
+            "required": ["agent_id", "slug", "name", "status"],
+            "properties": {
+              "agent_id": { "type": "string" },
+              "slug": { "type": "string" },
+              "name": { "type": "string" },
+              "status": { "type": "string" },
+              "version": { "type": ["integer", "null"] },
+              "created_at": { "type": ["string", "null"], "format": "date-time" }
+            },
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": { "type": "string" },
+          "detail": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    ]
+  },
+  "since": "v1.1"
+}

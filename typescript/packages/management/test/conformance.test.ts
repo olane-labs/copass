@@ -1,7 +1,13 @@
-import { describe, it, expect } from 'vitest';
+import { afterAll, beforeAll, describe, it, expect } from 'vitest';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
+import {
+  existsSync,
+  mkdirSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 
 import {
   jsonSchemaToZod,
@@ -14,18 +20,55 @@ import {
 const here = dirname(fileURLToPath(import.meta.url));
 const sourceSpecDir = resolve(here, '..', '..', '..', '..', 'spec', 'management', 'v1');
 
+// Per-tool parsed-output emit dir for the cross-language equivalence
+// check (`scripts/conformance_check.sh`). The companion Python suite
+// writes the same shape under `/tmp/conformance/py/<tool>.json` and
+// the shell script `diff -r`s the two trees. Disabled when the env
+// var is unset so local `vitest run` doesn't litter /tmp.
+const PARSED_OUTPUT_DIR = process.env.CONFORMANCE_TS_OUT;
+
 describe('@copass/management conformance', () => {
   const corpus = loadManagementSpecs({ specDir: sourceSpecDir });
+
+  beforeAll(() => {
+    if (PARSED_OUTPUT_DIR) {
+      // Wipe + recreate so a stale /tmp tree from a previous run can't
+      // mask a new divergence.
+      if (existsSync(PARSED_OUTPUT_DIR)) {
+        rmSync(PARSED_OUTPUT_DIR, { recursive: true, force: true });
+      }
+      mkdirSync(PARSED_OUTPUT_DIR, { recursive: true });
+    }
+  });
+
+  afterAll(() => {
+    if (PARSED_OUTPUT_DIR) {
+      // Sanity gate: if the directory is empty after the suite runs,
+      // the shell script's diff would falsely pass. Make that loud.
+      const expectedFiles = Object.keys(corpus.specs).length;
+      // Count by re-listing on disk so a misnamed write is caught.
+      const fs = require('node:fs') as typeof import('node:fs');
+      const written = fs
+        .readdirSync(PARSED_OUTPUT_DIR)
+        .filter((f) => f.endsWith('.json'));
+      if (written.length !== expectedFiles) {
+        throw new Error(
+          `conformance: expected ${expectedFiles} parsed-output files in ${PARSED_OUTPUT_DIR}, found ${written.length}`,
+        );
+      }
+    }
+  });
 
   it('declares supported spec versions', () => {
     expect(MIN_SPEC_VERSION).toBe('v1');
     expect(MAX_SPEC_VERSION).toBe('v1');
   });
 
-  it('loads all 14 read tools from the spec corpus', () => {
+  it('loads the 14 Phase 1 read tools and the 6 Phase 2A write specs', () => {
     const names = Object.keys(corpus.specs).sort();
     expect(names).toEqual(
       [
+        // Phase 1 read tools (since: "v1").
         'get_agent',
         'get_run_trace',
         'get_source',
@@ -40,9 +83,16 @@ describe('@copass/management conformance', () => {
         'list_sources',
         'list_trigger_components',
         'list_triggers',
+        // Phase 2A write specs (since: "v1.1"). Handlers land in Phase 2B.
+        'add_user_mcp_source',
+        'create_agent',
+        'update_agent_prompt',
+        'update_agent_tool_sources',
+        'update_agent_tools',
+        'wire_integration_to_agent',
       ].sort(),
     );
-    expect(names.length).toBe(14);
+    expect(names.length).toBe(20);
   });
 
   it('has a fixture for every tool', () => {
@@ -51,8 +101,23 @@ describe('@copass/management conformance', () => {
     }
   });
 
-  it('has a TS handler bound for every tool', () => {
+  // Phase 2A intentionally ships specs + fixtures for the 6 write
+  // tools but defers TS / Python handler implementations to Phase 2B.
+  // The handler-binding assertion stays pinned to the Phase 1 read
+  // surface; once Phase 2B lands, this set extends to the full 20-tool
+  // corpus without any test scaffolding change.
+  const PHASE_2B_PENDING_HANDLERS = new Set<string>([
+    'add_user_mcp_source',
+    'create_agent',
+    'update_agent_prompt',
+    'update_agent_tool_sources',
+    'update_agent_tools',
+    'wire_integration_to_agent',
+  ]);
+
+  it('has a TS handler bound for every Phase 1 read tool', () => {
     for (const name of Object.keys(corpus.specs)) {
+      if (PHASE_2B_PENDING_HANDLERS.has(name)) continue;
       expect(TOOL_HANDLERS[name], `missing handler for ${name}`).toBeTypeOf('function');
     }
   });
@@ -78,6 +143,21 @@ describe('@copass/management conformance', () => {
 
         expect(stableStringify(parsedInput)).toEqual(stableStringify(fixture.input));
         expect(stableStringify(parsedOutput)).toEqual(stableStringify(fixture.output));
+
+        if (PARSED_OUTPUT_DIR) {
+          // Emit the PARSED values (post Zod-coercion) under a stable
+          // canonical form so `scripts/conformance_check.sh` can diff
+          // them against the Python suite's `model_dump`-equivalent
+          // output. Any cross-language divergence (e.g. Pydantic
+          // int-coerces "5" where Zod rejects it) shows up as a real
+          // diff.
+          const path = `${PARSED_OUTPUT_DIR}/${name}.json`;
+          const payload = {
+            input: sortKeys(parsedInput),
+            output: sortKeys(parsedOutput),
+          };
+          writeFileSync(path, JSON.stringify(payload, null, 2));
+        }
       });
     }
   });

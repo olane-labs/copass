@@ -244,3 +244,66 @@ export interface TriggerListResponse {
 export interface ListTriggersOptions {
   status?: TriggerStatus;
 }
+
+/**
+ * Body for ``PATCH /agents/{slug}/tool-sources``.
+ *
+ * The field is required so the absent-vs-null distinction is
+ * structural (FastAPI 422s a missing body, vs silently no-op'ing on
+ * the partial-update path). ``null`` reverts to the caller default,
+ * ``[]`` makes the agent tool-less, a list sets the list verbatim.
+ */
+export interface UpdateAgentToolSourcesRequest {
+  tool_sources: string[] | null;
+}
+
+/**
+ * Body for ``POST /agents/{slug}/wire-integration``.
+ *
+ * The server resolves ``app_slug`` against the user's connected
+ * integration providers and unions the matching source(s) into the
+ * agent's ``tool_sources`` + rebuilds ``tool_allowlist`` atomically.
+ */
+export interface WireIntegrationRequest {
+  /** Integration app slug, e.g. 'slack', 'gmail', 'linear'. */
+  app_slug: string;
+}
+
+/**
+ * Discriminator for the wire-integration result. Branch on
+ * (``wired``, ``mode``):
+ *
+ * - `"explicit"`        — one or more providers wired, tools added.
+ * - `"allow_all"`       — wired, allowlist set to allow-all (reserved).
+ * - `"ingestion_only"`  — app exposes no callable tools (e.g. linear).
+ * - `"not_connected"`   — no provider has this app connected.
+ * - `"unknown_provider"`— provider present but not registered for
+ *                          agent wiring (defensive; logged at ERROR).
+ */
+export type WireIntegrationMode =
+  | 'explicit'
+  | 'allow_all'
+  | 'ingestion_only'
+  | 'not_connected'
+  | 'unknown_provider';
+
+/**
+ * Public envelope returned by ``AgentsResource.wireIntegration``.
+ *
+ * Mirrors the backend ``WireIntegrationResponse`` Pydantic model and
+ * the ADR 0006 ``WireIntegrationResult`` dataclass. Idempotent: a
+ * re-fire on an already-wired ``(slug, app_slug)`` pair returns
+ * ``sources_added: []`` with the current ``tool_count``.
+ */
+export interface WireIntegrationResult {
+  wired: boolean;
+  agent_slug: string;
+  app_slug: string;
+  /** Provider keys (not source-ids) that were newly unioned in. */
+  sources_added: string[];
+  /** Total callable tools across the resulting source set. */
+  tool_count: number;
+  mode: WireIntegrationMode;
+  /** Human-readable summary suitable for surfacing verbatim. */
+  message: string;
+}

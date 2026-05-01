@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "name": "update_agent_prompt",
+  "description": "Replace an agent's system_prompt. Bumps the agent's version. Use to refine an existing agent's behavior without recreating it. Always SHOW THE OLD PROMPT to the user first (via `get_agent`) and confirm the new one — this is destructive to the prior wording.",
+  "inputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "required": ["slug", "system_prompt"],
+    "properties": {
+      "slug": {
+        "type": "string",
+        "description": "The agent's slug."
+      },
+      "system_prompt": {
+        "type": "string",
+        "description": "The replacement prompt. Server secret-scans on write — keys / tokens / private-key blobs are rejected outright."
+      }
+    },
+    "additionalProperties": false
+  },
+  "outputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "oneOf": [
+      {
+        "type": "object",
+        "required": ["agent"],
+        "properties": {
+          "agent": {
+            "type": "object",
+            "required": ["agent_id", "slug"],
+            "properties": {
+              "agent_id": { "type": "string" },
+              "slug": { "type": "string" },
+              "version": { "type": ["integer", "null"] },
+              "updated_at": { "type": ["string", "null"], "format": "date-time" }
+            },
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": { "type": "string" },
+          "detail": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    ]
+  },
+  "since": "v1.1"
+}

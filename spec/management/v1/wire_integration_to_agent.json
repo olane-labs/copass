@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "name": "wire_integration_to_agent",
+  "description": "Wire a third-party integration's tools into one agent. Call this AFTER the user OAuths the app via `start_integration_connect` and confirms the connection appears in `list_sources`. Args: `agent_slug` (the agent to wire); `app_slug` (the integration, e.g. 'slack', 'gmail'). The structured response is shaped: `{wired: bool, mode: 'explicit'|'ingestion_only'|'not_connected'|'unknown_provider', sources_added: list, tool_count: int, message: str}`. Branch on `wired` + `mode` — `wired=true, mode='explicit'` means the agent now has tool_count tools; `wired=false, mode='not_connected'` means tell the user to OAuth first; `wired=false, mode='ingestion_only'` means the app feeds the graph but exposes no tools (use discover/interpret/search instead). Surface `message` to the user verbatim.",
+  "inputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "required": ["agent_slug", "app_slug"],
+    "properties": {
+      "agent_slug": {
+        "type": "string",
+        "description": "The agent to wire."
+      },
+      "app_slug": {
+        "type": "string",
+        "minLength": 1,
+        "description": "Integration app slug, e.g. 'slack', 'gmail', 'linear'. Must match the slug surfaced by `list_apps` for an active OAuth-connected integration."
+      }
+    },
+    "additionalProperties": false
+  },
+  "outputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "required": ["wired", "agent_slug", "app_slug", "sources_added", "tool_count", "mode", "message"],
+    "properties": {
+      "wired": { "type": "boolean" },
+      "agent_slug": { "type": "string" },
+      "app_slug": { "type": "string" },
+      "sources_added": {
+        "type": "array",
+        "items": { "type": "string" }
+      },
+      "tool_count": { "type": "integer", "minimum": 0 },
+      "mode": {
+        "type": "string",
+        "enum": [
+          "explicit",
+          "allow_all",
+          "ingestion_only",
+          "not_connected",
+          "unknown_provider"
+        ]
+      },
+      "message": { "type": "string" }
+    },
+    "additionalProperties": false
+  },
+  "since": "v1.1"
+}

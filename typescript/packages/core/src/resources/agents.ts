@@ -18,7 +18,10 @@ import type {
   TriggerComponentListResponse,
   TriggerListResponse,
   UpdateAgentRequest,
+  UpdateAgentToolSourcesRequest,
   UpdateTriggerRequest,
+  WireIntegrationRequest,
+  WireIntegrationResult,
 } from '../types/agents.js';
 
 const BASE = '/api/v1/storage/sandboxes';
@@ -157,6 +160,60 @@ export class AgentsResource extends BaseResource {
   /** Soft-archive (status → 'archived'). Idempotent. */
   async archive(sandboxId: string, slug: string): Promise<void> {
     await this.delete<void>(`${agentsBase(sandboxId)}/${slug}`);
+  }
+
+  /**
+   * Replace an agent's `tool_sources` (the resolver list).
+   *
+   * Targets `PATCH /agents/{slug}/tool-sources`. Distinct from
+   * {@link update} so the absent-vs-null distinction is structural:
+   *
+   * - `tool_sources: null` — sent as JSON `null`; reverts to the
+   *   caller's default tool-sources set.
+   * - `tool_sources: []`   — explicit "tool-less by choice".
+   * - `tool_sources: [...]` — set the list verbatim.
+   *
+   * Distinct from `tool_allowlist` — this controls which RESOLVERS
+   * run (which tools are AVAILABLE), not which tool NAMES are
+   * CALLABLE.
+   */
+  async updateToolSources(
+    sandboxId: string,
+    slug: string,
+    toolSources: string[] | null,
+  ): Promise<Agent> {
+    const body: UpdateAgentToolSourcesRequest = {
+      tool_sources: toolSources === null ? null : [...toolSources],
+    };
+    return this.patch<Agent>(
+      `${agentsBase(sandboxId)}/${slug}/tool-sources`,
+      body,
+    );
+  }
+
+  /**
+   * Wire a third-party integration's tools into one agent atomically.
+   *
+   * Targets `POST /agents/{slug}/wire-integration`. Resolves
+   * `appSlug` against the user's active OAuth-connected providers,
+   * unions the matching source(s) into the agent's `tool_sources`,
+   * and rebuilds `tool_allowlist` from the full resulting source set
+   * in one `update_agent` call.
+   *
+   * Idempotent per ADR 0006: re-firing on an already-wired
+   * `(slug, appSlug)` pair returns `sources_added: []` with the
+   * current `tool_count`.
+   */
+  async wireIntegration(
+    sandboxId: string,
+    slug: string,
+    appSlug: string,
+  ): Promise<WireIntegrationResult> {
+    const body: WireIntegrationRequest = { app_slug: appSlug };
+    return this.post<WireIntegrationResult>(
+      `${agentsBase(sandboxId)}/${slug}/wire-integration`,
+      body,
+    );
   }
 
   // ─── Invocation ─────────────────────────────────────────────────────

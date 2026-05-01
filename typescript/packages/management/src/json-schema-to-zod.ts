@@ -2,6 +2,14 @@ import { z, type ZodTypeAny } from 'zod';
 
 type Schema = Record<string, unknown> & { type?: string | string[] };
 
+function describeIfPresent(node: ZodTypeAny, schema: Schema): ZodTypeAny {
+  const description = schema.description;
+  if (typeof description === 'string' && description.length > 0) {
+    return node.describe(description);
+  }
+  return node;
+}
+
 function asArray<T>(value: T | T[] | undefined): T[] {
   if (value === undefined) return [];
   return Array.isArray(value) ? value : [value];
@@ -78,9 +86,7 @@ function buildForType(schema: Schema, type: string): ZodTypeAny {
   return applyStringConstraints(schema, buildScalarForType(type));
 }
 
-export function jsonSchemaToZod(schema: Schema): ZodTypeAny {
-  if (!schema || typeof schema !== 'object') return z.unknown();
-
+function buildSchemaUntyped(schema: Schema): ZodTypeAny {
   const enumZ = buildEnum(schema);
   if (enumZ) return enumZ;
 
@@ -99,7 +105,6 @@ export function jsonSchemaToZod(schema: Schema): ZodTypeAny {
   const types = asArray(schema.type as string | string[] | undefined);
 
   if (types.length === 0) {
-    // type-less: be permissive but still respect properties when present
     if (schema.properties || schema.additionalProperties !== undefined) {
       return buildForType(schema, 'object');
     }
@@ -110,7 +115,12 @@ export function jsonSchemaToZod(schema: Schema): ZodTypeAny {
     return buildForType(schema, types[0]);
   }
 
-  // Multi-type union, e.g. ["string", "null"] or ["object", "null"]
+  // Multi-type union, e.g. ["string", "null"] or ["object", "null"].
   const variants = types.map((t) => buildForType(schema, t));
   return z.union(variants as [ZodTypeAny, ZodTypeAny, ...ZodTypeAny[]]);
+}
+
+export function jsonSchemaToZod(schema: Schema): ZodTypeAny {
+  if (!schema || typeof schema !== 'object') return z.unknown();
+  return describeIfPresent(buildSchemaUntyped(schema), schema);
 }

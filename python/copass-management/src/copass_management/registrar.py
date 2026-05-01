@@ -54,6 +54,11 @@ class RegistrarOptions:
     sandbox_id: str
     spec_dir: Optional[Path] = None
     validate_output: bool = False
+    # Phase 2A spec-only landings (where a JSON Schema + fixture
+    # exists but the per-tool handler is deferred to Phase 2B) need
+    # the registrar to skip rather than raise. Production wiring
+    # leaves this off so missing handlers fail loudly.
+    allow_missing_handlers: bool = False
 
 
 def register_management_tools(
@@ -73,6 +78,8 @@ def register_management_tools(
         spec = corpus.specs[name]
         handler = TOOL_HANDLERS.get(name)
         if handler is None:
+            if options.allow_missing_handlers:
+                continue
             raise RuntimeError(
                 f"register_management_tools: no handler implementation for tool "
                 f"{name!r}. Add one in copass_management/tools/."

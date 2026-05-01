@@ -9,7 +9,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const sourceSpecDir = resolve(here, '..', '..', '..', '..', 'spec', 'management', 'v1');
 
 describe('registerManagementTools', () => {
-  it('registers all 14 read tools with names matching the spec corpus', () => {
+  it('registers the 14 Phase 1 read tools (Phase 2A specs are loaded but lack handlers until Phase 2B)', () => {
     const client = new CopassClient({
       apiUrl: 'http://test',
       auth: { type: 'api-key', key: 'olk_test' },
@@ -19,9 +19,14 @@ describe('registerManagementTools', () => {
     registerManagementTools(
       (reg) => registered.push(reg),
       client,
-      { sandboxId: 'sb_test', specDir: sourceSpecDir },
+      {
+        sandboxId: 'sb_test',
+        specDir: sourceSpecDir,
+        allowMissingHandlers: true,
+      },
     );
 
+    // 14 read tools in Phase 2A — Phase 2B fans out to all 20.
     expect(registered.length).toBe(14);
     const names = registered.map((r) => r.name).sort();
     expect(names).toEqual(
@@ -70,7 +75,11 @@ describe('registerManagementTools', () => {
     registerManagementTools(
       (reg) => registered.push(reg),
       client,
-      { sandboxId: 'sb_test', specDir: sourceSpecDir },
+      {
+        sandboxId: 'sb_test',
+        specDir: sourceSpecDir,
+        allowMissingHandlers: true,
+      },
     );
 
     const listSandboxes = registered.find((r) => r.name === 'list_sandboxes');
@@ -81,5 +90,20 @@ describe('registerManagementTools', () => {
     expect(fakeFetch).toHaveBeenCalled();
 
     vi.unstubAllGlobals();
+  });
+
+  it('throws when a spec has no handler and allowMissingHandlers is not set', () => {
+    const client = new CopassClient({
+      apiUrl: 'http://test',
+      auth: { type: 'api-key', key: 'olk_test' },
+    });
+
+    expect(() =>
+      registerManagementTools(
+        () => undefined,
+        client,
+        { sandboxId: 'sb_test', specDir: sourceSpecDir },
+      ),
+    ).toThrow(/no handler implementation for tool/);
   });
 });

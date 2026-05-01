@@ -5,11 +5,18 @@ round-trip.
 This is the Python side of the cross-language equivalence contract
 established by ADR 0007 — it must produce the same parsed structures
 as the TypeScript ``conformance.test.ts`` for the same fixture corpus.
+
+Phase 2A audit follow-up: when the ``CONFORMANCE_PY_OUT`` env var is
+set, every per-tool round-trip emits its parsed (post-validation)
+output to ``$CONFORMANCE_PY_OUT/<tool>.json`` so the shell harness
+can ``diff -r`` against the TypeScript-emitted tree.
 """
 
 from __future__ import annotations
 
 import json
+import os
+import shutil
 from pathlib import Path
 
 import pytest
@@ -26,6 +33,39 @@ from copass_management.tools import TOOL_HANDLERS
 REPO_ROOT = Path(__file__).resolve().parents[3]
 SPEC_DIR = REPO_ROOT / "spec" / "management" / "v1"
 
+_PARSED_OUTPUT_DIR_ENV = os.environ.get("CONFORMANCE_PY_OUT")
+PARSED_OUTPUT_DIR: Path | None = (
+    Path(_PARSED_OUTPUT_DIR_ENV) if _PARSED_OUTPUT_DIR_ENV else None
+)
+
+
+def _stable_canonical(value: object) -> object:
+    """Recursively sort dict keys so the JSON form is deterministic."""
+    if isinstance(value, dict):
+        return {k: _stable_canonical(value[k]) for k in sorted(value)}
+    if isinstance(value, list):
+        return [_stable_canonical(v) for v in value]
+    return value
+
+
+@pytest.fixture(scope="module", autouse=True)
+def _wipe_parsed_output_dir():
+    if PARSED_OUTPUT_DIR is not None:
+        if PARSED_OUTPUT_DIR.exists():
+            shutil.rmtree(PARSED_OUTPUT_DIR)
+        PARSED_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    yield
+    if PARSED_OUTPUT_DIR is not None:
+        # Sanity gate so a missing-write doesn't slip through as a
+        # silently-passing `diff -r` against an empty tree.
+        written = sorted(p.stem for p in PARSED_OUTPUT_DIR.glob("*.json"))
+        expected = sorted(p.stem for p in SPEC_DIR.glob("*.json"))
+        assert written == expected, (
+            f"conformance: expected {len(expected)} parsed-output files "
+            f"in {PARSED_OUTPUT_DIR}, found {len(written)} "
+            f"(missing: {set(expected) - set(written)})"
+        )
+
 
 @pytest.fixture(scope="module")
 def corpus():
@@ -37,8 +77,9 @@ def test_supported_spec_versions() -> None:
     assert MAX_SPEC_VERSION == "v1"
 
 
-def test_corpus_loads_all_14_read_tools(corpus) -> None:
+def test_corpus_loads_phase1_reads_and_phase2a_writes(corpus) -> None:
     expected = {
+        # Phase 1 read tools.
         "get_agent",
         "get_run_trace",
         "get_source",
@@ -53,12 +94,36 @@ def test_corpus_loads_all_14_read_tools(corpus) -> None:
         "list_sources",
         "list_trigger_components",
         "list_triggers",
+        # Phase 2A write specs (handlers land in Phase 2B).
+        "add_user_mcp_source",
+        "create_agent",
+        "update_agent_prompt",
+        "update_agent_tool_sources",
+        "update_agent_tools",
+        "wire_integration_to_agent",
     }
     assert set(corpus.specs.keys()) == expected
+    assert len(corpus.specs) == 20
 
 
-def test_handler_bound_for_every_tool(corpus) -> None:
+# Phase 2A intentionally ships specs + fixtures for the 6 write tools
+# but defers per-tool handler implementations to Phase 2B. Once the
+# Phase 2B tool modules land they'll register themselves and this set
+# can shrink to {} without any other test scaffolding change.
+_PHASE_2B_PENDING_HANDLERS = frozenset({
+    "add_user_mcp_source",
+    "create_agent",
+    "update_agent_prompt",
+    "update_agent_tool_sources",
+    "update_agent_tools",
+    "wire_integration_to_agent",
+})
+
+
+def test_handler_bound_for_every_phase1_read_tool(corpus) -> None:
     for name in corpus.specs:
+        if name in _PHASE_2B_PENDING_HANDLERS:
+            continue
         assert name in TOOL_HANDLERS, f"missing handler for {name!r}"
 
 
@@ -106,3 +171,15 @@ def test_fixture_round_trip_byte_equivalent(corpus, spec_name: str) -> None:
     # Parse-and-redump preserves shape because validators don't transform.
     assert _stable_json(json.loads(_stable_json(fixture.input))) == _stable_json(fixture.input)
     assert _stable_json(json.loads(_stable_json(fixture.output))) == _stable_json(fixture.output)
+
+    if PARSED_OUTPUT_DIR is not None:
+        # Emit the canonical post-validation form for cross-language
+        # `diff -r`. jsonschema validators don't coerce values, but
+        # if Pydantic ever swaps in we want every test run's parsed
+        # output on disk so a real divergence shows up immediately.
+        target = PARSED_OUTPUT_DIR / f"{spec_name}.json"
+        payload = {
+            "input": _stable_canonical(fixture.input),
+            "output": _stable_canonical(fixture.output),
+        }
+        target.write_text(json.dumps(payload, indent=2, ensure_ascii=False))

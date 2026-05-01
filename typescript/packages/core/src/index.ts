@@ -114,7 +114,11 @@ export type {
   TriggerListResponse,
   TriggerStatus,
   UpdateAgentRequest,
+  UpdateAgentToolSourcesRequest,
   UpdateTriggerRequest,
+  WireIntegrationMode,
+  WireIntegrationRequest,
+  WireIntegrationResult,
 } from './types/agents.js';
 
 // Copass Concierge (per-user platform agent)

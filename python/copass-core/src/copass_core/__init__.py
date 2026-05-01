@@ -53,6 +53,8 @@ from copass_core.http import (
 from copass_core.resources import (
     AgentsResource,
     AgentTriggersResource,
+    WireIntegrationMode,
+    WireIntegrationResult,
     ApiKeysResource,
     BaseResource,
     Behavior,
@@ -165,6 +167,8 @@ __all__ = [
     # Resources — agents + integrations + cross-user grants
     "AgentsResource",
     "AgentTriggersResource",
+    "WireIntegrationMode",
+    "WireIntegrationResult",
     "IntegrationsResource",
     "SandboxConnectionsResource",
     # Higher-order

@@ -18,12 +18,63 @@ prefix is ``/api/v1/storage/sandboxes/{sandbox_id}/agents``. The
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Literal, Optional
 
 from copass_core.resources.base import BaseResource
 
 
 _STORAGE_BASE = "/api/v1/storage/sandboxes"
+
+
+WireIntegrationMode = Literal[
+    "explicit",
+    "allow_all",
+    "ingestion_only",
+    "not_connected",
+    "unknown_provider",
+]
+
+
+@dataclass(frozen=True)
+class WireIntegrationResult:
+    """Public envelope returned by ``AgentsResource.wire_integration``.
+
+    Mirrors the backend
+    :class:`frame_graph.copass_id.agents.types.WireIntegrationResult`
+    dataclass and the wire shape served by
+    ``POST /agents/{slug}/wire-integration``.
+
+    ``mode`` is the discriminator; consumers branch on
+    (``wired``, ``mode``):
+
+    * ``"explicit"`` — one or more providers wired, tools added.
+    * ``"allow_all"`` — wired, allowlist set to allow-all (reserved).
+    * ``"ingestion_only"`` — app exposes no callable tools.
+    * ``"not_connected"`` — no provider has this app connected.
+    * ``"unknown_provider"`` — provider present in user sources but
+      not registered for agent wiring (defensive; logged at ERROR).
+    """
+
+    wired: bool
+    agent_slug: str
+    app_slug: str
+    sources_added: List[str] = field(default_factory=list)
+    tool_count: int = 0
+    mode: WireIntegrationMode = "explicit"
+    message: str = ""
+
+    @classmethod
+    def from_dict(cls, payload: Dict[str, Any]) -> "WireIntegrationResult":
+        return cls(
+            wired=bool(payload.get("wired", False)),
+            agent_slug=str(payload.get("agent_slug", "")),
+            app_slug=str(payload.get("app_slug", "")),
+            sources_added=list(payload.get("sources_added") or []),
+            tool_count=int(payload.get("tool_count", 0)),
+            mode=payload.get("mode", "explicit"),  # type: ignore[arg-type]
+            message=str(payload.get("message", "")),
+        )
 
 
 def _agents_base(sandbox_id: str) -> str:
@@ -214,6 +265,60 @@ class AgentsResource(BaseResource):
     async def archive(self, sandbox_id: str, slug: str) -> None:
         await self._delete(f"{_agents_base(sandbox_id)}/{slug}")
 
+    async def update_tool_sources(
+        self,
+        sandbox_id: str,
+        slug: str,
+        tool_sources: Optional[List[str]],
+    ) -> Dict[str, Any]:
+        """Replace an agent's ``tool_sources`` (resolver list).
+
+        Targets ``PATCH /agents/{slug}/tool-sources``. Distinct from
+        :meth:`update` so the absent-vs-null distinction is structural:
+
+        * ``tool_sources=None`` — sent as JSON ``null``; reverts to the
+          caller's default tool-sources set.
+        * ``tool_sources=[]`` — explicit "tool-less by choice".
+        * ``tool_sources=[...]`` — set the list verbatim.
+
+        Distinct from ``tool_allowlist`` — this controls which
+        RESOLVERS run (which tools are AVAILABLE), not which tool
+        NAMES are CALLABLE. Returns the updated agent.
+        """
+        body: Dict[str, Any] = {
+            "tool_sources": (
+                None if tool_sources is None else list(tool_sources)
+            ),
+        }
+        return await self._patch(
+            f"{_agents_base(sandbox_id)}/{slug}/tool-sources", body,
+        )
+
+    async def wire_integration(
+        self,
+        sandbox_id: str,
+        slug: str,
+        app_slug: str,
+    ) -> WireIntegrationResult:
+        """Wire a third-party integration's tools into one agent atomically.
+
+        Targets ``POST /agents/{slug}/wire-integration``. Resolves
+        ``app_slug`` against the user's active OAuth-connected
+        providers, unions the matching source(s) into the agent's
+        ``tool_sources``, and rebuilds ``tool_allowlist`` from the
+        full resulting source set in one ``update_agent`` call.
+
+        Idempotent per ADR 0006: re-firing on an already-wired
+        ``(slug, app_slug)`` pair returns
+        ``WireIntegrationResult(sources_added=[], ...)`` with the
+        current ``tool_count``.
+        """
+        body = {"app_slug": app_slug}
+        payload = await self._post(
+            f"{_agents_base(sandbox_id)}/{slug}/wire-integration", body,
+        )
+        return WireIntegrationResult.from_dict(payload)
+
     # ── Invocation ──────────────────────────────────────────────
 
     async def test_fire(
@@ -301,4 +406,6 @@ class AgentsResource(BaseResource):
 __all__ = [
     "AgentsResource",
     "AgentTriggersResource",
+    "WireIntegrationMode",
+    "WireIntegrationResult",
 ]

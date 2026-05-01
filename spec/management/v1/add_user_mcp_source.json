@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "name": "add_user_mcp_source",
+  "description": "Register the user's own MCP server as a Copass data source. Bearer / header_token / none auth supported. Secrets are stored in a managed secret store — never echoed back. Health check (one-shot tools/list) runs at registration; if it fails, the row lands in `status='error'` and the user can fix and call `test_user_mcp_source`. `app_namespace` is the prefix used to namespace the MCP's tools when an agent opts into `tool_sources=['user_mcp']`; uniqueness checked across active sources in this sandbox. Concierge default `tool_sources` does NOT include 'user_mcp' — opt-in only on the per-agent row.",
+  "inputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "required": ["name", "base_url", "auth_kind"],
+    "properties": {
+      "name": {
+        "type": "string",
+        "description": "Human-readable source name."
+      },
+      "base_url": {
+        "type": "string",
+        "description": "User's MCP server URL (no trailing slash). https only, except localhost in dev."
+      },
+      "auth_kind": {
+        "type": "string",
+        "enum": ["bearer", "header_token", "none"]
+      },
+      "token": {
+        "type": "string",
+        "description": "Bearer / header secret. Stored in managed secret store, never persisted on the source row."
+      },
+      "auth_header": {
+        "type": "string",
+        "description": "Required iff auth_kind='header_token'."
+      },
+      "app_namespace": {
+        "type": "string",
+        "description": "Tool-name prefix (≤64 chars). Defaults to the data_source_id when absent."
+      },
+      "allowed_tools": {
+        "type": "array",
+        "items": { "type": "string" },
+        "description": "Per-source allowlist on top of the agent-level allowlist."
+      },
+      "ingest_tool_calls": {
+        "type": "array",
+        "items": { "type": "object" },
+        "description": "Tool calls to run on every pull(). Empty = live-tools-only; the source contributes to agent turns but not graph ingestion."
+      },
+      "rate_cap_per_minute": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 600,
+        "description": "Per-source tool-call rate cap. Default 60, max 600."
+      },
+      "webhook_rate_cap_per_minute": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 6000,
+        "description": "Per-source webhook firehose rate cap. Default 600, max 6000."
+      }
+    },
+    "additionalProperties": false
+  },
+  "outputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "data_source_id": { "type": ["string", "null"] },
+      "status": { "type": ["string", "null"] },
+      "name": { "type": ["string", "null"] },
+      "ingestion_mode": { "type": ["string", "null"] },
+      "health_error": { "type": ["string", "null"] },
+      "error": { "type": ["string", "null"] },
+      "detail": { "type": ["string", "null"] },
+      "hint": { "type": ["string", "null"] },
+      "source": {
+        "type": ["object", "null"],
+        "properties": {
+          "data_source_id": { "type": "string" },
+          "name": { "type": "string" },
+          "provider": { "type": "string" },
+          "ingestion_mode": { "type": ["string", "null"] },
+          "status": { "type": "string" },
+          "kind": { "type": ["string", "null"] },
+          "created_at": { "type": ["string", "null"], "format": "date-time" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "additionalProperties": true
+  },
+  "since": "v1.1"
+}

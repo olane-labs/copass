@@ -1,6 +1,11 @@
 """Resource modules — thin wrappers around specific API paths."""
 
-from copass_core.resources.agents import AgentsResource, AgentTriggersResource
+from copass_core.resources.agents import (
+    AgentsResource,
+    AgentTriggersResource,
+    WireIntegrationMode,
+    WireIntegrationResult,
+)
 from copass_core.resources.api_keys import ApiKeysResource
 from copass_core.resources.base import BaseResource
 from copass_core.resources.context import ContextResource, ContextTier
@@ -89,6 +94,8 @@ __all__ = [
     # Agents
     "AgentsResource",
     "AgentTriggersResource",
+    "WireIntegrationMode",
+    "WireIntegrationResult",
     # Integrations
     "IntegrationsResource",
     # Sandbox connections

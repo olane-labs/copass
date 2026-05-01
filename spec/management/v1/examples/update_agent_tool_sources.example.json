@@ -1,0 +1,15 @@
+{
+  "input": {
+    "slug": "gtm-marketing",
+    "tool_sources": ["copass_retrieval", "user_mcp"]
+  },
+  "output": {
+    "agent": {
+      "agent_id": "ag_01HXYZAB1234567890123ABCDE",
+      "slug": "gtm-marketing",
+      "version": 10,
+      "updated_at": "2026-04-30T14:18:01.000000+00:00",
+      "tool_sources": ["copass_retrieval", "user_mcp"]
+    }
+  }
+}

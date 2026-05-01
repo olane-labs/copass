@@ -49,6 +49,15 @@ export interface RegistrarOptions extends LoadOptions {
    * test enforces parity at build time. Enabling this adds runtime cost.
    */
   validateOutput?: boolean;
+  /**
+   * When true, silently skip spec entries that have no handler bound
+   * in `TOOL_HANDLERS` rather than raising. Used by Phase 2A's
+   * spec-only landing where the JSON Schemas + fixtures ship before
+   * the per-tool TS / Python handler files (Phase 2B). Defaults to
+   * `false` — production wiring should always pin every spec to a
+   * handler.
+   */
+  allowMissingHandlers?: boolean;
 }
 
 /**
@@ -75,6 +84,9 @@ export function registerManagementTools(
     const spec = corpus.specs[name];
     const handler = TOOL_HANDLERS[name];
     if (!handler) {
+      if (options.allowMissingHandlers) {
+        continue;
+      }
       throw new Error(
         `registerManagementTools: no handler implementation for tool "${name}". Add one in src/tools/.`,
       );
