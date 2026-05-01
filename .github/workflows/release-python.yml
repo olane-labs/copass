@@ -138,6 +138,11 @@ jobs:
           - copass-context-agents
           - copass-anthropic-agents
           - copass-google-agents
+          - copass-agent-router
+          - copass-config
+          - copass-langchain
+          - copass-management
+          - copass-pydantic-ai
     steps:
       - uses: actions/checkout@v4
 
