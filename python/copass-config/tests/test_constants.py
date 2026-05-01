@@ -7,8 +7,13 @@ import copass_config as cfg
 
 
 def test_version_present() -> None:
+    """Version must be importable and look like a semver string. We
+    deliberately don't pin the literal value — the release workflow
+    stamps it from ``python/VERSION`` at build time, so a hardcoded
+    assertion would always fail on a lockstep release."""
+    import re
     assert isinstance(cfg.__version__, str)
-    assert cfg.__version__ == "0.1.0"
+    assert re.match(r"^\d+\.\d+\.\d+(\D.*)?$", cfg.__version__), cfg.__version__
 
 
 def test_tool_descriptions_non_empty() -> None:
