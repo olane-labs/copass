@@ -90,7 +90,7 @@ importers:
   packages/agent-router:
     devDependencies:
       '@copass/core':
-        specifier: ^0.3.8
+        specifier: ^0.3.9
         version: link:../core
       '@types/node':
         specifier: ^25.0.0
@@ -105,11 +105,11 @@ importers:
   packages/ai-sdk:
     dependencies:
       '@copass/config':
-        specifier: ^0.3.1
+        specifier: ^0.3.2
         version: link:../config
     devDependencies:
       '@copass/core':
-        specifier: ^0.3.8
+        specifier: ^0.3.9
         version: link:../core
       '@types/node':
         specifier: ^25.0.0
@@ -177,7 +177,7 @@ importers:
         version: 7.0.5
     devDependencies:
       '@copass/core':
-        specifier: ^0.3.8
+        specifier: ^0.3.9
         version: link:../core
       '@types/node':
         specifier: ^25.0.0
@@ -211,7 +211,7 @@ importers:
         version: 1.0.38
     devDependencies:
       '@copass/core':
-        specifier: ^0.3.8
+        specifier: ^0.3.9
         version: link:../core
       '@types/fs-extra':
         specifier: ^11.0.4
@@ -229,11 +229,11 @@ importers:
   packages/langchain:
     dependencies:
       '@copass/config':
-        specifier: ^0.3.1
+        specifier: ^0.3.2
         version: link:../config
     devDependencies:
       '@copass/core':
-        specifier: ^0.3.8
+        specifier: ^0.3.9
         version: link:../core
       '@langchain/core':
         specifier: ^1.1.0
@@ -257,7 +257,7 @@ importers:
   packages/management:
     devDependencies:
       '@copass/core':
-        specifier: ^0.3.8
+        specifier: ^0.3.9
         version: link:../core
       '@modelcontextprotocol/sdk':
         specifier: ^1.29.0
@@ -281,11 +281,11 @@ importers:
   packages/mastra:
     dependencies:
       '@copass/config':
-        specifier: ^0.3.1
+        specifier: ^0.3.2
         version: link:../config
     devDependencies:
       '@copass/core':
-        specifier: ^0.3.8
+        specifier: ^0.3.9
         version: link:../core
       '@mastra/core':
         specifier: ^1.26.0
@@ -306,10 +306,10 @@ importers:
   packages/mcp:
     dependencies:
       '@copass/config':
-        specifier: ^0.3.1
+        specifier: ^0.3.2
         version: link:../config
       '@copass/management':
-        specifier: ^0.1.1
+        specifier: ^0.1.2
         version: link:../management
       '@modelcontextprotocol/sdk':
         specifier: ^1.29.0
@@ -319,7 +319,7 @@ importers:
         version: 4.3.6
     devDependencies:
       '@copass/core':
-        specifier: ^0.3.8
+        specifier: ^0.3.9
         version: link:../core
       '@types/node':
         specifier: ^25.0.0

@@ -1,6 +1,6 @@
 {
   "name": "@copass/management",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Spec-driven management tool registrar for Copass agents (read-only, Phase 1).",
   "publishConfig": {
     "access": "public",
@@ -68,7 +68,7 @@
     }
   },
   "devDependencies": {
-    "@copass/core": "^0.3.8",
+    "@copass/core": "^0.3.9",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@types/node": "^25.0.0",
     "tsup": "^8.5.0",

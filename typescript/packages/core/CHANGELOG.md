@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.3.9](https://github.com/olane-labs/copass/compare/@copass/core@0.3.8...@copass/core@0.3.9) (2026-05-01)
+
+**Note:** Version bump only for package @copass/core
+
 ## [0.3.8](https://github.com/olane-labs/copass/compare/@copass/core@0.3.6...@copass/core@0.3.8) (2026-05-01)
 
 **Note:** Version bump only for package @copass/core
