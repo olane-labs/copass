@@ -254,7 +254,7 @@ def copass_retrieval_tools(
     sandbox_id: str,
     project_id: Optional[str] = None,
     window: Optional[WindowLike] = None,
-    preset: SearchPreset = "auto",
+    preset: SearchPreset = "copass/1.0",
 ) -> List[AgentTool]:
     """Return ``[discover, interpret, search]`` as :class:`AgentTool` instances.
 
@@ -267,8 +267,8 @@ def copass_retrieval_tools(
             is window-aware — repeated ``discover`` calls skip items
             already surfaced earlier in this conversation.
         preset: Preset for ``interpret`` / ``search``. Defaults to
-            ``"auto"`` — required for ``interpret`` (with ``"fast"``,
-            ``interpret`` silently returns "No supporting context").
+            ``"copass/1.0"``. Append ``":thinking"`` (e.g.
+            ``"copass/2.0:thinking"``) to enable task decomposition.
 
     Returns:
         ``[discover, interpret, search]`` ready to pass to

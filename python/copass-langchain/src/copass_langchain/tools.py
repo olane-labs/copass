@@ -70,7 +70,7 @@ def copass_tools(
     sandbox_id: str,
     project_id: Optional[str] = None,
     window: Optional[ContextWindowLike] = None,
-    preset: SearchPreset = "auto",
+    preset: SearchPreset = "copass/1.0",
 ) -> CopassTools:
     """Return a :class:`CopassTools` bundle wired to ``client``.
 
@@ -81,10 +81,9 @@ def copass_tools(
         window: Optional :class:`ContextWindowLike` — when provided,
             every retrieval call is window-aware.
         preset: Retrieval preset for ``interpret`` / ``search``.
-            Ignored by ``discover``. Defaults to ``"auto"`` —
-            ``interpret`` requires ``auto`` in the current server
-            release (``fast`` silently returns
-            "No supporting context could be retrieved").
+            Ignored by ``discover``. Defaults to ``"copass/1.0"``.
+            Append ``":thinking"`` (e.g. ``"copass/2.0:thinking"``)
+            to enable task decomposition before retrieval.
 
     Example::
 

@@ -96,30 +96,21 @@ export interface InterpretResponse {
 }
 
 /**
- * `/search` retrieval modes accepted by the Copass API.
+ * Retrieval presets accepted by the Copass API.
  *
- * Base presets trade off latency for depth:
- *   - `fast`     — low-latency agent-oriented
- *   - `auto`     — balanced quality (default server-side)
- *   - `discover` — returns raw data-chunk menu instead of a narrative answer
- *   - `sql`      — direct text-to-SQL over the ontology event store
- *   - `max`      — reserved, returns 403 for public callers
+ * Base presets:
+ *   - `copass/1.0` — path-discovery (low-latency default)
+ *   - `copass/2.0` — hierarchical-fused per-node embeddings
  *
- * `<base>-decompose` variants run an LLM pre-pass that breaks the question
- * into an ordered list of sub-questions, then execute `<base>` on each
- * before a single combined synthesis step. Only valid on `/search`;
- * `/interpret` does not accept decompose presets.
+ * Append `:thinking` to either (e.g. `copass/2.0:thinking`) to run an
+ * LLM pre-pass that decomposes the question into sub-questions, executes
+ * the base preset on each, and synthesizes one combined answer.
  */
 export type SearchPreset =
-  | 'fast'
-  | 'auto'
-  | 'discover'
-  | 'sql'
-  | 'max'
-  | 'fast-decompose'
-  | 'auto-decompose'
-  | 'discover-decompose'
-  | 'sql-decompose';
+  | 'copass/1.0'
+  | 'copass/2.0'
+  | 'copass/1.0:thinking'
+  | 'copass/2.0:thinking';
 
 export interface SearchRequest {
   query: string;

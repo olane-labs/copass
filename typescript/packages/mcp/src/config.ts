@@ -35,19 +35,14 @@ export interface ServerConfig {
 }
 
 const VALID_PRESETS: readonly SearchPreset[] = [
-  'fast',
-  'auto',
-  'discover',
-  'sql',
-  'max',
-  // `-decompose` variants are /search-only. Setting one of these as the
+  'copass/1.0',
+  'copass/2.0',
+  // `:thinking` variants are /search-only. Setting one of these as the
   // MCP subprocess default makes `interpret` fail (decomposition isn't
   // valid on /interpret) — fine when the subprocess is only used for
   // `search`, otherwise override per-call via the `preset` tool arg.
-  'fast-decompose',
-  'auto-decompose',
-  'discover-decompose',
-  'sql-decompose',
+  'copass/1.0:thinking',
+  'copass/2.0:thinking',
 ] as const;
 
 /**
@@ -57,12 +52,11 @@ const VALID_PRESETS: readonly SearchPreset[] = [
  * - `COPASS_SANDBOX_ID` (required)
  * - `COPASS_API_URL` (default: https://ai.copass.id)
  * - `COPASS_PROJECT_ID` (optional — default for retrieval/ingest)
- * - `COPASS_PRESET` (default: `auto`). Accepts any `SearchPreset`, but
- *   `auto` is the only value whose providers consume the
- *   `semantic_alignment_scopes` that `/interpret`'s scope adapter
- *   produces — so non-`auto` defaults (and any `-decompose` default)
- *   break `interpret`. Leave at `auto` unless the subprocess is
- *   search-only, and override per-call via the `preset` tool arg.
+ * - `COPASS_PRESET` (default: `copass/1.0`). Accepts any `SearchPreset`,
+ *   but `:thinking` variants only work on `/search` — setting one as the
+ *   subprocess default breaks `interpret`. Leave at `copass/1.0` unless
+ *   the subprocess is search-only, and override per-call via the
+ *   `preset` tool arg.
  *
  * Throws a descriptive error for missing/invalid values so the MCP client
  * sees an immediate startup failure with actionable text.
@@ -84,7 +78,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
 
   const api_url = env.COPASS_API_URL?.trim() || 'https://ai.copass.id';
   const project_id = env.COPASS_PROJECT_ID?.trim() || undefined;
-  const rawPreset = env.COPASS_PRESET?.trim() || 'auto';
+  const rawPreset = env.COPASS_PRESET?.trim() || 'copass/1.0';
 
   if (!VALID_PRESETS.includes(rawPreset as SearchPreset)) {
     throw new Error(

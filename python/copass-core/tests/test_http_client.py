@@ -67,14 +67,14 @@ async def test_retrieval_interpret_passes_items_and_preset(client: CopassClient)
         sandbox_id="sb-1",
         query="q",
         items=[["cid-1", "cid-2"]],
-        preset="fast",
+        preset="copass/1.0",
         project_id="p-1",
     )
     import json as _json
 
     body = _json.loads(route.calls.last.request.content)
     assert body["items"] == [["cid-1", "cid-2"]]
-    assert body["preset"] == "fast"
+    assert body["preset"] == "copass/1.0"
     assert body["project_id"] == "p-1"
 
 

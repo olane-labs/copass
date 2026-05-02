@@ -75,7 +75,7 @@ class CopassRetrievalClient:
         items: list[list[str]],
         project_id: Optional[str] = None,
         window: Optional[WindowLike] = None,
-        preset: SearchPreset = "auto",
+        preset: SearchPreset = "copass/1.0",
     ) -> dict[str, Any]:
         body: dict[str, Any] = {
             "query": query,
@@ -94,7 +94,7 @@ class CopassRetrievalClient:
         query: str,
         project_id: Optional[str] = None,
         window: Optional[WindowLike] = None,
-        preset: SearchPreset = "auto",
+        preset: SearchPreset = "copass/1.0",
     ) -> dict[str, Any]:
         body: dict[str, Any] = {
             "query": query,

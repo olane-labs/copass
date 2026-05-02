@@ -4,12 +4,11 @@
  * Bypasses the MCP + Agent SDK loop so each dropdown selection in the chat
  * UI maps 1:1 to a specific retrieval shape:
  *
- *  - `discover+interpret`            → /discover then /interpret on the top hits
- *  - `discover+interpret-decompose`  → /search with preset=`discover-decompose`
- *  - `search`                        → /search with preset=`auto`
- *  - `search-decompose`              → /search with preset=`auto-decompose`
- *  - `sql`                           → /search with preset=`sql`
- *  - `sql-decompose`                 → /search with preset=`sql-decompose`
+ *  - `discover+interpret`     → /discover then /interpret on the top hits
+ *  - `search`                 → /search with preset=`copass/1.0`
+ *  - `search:thinking`        → /search with preset=`copass/1.0:thinking`
+ *  - `search-2.0`             → /search with preset=`copass/2.0`
+ *  - `search-2.0:thinking`    → /search with preset=`copass/2.0:thinking`
  *
  * Each call emits `tool-call` + `tool-result` events (just like agent mode)
  * so the UI renders identical collapsible cards — a preset run is shown as
@@ -22,11 +21,10 @@ import type { StreamEvent } from './stream-events.js';
 
 export const TEST_MODES = [
   'discover+interpret',
-  'discover+interpret-decompose',
   'search',
-  'search-decompose',
-  'sql',
-  'sql-decompose',
+  'search:thinking',
+  'search-2.0',
+  'search-2.0:thinking',
 ] as const;
 
 export type TestMode = (typeof TEST_MODES)[number];
@@ -131,15 +129,13 @@ export async function* runTestModeStream(
 
 function mapToSearchPreset(mode: Exclude<TestMode, 'discover+interpret'>): SearchPreset {
   switch (mode) {
-    case 'discover+interpret-decompose':
-      return 'discover-decompose';
     case 'search':
-      return 'auto';
-    case 'search-decompose':
-      return 'auto-decompose';
-    case 'sql':
-      return 'sql';
-    case 'sql-decompose':
-      return 'sql-decompose';
+      return 'copass/1.0';
+    case 'search:thinking':
+      return 'copass/1.0:thinking';
+    case 'search-2.0':
+      return 'copass/2.0';
+    case 'search-2.0:thinking':
+      return 'copass/2.0:thinking';
   }
 }

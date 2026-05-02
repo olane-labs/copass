@@ -190,16 +190,16 @@ async def test_matrix_query_sends_preset_header(client: CopassClient) -> None:
             json={
                 "query": "q",
                 "answer": "a",
-                "preset": "semantic_path",
+                "preset": "copass/1.0",
                 "execution_time_ms": 42,
             },
         )
     )
     await client.matrix.query(
-        query="q", preset="semantic_path", detail_instruction="be brief", trace_id="t-1"
+        query="q", preset="copass/1.0", detail_instruction="be brief", trace_id="t-1"
     )
     headers = route.calls.last.request.headers
-    assert headers["X-Search-Matrix"] == "semantic_path"
+    assert headers["X-Search-Matrix"] == "copass/1.0"
     assert headers["X-Detail-Instruction"] == "be brief"
     assert headers["X-Trace-Id"] == "t-1"
 

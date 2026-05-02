@@ -46,7 +46,7 @@ export interface CreateCopassAgentOptions extends ReactAgentExtraOptions {
   tools?: StructuredToolInterface[];
   /** Optional project scoping for retrieval. */
   project_id?: string;
-  /** Preset for `interpret` / `search`. Default: `"fast"`. */
+  /** Preset for `interpret` / `search`. Default: `"copass/1.0"`. */
   preset?: SearchPreset;
   /** Include LangChain `ToolMessage`s in the Context Window. Default: `false`. */
   includeToolMessages?: boolean;

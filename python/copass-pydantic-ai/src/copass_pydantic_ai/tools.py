@@ -27,7 +27,7 @@ def copass_tools(
     sandbox_id: str,
     project_id: Optional[str] = None,
     window: Optional[WindowLike] = None,
-    preset: SearchPreset = "auto",
+    preset: SearchPreset = "copass/1.0",
 ) -> tuple[Callable[..., Any], Callable[..., Any], Callable[..., Any]]:
     """Return Copass retrieval as three Pydantic AI-compatible tool callables.
 
@@ -37,11 +37,10 @@ def copass_tools(
         project_id: Optional project scoping.
         window: Optional :class:`WindowLike` (e.g. a Context Window handle).
             When provided, every retrieval call is window-aware.
-        preset: Preset for ``interpret`` / ``search``. Defaults to ``"auto"``
-            — required for ``interpret``, since the server's interpret-adapter
-            produces ``semantic_alignment_scopes`` that only the ``auto``
-            preset's providers consume. With ``"fast"``, ``interpret`` would
-            silently return "No supporting context could be retrieved".
+        preset: Preset for ``interpret`` / ``search``. Defaults to
+            ``"copass/1.0"``. Append ``":thinking"`` (e.g.
+            ``"copass/2.0:thinking"``) to enable task decomposition
+            before retrieval.
 
     Returns:
         ``(discover, interpret, search)`` — three async callables, ready to

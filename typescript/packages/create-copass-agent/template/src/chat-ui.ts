@@ -126,11 +126,10 @@ export const CHAT_UI = `<!doctype html>
     <select id="preset">
       <option value="">agent (default)</option>
       <option value="discover+interpret">discover + interpret</option>
-      <option value="discover+interpret-decompose">discover + interpret (decompose)</option>
-      <option value="search">search</option>
-      <option value="search-decompose">search (decompose)</option>
-      <option value="sql">sql</option>
-      <option value="sql-decompose">sql (decompose)</option>
+      <option value="search">search (copass/1.0)</option>
+      <option value="search:thinking">search (copass/1.0:thinking)</option>
+      <option value="search-2.0">search (copass/2.0)</option>
+      <option value="search-2.0:thinking">search (copass/2.0:thinking)</option>
     </select>
   </div>
   <div id="log"></div>

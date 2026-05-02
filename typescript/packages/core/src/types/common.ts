@@ -20,10 +20,7 @@ export type DetailLevel = 'concise' | 'summary' | 'detailed' | 'full';
 
 /** Matrix search preset names. */
 export type SearchPreset =
-  | 'semantic_alignment'
-  | 'semantic_path'
-  | 'semantic_extraction_path'
-  | 'hierarchical'
-  | 'path_discovery'
-  | 'temporal_only'
-  | 'direct_graph';
+  | 'copass/1.0'
+  | 'copass/2.0'
+  | 'copass/1.0:thinking'
+  | 'copass/2.0:thinking';

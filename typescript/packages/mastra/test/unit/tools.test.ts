@@ -25,7 +25,7 @@ function makeClient(overrides: Record<string, unknown> = {}): CopassClient {
       }),
       search: vi.fn().mockResolvedValue({
         answer: 'Auth refresh is driven by a background interceptor.',
-        preset: 'fast',
+        preset: 'copass/1.0',
         execution_time_ms: 123,
         sandbox_id: 'sb1',
         query: 'how does auth handle refresh?',
@@ -97,7 +97,7 @@ describe('copassTools (Mastra)', () => {
 
   describe('interpret', () => {
     it('forwards items + preset, returns brief only', async () => {
-      const tools = copassTools({ client, sandbox_id: 'sb1', preset: 'auto' });
+      const tools = copassTools({ client, sandbox_id: 'sb1', preset: 'copass/1.0' });
 
       const result = await tools.interpret.execute!(
         { query: 'why is checkout flaky?', items: [['c1', 'c2']] },
@@ -109,20 +109,20 @@ describe('copassTools (Mastra)', () => {
         expect.objectContaining({
           query: 'why is checkout flaky?',
           items: [['c1', 'c2']],
-          preset: 'auto',
+          preset: 'copass/1.0',
         }),
       );
       expect(result).toEqual({ brief: 'Checkout retries on 5xx from Stripe.' });
     });
 
-    it('defaults preset to "auto" when not provided', async () => {
+    it('defaults preset to "copass/1.0" when not provided', async () => {
       const tools = copassTools({ client, sandbox_id: 'sb1' });
 
       await tools.interpret.execute!({ query: 'q', items: [['c1']] }, execCtx);
 
       expect(client.retrieval.interpret).toHaveBeenCalledWith(
         'sb1',
-        expect.objectContaining({ preset: 'auto' }),
+        expect.objectContaining({ preset: 'copass/1.0' }),
       );
     });
   });
@@ -130,7 +130,7 @@ describe('copassTools (Mastra)', () => {
   describe('search', () => {
     it('forwards preset + window, returns only the synthesized answer', async () => {
       const window: WindowLike = { getTurns: () => [] };
-      const tools = copassTools({ client, sandbox_id: 'sb1', window, preset: 'auto' });
+      const tools = copassTools({ client, sandbox_id: 'sb1', window, preset: 'copass/1.0' });
 
       const result = await tools.search.execute!(
         { query: 'how does auth handle refresh?' },
@@ -141,7 +141,7 @@ describe('copassTools (Mastra)', () => {
         'sb1',
         expect.objectContaining({
           query: 'how does auth handle refresh?',
-          preset: 'auto',
+          preset: 'copass/1.0',
           window,
         }),
       );

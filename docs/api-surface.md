@@ -218,7 +218,7 @@ Natural language search across the knowledge graph.
 - `query` (required), `project_id?`, `reference_date?`, `detail_level?` (`concise|detailed`), `max_tokens?`
 
 **Headers:**
-- `X-Search-Matrix` — preset: `semantic_alignment`, `semantic_path`, `hierarchical`, `temporal_only`, `direct_graph`, `path_discovery`
+- `X-Search-Matrix` — preset: `copass/1.0`, `copass/2.0` (append `:thinking` for task decomposition)
 - `X-Detail-Instruction`, `X-Trace-Id`
 
 ---

@@ -2,7 +2,15 @@
 
 **Build AI agents grounded in your data — on any provider.** A typed, multi-language monorepo of SDKs and integrations for [Copass](https://copass.id).
 
-In Copass, **context and agents are decoupled.** Your sandbox holds the data, the integrations, the memory, and the end users. Agent runtimes — Anthropic, Google, more on the way — are interchangeable backends. Swap providers on a per-call flag; your context stays where it is.
+Copass is the abstraction layer over fragmented AI markets. **Three Routers, one architecture:**
+
+- **AgentRouter** — unified managed agents (*the who*). Anthropic, Google, more on the way.
+- **ContextRouter** — unified managed context (*the what they know*). Sandboxes, integrations, retrieval, memory.
+- **ComputeRouter** — unified managed compute (*the where they run*). Self-hosted open-weights agents on managed compute. Phase 1 in flight.
+
+Underneath all three: **ANS** — the Attention Name System. Every primitive (sandbox, agent, data source, compute session) has a stable address like `o://alice/sandbox/sb_abc`. Provider swaps, compute swaps, and runtime moves leave the address untouched. DNS for hosts; ANS for attention.
+
+In Copass, **context and agents are decoupled.** Your sandbox holds the data, the integrations, the memory, and the end users. Agent runtimes are interchangeable backends. Compute is interchangeable underneath. Swap providers on a per-call flag; your context stays where it is.
 
 ```
   ┌───────────────────────┐

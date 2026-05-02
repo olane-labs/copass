@@ -43,7 +43,7 @@ def _make_client() -> CopassRetrievalClient:
     c.search = AsyncMock(  # type: ignore[method-assign]
         return_value={
             "answer": "Auth refresh is driven by a background interceptor.",
-            "preset": "fast",
+            "preset": "copass/1.0",
             "execution_time_ms": 123,
         }
     )
@@ -108,7 +108,7 @@ async def test_discover_forwards_project_and_window() -> None:
 @pytest.mark.asyncio
 async def test_interpret_forwards_items_and_preset() -> None:
     client = _make_client()
-    _, interpret, _ = copass_tools(client=client, sandbox_id="sb1", preset="auto")
+    _, interpret, _ = copass_tools(client=client, sandbox_id="sb1", preset="copass/1.0")
 
     result = await interpret(query="why is checkout flaky?", items=[["c1", "c2"]])
 
@@ -118,25 +118,25 @@ async def test_interpret_forwards_items_and_preset() -> None:
         items=[["c1", "c2"]],
         project_id=None,
         window=None,
-        preset="auto",
+        preset="copass/1.0",
     )
     assert result == {"brief": "Checkout retries on 5xx from Stripe."}
 
 
 @pytest.mark.asyncio
-async def test_interpret_defaults_preset_to_auto() -> None:
+async def test_interpret_defaults_preset_to_copass_1_0() -> None:
     client = _make_client()
     _, interpret, _ = copass_tools(client=client, sandbox_id="sb1")
 
     await interpret(query="q", items=[["c1"]])
 
-    assert client.interpret.await_args.kwargs["preset"] == "auto"  # type: ignore[attr-defined]
+    assert client.interpret.await_args.kwargs["preset"] == "copass/1.0"  # type: ignore[attr-defined]
 
 
 @pytest.mark.asyncio
 async def test_search_returns_only_answer() -> None:
     client = _make_client()
-    _, _, search = copass_tools(client=client, sandbox_id="sb1", preset="auto")
+    _, _, search = copass_tools(client=client, sandbox_id="sb1", preset="copass/1.0")
 
     result = await search(query="how does auth handle refresh?")
 
@@ -145,7 +145,7 @@ async def test_search_returns_only_answer() -> None:
         query="how does auth handle refresh?",
         project_id=None,
         window=None,
-        preset="auto",
+        preset="copass/1.0",
     )
     assert result == {"answer": "Auth refresh is driven by a background interceptor."}
 
@@ -196,15 +196,15 @@ async def test_client_search_forwards_preset_and_project() -> None:
     ).mock(
         return_value=httpx.Response(
             200,
-            json={"answer": "a", "preset": "auto"},
+            json={"answer": "a", "preset": "copass/1.0"},
         )
     )
 
     client = CopassRetrievalClient(api_url="https://api.test", api_key="olk_abc")
-    await client.search("sb1", query="q", project_id="proj", preset="auto")
+    await client.search("sb1", query="q", project_id="proj", preset="copass/1.0")
 
     import json
 
     body = json.loads(route.calls.last.request.content)
-    assert body["preset"] == "auto"
+    assert body["preset"] == "copass/1.0"
     assert body["project_id"] == "proj"

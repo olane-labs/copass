@@ -64,15 +64,10 @@ class WindowLike(Protocol):
 
 
 SearchPreset = Literal[
-    "fast",
-    "auto",
-    "discover",
-    "sql",
-    "max",
-    "fast-decompose",
-    "auto-decompose",
-    "discover-decompose",
-    "sql-decompose",
+    "copass/1.0",
+    "copass/2.0",
+    "copass/1.0:thinking",
+    "copass/2.0:thinking",
 ]
 
 

@@ -83,7 +83,7 @@ function makeConfig(): ServerConfig {
   return {
     api_url: 'http://stub',
     sandbox_id: 'sb_test',
-    preset: 'auto',
+    preset: 'copass/1.0',
   } as ServerConfig;
 }
 

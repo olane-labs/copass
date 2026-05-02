@@ -4,7 +4,12 @@ from __future__ import annotations
 
 from typing import Literal, Protocol, runtime_checkable
 
-SearchPreset = Literal["fast", "auto", "discover", "sql", "max"]
+SearchPreset = Literal[
+    "copass/1.0",
+    "copass/2.0",
+    "copass/1.0:thinking",
+    "copass/2.0:thinking",
+]
 
 
 @runtime_checkable

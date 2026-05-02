@@ -85,7 +85,7 @@ async def test_interpret_forwards_items_and_preset(client: CopassClient) -> None
             },
         )
     )
-    tools = copass_tools(client=client, sandbox_id="sb-1", preset="fast")
+    tools = copass_tools(client=client, sandbox_id="sb-1", preset="copass/1.0")
     result = await tools.interpret.ainvoke(
         {"query": "q", "items": [["a", "b"]]},
     )
@@ -94,7 +94,7 @@ async def test_interpret_forwards_items_and_preset(client: CopassClient) -> None
 
     body = _json.loads(route.calls.last.request.content)
     assert body["items"] == [["a", "b"]]
-    assert body["preset"] == "fast"
+    assert body["preset"] == "copass/1.0"
 
 
 @respx.mock
@@ -104,7 +104,7 @@ async def test_search_wraps_response(client: CopassClient) -> None:
             200,
             json={
                 "answer": "Because the /checkout worker was pinned to 1 replica.",
-                "preset": "auto",
+                "preset": "copass/1.0",
                 "execution_time_ms": 200,
                 "sandbox_id": "sb-1",
                 "query": "checkout flaky",

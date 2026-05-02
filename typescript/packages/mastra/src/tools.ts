@@ -26,10 +26,9 @@ export interface CopassToolsOptions {
   window?: WindowLike;
   /**
    * Preset for `interpret` and `search` (ignored by `discover`).
-   * Defaults to `"auto"` — required for `interpret`, since the server's
-   * interpret-adapter produces `semantic_alignment_scopes` that only the
-   * `auto` preset's providers consume. With `"fast"`, `interpret` would
-   * silently return "No supporting context could be retrieved".
+   * Defaults to `"copass/1.0"`. Append `":thinking"` (e.g.
+   * `"copass/2.0:thinking"`) to enable task decomposition before
+   * retrieval.
    */
   preset?: SearchPreset;
 }
@@ -62,7 +61,7 @@ export interface CopassToolsOptions {
  * ```
  */
 export function copassTools(options: CopassToolsOptions) {
-  const { client, sandbox_id, project_id, window, preset = 'auto' } = options;
+  const { client, sandbox_id, project_id, window, preset = 'copass/1.0' } = options;
 
   const discover = createTool({
     id: 'discover',

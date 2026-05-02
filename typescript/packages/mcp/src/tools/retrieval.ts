@@ -76,7 +76,7 @@ export function registerRetrievalTools(server: McpServer, deps: RetrievalDeps): 
       inputSchema: {
         query: z.string().describe(INTERPRET_QUERY_PARAM),
         items: z.array(z.array(z.string()).min(1)).min(1).describe(INTERPRET_ITEMS_PARAM),
-        preset: z.enum(['fast', 'auto', 'max']).optional().describe(PRESET_PARAM),
+        preset: z.enum(['copass/1.0', 'copass/2.0']).optional().describe(PRESET_PARAM),
         project_id: z.string().optional().describe(PROJECT_ID_PARAM),
       },
     },
@@ -102,20 +102,14 @@ export function registerRetrievalTools(server: McpServer, deps: RetrievalDeps): 
       description: SEARCH_DESCRIPTION,
       inputSchema: {
         query: z.string().describe(SEARCH_QUERY_PARAM),
-        // `max` is omitted — the server returns 403 for public callers,
-        // so exposing it would only yield confusing tool-use errors.
-        // `-decompose` variants split the question into sub-questions and
+        // `:thinking` variants split the question into sub-questions and
         // run the base preset on each before a combined synthesis.
         preset: z
           .enum([
-            'fast',
-            'auto',
-            'discover',
-            'sql',
-            'fast-decompose',
-            'auto-decompose',
-            'discover-decompose',
-            'sql-decompose',
+            'copass/1.0',
+            'copass/2.0',
+            'copass/1.0:thinking',
+            'copass/2.0:thinking',
           ])
           .optional()
           .describe(PRESET_PARAM),
