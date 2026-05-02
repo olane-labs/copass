@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.4.1](https://github.com/olane-labs/copass/compare/@copass/langchain@0.3.8...@copass/langchain@0.4.1) (2026-05-02)
+
+**Note:** Version bump only for package @copass/langchain
+
 ## [0.3.8](https://github.com/olane-labs/copass/compare/@copass/langchain@0.3.7...@copass/langchain@0.3.8) (2026-05-01)
 
 **Note:** Version bump only for package @copass/langchain

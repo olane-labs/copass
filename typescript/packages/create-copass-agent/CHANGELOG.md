@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.4.1](https://github.com/olane-labs/copass/compare/create-copass-agent@0.3.2...create-copass-agent@0.4.1) (2026-05-02)
+
+**Note:** Version bump only for package create-copass-agent
+
 ## [0.3.2](https://github.com/olane-labs/copass/compare/create-copass-agent@0.3.1...create-copass-agent@0.3.2) (2026-05-01)
 
 **Note:** Version bump only for package create-copass-agent
