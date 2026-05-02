@@ -1,7 +1,7 @@
 {
   "name": "@copass/datasource-olane",
-  "version": "0.3.8",
-  "description": "Olane OS data source driver for Copass — start/stop/status of local Olane OS instances, address book, worlds, and identity management",
+  "version": "0.4.0",
+  "description": "Olane OS data source driver for Copass \u2014 start/stop/status of local Olane OS instances, address book, worlds, and identity management",
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"
@@ -63,10 +63,10 @@
     "portfinder": "^1.0.38"
   },
   "peerDependencies": {
-    "@copass/core": "^0.3.0"
+    "@copass/core": "^0.4.0"
   },
   "devDependencies": {
-    "@copass/core": "^0.3.9",
+    "@copass/core": "^0.4.0",
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^25.0.0",
     "tsup": "^8.5.0",

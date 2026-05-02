@@ -1,6 +1,6 @@
 {
   "name": "@copass/config",
-  "version": "0.3.2",
+  "version": "0.4.0",
   "description": "Canonical tool descriptions, parameter descriptions, and system prompts shared across every @copass/* adapter. Single source of truth for LLM-facing copy.",
   "publishConfig": {
     "access": "public",
