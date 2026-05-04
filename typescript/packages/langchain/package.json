@@ -1,7 +1,7 @@
 {
   "name": "@copass/langchain",
   "version": "0.5.0",
-  "description": "LangChain tool adapters for Copass — drop-in discover/interpret/search tools for LangChain agents",
+  "description": "LangChain tool adapters for Copass \u2014 drop-in discover/interpret/search tools for LangChain agents",
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"
@@ -55,10 +55,10 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "@copass/config": "^0.4.2"
+    "@copass/config": "^0.5.0"
   },
   "peerDependencies": {
-    "@copass/core": "^0.4.0",
+    "@copass/core": "^0.5.0",
     "@langchain/core": ">=1.0.0",
     "@langchain/langgraph": ">=1.0.0",
     "zod": ">=3.23.0"
