@@ -1,7 +1,7 @@
 {
   "name": "@copass/agent-router",
-  "version": "0.4.2",
-  "description": "High-level Copass agent SDK — hosted agent-runtime routing + integrations + one-liner OAuth flow",
+  "version": "0.5.0",
+  "description": "High-level Copass agent SDK \u2014 hosted agent-runtime routing + integrations + one-liner OAuth flow",
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"
@@ -54,7 +54,7 @@
     "node": ">=18.0.0"
   },
   "peerDependencies": {
-    "@copass/core": "^0.4.0"
+    "@copass/core": "^0.5.0"
   },
   "devDependencies": {
     "@copass/core": "^0.5.0",
