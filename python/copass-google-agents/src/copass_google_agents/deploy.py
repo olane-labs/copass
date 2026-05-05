@@ -12,11 +12,16 @@ ship an ADK agent with:
   wants a specific MCP server reachable natively from the deployed
   agent, in addition to server-side resolver routing).
 
-The proxy tool reads its configuration from three environment
-variables baked into the deployed engine: ``COPASS_API_URL``,
-``COPASS_API_KEY``, and optionally ``COPASS_DISPATCH_PATH``. Closures
-over deploy-time variables do not round-trip cleanly into Agent
-Engine's remote runtime, so env vars are the safe channel.
+Identity / auth model — **no API key is baked into the engine**. The
+proxy tool reads ``COPASS_API_URL`` (and optional
+``COPASS_DISPATCH_PATH``) from environment variables stamped at deploy
+time — those describe the *target* and are not user-secret. The
+per-call ``copass_api_key`` flows through the ADK session: the calling
+Copass server populates it via
+``async_create_session(state={"copass_api_key": ...})`` and the proxy
+tool reads it from ``tool_context.state`` on every invocation. This
+keeps deployed engines reusable across users and avoids embedding a
+long-lived credential in the reasoning-engine resource.
 
 Example::
 
@@ -29,7 +34,6 @@ Example::
         system_prompt="You are a support agent. Call copass_dispatch "
                       "to invoke any tool available to the current user.",
         copass_api_url="https://api.copass.id",
-        copass_api_key="olk_...",
     )
     print(engine.api_resource.name)
     # projects/.../reasoningEngines/... — feed into
@@ -60,8 +64,8 @@ logger = logging.getLogger(__name__)
 
 
 DEFAULT_REQUIREMENTS = [
-    "google-cloud-aiplatform[agent_engines,adk]==1.148.1",
-    "google-adk==1.31.1",
+    "google-cloud-aiplatform[agent_engines,adk]==1.149.0",
+    "google-adk==1.32.0",
     "cloudpickle>=3.1.2",
     "pydantic>=2.0.0",
     "httpx>=0.27",
@@ -77,7 +81,6 @@ def deploy_adk_agent(
     project: str,
     system_prompt: str,
     copass_api_url: str,
-    copass_api_key: str,
     location: str = DEFAULT_LOCATION,
     model: str = "gemini-3.1-pro-preview",
     staging_bucket: Optional[str] = None,
@@ -88,6 +91,11 @@ def deploy_adk_agent(
     vertex_client: Any = None,
 ) -> Any:
     """Deploy an ADK agent to Vertex AI Agent Engine.
+
+    No API key is baked in. The deployed engine reads the per-call
+    ``copass_api_key`` from ``tool_context.state`` at invocation time;
+    the calling Copass server populates it on the ADK session via
+    ``async_create_session(state={"copass_api_key": ...})``.
 
     Args:
         display_name: Human-readable name shown in the GCP console.
@@ -100,9 +108,6 @@ def deploy_adk_agent(
             ``copass_dispatch`` proxy calls back into
             (e.g. ``https://api.copass.id``). Baked in as the
             ``COPASS_API_URL`` env var on the deployed engine.
-        copass_api_key: API key the proxy includes on each call-back.
-            Baked in as ``COPASS_API_KEY``. **Treat as a secret** —
-            the key is embedded in the reasoning engine's environment.
         location: GCP region. Defaults to :data:`DEFAULT_LOCATION`.
         model: Gemini model id. Defaults to
             ``gemini-3.1-pro-preview`` — the current latest 3.1 Pro
@@ -144,8 +149,6 @@ def deploy_adk_agent(
         raise ValueError("deploy_adk_agent: `system_prompt` is required")
     if not copass_api_url:
         raise ValueError("deploy_adk_agent: `copass_api_url` is required")
-    if not copass_api_key:
-        raise ValueError("deploy_adk_agent: `copass_api_key` is required")
     if not staging_bucket or not staging_bucket.startswith("gs://"):
         raise ValueError(
             "deploy_adk_agent: `staging_bucket` is required and must "
@@ -196,7 +199,6 @@ def deploy_adk_agent(
 
     env_vars: dict = {
         "COPASS_API_URL": copass_api_url,
-        "COPASS_API_KEY": copass_api_key,
     }
     if dispatch_path:
         env_vars["COPASS_DISPATCH_PATH"] = dispatch_path
@@ -222,8 +224,8 @@ def deploy_adk_agent(
 
 
 DEFAULT_MCP_PROXY_REQUIREMENTS = [
-    "google-cloud-aiplatform[agent_engines,adk]==1.148.1",
-    "google-adk==1.31.1",
+    "google-cloud-aiplatform[agent_engines,adk]==1.149.0",
+    "google-adk==1.32.0",
     "cloudpickle>=3.1.2",
     "pydantic>=2.0.0",
     "httpx>=0.27",
@@ -241,7 +243,6 @@ def deploy_adk_agent_with_mcp_proxy(
     project: str,
     system_prompt: str,
     copass_mcp_url: str,
-    copass_api_key: str,
     location: str = DEFAULT_LOCATION,
     model: str = "gemini-3.1-pro-preview",
     staging_bucket: Optional[str] = None,
@@ -273,6 +274,17 @@ def deploy_adk_agent_with_mcp_proxy(
     prompt-injection risk that a static-header + tool-argument layout
     would have exposed.
 
+    Identity / auth model — **no API key is baked into the engine**.
+    The bearer token is read at runtime from
+    ``readonly_context.state['copass_api_key']`` by the
+    ``header_provider`` callable on every tool invocation. The calling
+    Copass server populates that key when it creates the ADK session
+    (``async_create_session(state={"copass_api_key": ...})``). When the
+    state is missing the key, the header_provider returns headers
+    WITHOUT an Authorization header — the MCP server will then reject
+    with a 401, surfacing a clear authentication error rather than
+    silently using a stale, baked-in credential.
+
     Args:
         display_name: Human-readable name.
         project: GCP project id.
@@ -285,11 +297,6 @@ def deploy_adk_agent_with_mcp_proxy(
         copass_mcp_url: Full URL of the Copass MCP streamable-http
             endpoint (e.g. ``https://mcp.copass.com/mcp``). Pass the
             exact ``/mcp`` suffix — ADK doesn't append it.
-        copass_api_key: Service ``olk_{env}_{user_hex}_{random}`` key
-            the deployed agent uses to authenticate against the MCP
-            server. The MCP server's
-            :class:`CopassApiKeyVerifier` accepts these; the backend
-            dispatch endpoint re-validates on every downstream call.
         location: GCP region.
         model: Gemini model id.
         staging_bucket: GCS bucket for ADK artifacts (``gs://...``).
@@ -313,8 +320,6 @@ def deploy_adk_agent_with_mcp_proxy(
         raise ValueError("deploy_adk_agent_with_mcp_proxy: `system_prompt` is required")
     if not copass_mcp_url:
         raise ValueError("deploy_adk_agent_with_mcp_proxy: `copass_mcp_url` is required")
-    if not copass_api_key:
-        raise ValueError("deploy_adk_agent_with_mcp_proxy: `copass_api_key` is required")
     if not staging_bucket or not staging_bucket.startswith("gs://"):
         raise ValueError(
             "deploy_adk_agent_with_mcp_proxy: `staging_bucket` is required and must "
@@ -345,39 +350,55 @@ def deploy_adk_agent_with_mcp_proxy(
     # :class:`ReadonlyContext`. We return:
     #
     #     {
-    #       "Authorization": f"Bearer {service_olk_key}",
+    #       "Authorization": f"Bearer {state['copass_api_key']}",
     #       "x-copass-user-scope": ctx.user_id,   # set by async_create_session
     #     }
     #
-    # The service API key authenticates the ENGINE to the MCP server;
-    # ``x-copass-user-scope`` carries the per-session identity the
-    # Copass backend minted at ``/agents/run`` time. Because ADK
-    # populates the header from ``ReadonlyContext.user_id`` (not from
-    # model output), the model cannot forge a different scope via
-    # prompt injection or a confused tool-call — the value is outside
-    # the LLM's control surface entirely.
+    # The API key authenticates the CALLER to the MCP server; it is
+    # read from per-session state populated by the calling Copass
+    # server at ``async_create_session(state={"copass_api_key": ...})``
+    # time — NEVER baked into the deployed engine. ``x-copass-user-
+    # scope`` carries the per-session identity the Copass backend
+    # minted at ``/agents/run`` time. Because ADK populates the header
+    # from ``ReadonlyContext.user_id`` (not from model output), the
+    # model cannot forge a different scope via prompt injection or a
+    # confused tool-call — the value is outside the LLM's control
+    # surface entirely.
+    #
+    # If session state is missing ``copass_api_key`` (misconfigured
+    # caller), the header_provider returns headers WITHOUT an
+    # ``Authorization`` entry. The MCP server will reject the request
+    # and surface a clear 401, instead of falling back on a stale
+    # baked-in credential.
     #
     # See https://github.com/google/adk-python/discussions/2482 for the
     # canonical "per-user tokens to MCP" pattern this follows.
-    _service_key = copass_api_key
 
     def _header_provider(readonly_context: Any) -> dict:
-        # Closure over `_service_key` captures the olk_ at deploy time;
-        # ``ctx.user_id`` is read per invocation from the ADK session.
-        headers = {"Authorization": f"Bearer {_service_key}"}
+        # Auth, scope, and any extra headers all flow from the per-
+        # session ``readonly_context.state`` populated by the calling
+        # Copass server at ``async_create_session`` time. No closure
+        # over deploy-time secrets.
+        headers: dict = {}
+        state = getattr(readonly_context, "state", None)
+        api_key: Optional[str] = None
+        sig: Optional[str] = None
+        if state is not None and hasattr(state, "get"):
+            value = state.get("copass_api_key")
+            if value:
+                api_key = str(value)
+            sig_value = state.get("scope_sig")
+            if sig_value:
+                sig = str(sig_value)
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
         user_id = getattr(readonly_context, "user_id", None)
         if user_id:
             headers["x-copass-user-scope"] = str(user_id)
-        # Optional: pass a backend-minted signature alongside for
-        # HMAC-based defense-in-depth once the backend stashes it in
-        # session state at ``async_create_session`` time.
-        try:
-            state = readonly_context.state  # MappingProxyType → supports .get
-            sig = state.get("scope_sig") if hasattr(state, "get") else None
-            if sig:
-                headers["x-copass-scope-sig"] = str(sig)
-        except Exception:
-            pass
+        if sig:
+            # Optional HMAC-based defense-in-depth signature from the
+            # backend's ``async_create_session`` state.
+            headers["x-copass-scope-sig"] = sig
         return headers
 
     mcp_toolset = McpToolset(
@@ -412,9 +433,10 @@ def deploy_adk_agent_with_mcp_proxy(
         client = vertexai.Client(**client_kwargs)
 
     # No env_vars needed — this variant has no `_proxy_tool` looking
-    # up COPASS_API_URL / COPASS_API_KEY. The MCP toolset already
-    # carries its URL + bearer baked into the toolset object's
-    # connection_params, which cloudpickles into the deployed engine.
+    # up COPASS_API_URL. The MCP toolset already carries its URL baked
+    # into the toolset object's connection_params, which cloudpickles
+    # into the deployed engine. The bearer token is sourced per-call
+    # from session state (see ``_header_provider`` above), not env vars.
     config: dict = {
         "display_name": display_name,
         "staging_bucket": staging_bucket,

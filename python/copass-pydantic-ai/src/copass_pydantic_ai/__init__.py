@@ -10,5 +10,3 @@ __all__ = [
     "SearchPreset",
     "WindowLike",
 ]
-
-__version__ = "0.2.0"

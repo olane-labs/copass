@@ -23,9 +23,6 @@ from copass_langchain.callback import CopassWindowCallback
 from copass_langchain.tools import CopassTools, copass_tools
 from copass_langchain.types import ContextWindowLike
 
-__version__ = "0.1.0"
-
-
 def __getattr__(name: str) -> object:
     """Lazy-import :func:`create_copass_agent` so importing the
     package does not pull ``langgraph`` unless the caller actually
@@ -38,7 +35,6 @@ def __getattr__(name: str) -> object:
 
 
 __all__ = [
-    "__version__",
     "copass_tools",
     "CopassTools",
     "CopassWindowCallback",

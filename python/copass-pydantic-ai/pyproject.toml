@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "copass-pydantic-ai"
-version = "0.2.0"
+dynamic = ["version"]
 description = "Pydantic AI tool adapters for Copass — drop-in discover/interpret/search tools for Pydantic AI agents"
 readme = "README.md"
 license = { text = "MIT" }
@@ -43,6 +43,11 @@ dev = [
 [project.urls]
 Homepage = "https://github.com/olane-labs/copass"
 Repository = "https://github.com/olane-labs/copass.git"
+
+[tool.hatch.version]
+source = "regex"
+path = "../VERSION"
+pattern = "^(?P<version>.+)$"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/copass_pydantic_ai"]

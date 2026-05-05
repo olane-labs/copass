@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "copass-management"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Spec-driven management tool registrar for Copass agents (read-only, Phase 1)."
 readme = "README.md"
 license = { text = "MIT" }
@@ -40,6 +40,11 @@ Repository = "https://github.com/olane-labs/copass.git"
 [tool.copass]
 min_spec_version = "v1"
 max_spec_version = "v1"
+
+[tool.hatch.version]
+source = "regex"
+path = "../VERSION"
+pattern = "^(?P<version>.+)$"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/copass_management"]

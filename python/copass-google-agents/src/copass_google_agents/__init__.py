@@ -70,10 +70,7 @@ from copass_context_agents import (
 )
 from copass_google_agents.google_agent import DEFAULT_MODEL, CopassGoogleAgent
 
-__version__ = "0.1.0"
-
 __all__ = [
-    "__version__",
     # Google-specific
     "CopassGoogleAgent",
     "DEFAULT_MODEL",

@@ -9,12 +9,14 @@ name: release-python
 #     The downstream ``release-*`` jobs handle this path.
 #
 #  2. Lockstep release on push to ``production``. Single source of
-#     truth is ``python/VERSION``. The ``release-production`` matrix
-#     job stamps that version into all 5 ``pyproject.toml`` files (and
-#     ``__version__`` constants) at build time, then publishes every
-#     package at the same version in parallel. Skipped silently when
-#     ``python/VERSION`` did not change in the pushed commit — pushing
-#     a typo fix to ``production`` does not republish anything.
+#     truth is ``python/VERSION``. Each package's ``pyproject.toml``
+#     reads ``python/VERSION`` directly via
+#     ``[tool.hatch.version] source = regex``, so the workflow only
+#     needs to call ``python -m build`` per package — no version
+#     stamping step. The ``release-production`` matrix publishes
+#     every package at the same version in parallel. Skipped silently
+#     when ``python/VERSION`` did not change in the pushed commit —
+#     pushing a typo fix to ``production`` does not republish anything.
 #
 # Both paths use PyPI Trusted Publishing (OIDC — no long-lived tokens).
 #
@@ -157,49 +159,10 @@ jobs:
         if: matrix.package == 'copass-management'
         run: python3 python/copass-management/scripts/sync_spec.py
 
-      - name: Stamp version into pyproject.toml + __version__
-        env:
-          NEW_VERSION: ${{ needs.check-lockstep-version.outputs.version }}
-          PKG: ${{ matrix.package }}
-        run: |
-          python3 <<'PY'
-          import os, re, pathlib
-          v = os.environ["NEW_VERSION"]
-          pkg_dir = pathlib.Path("python") / os.environ["PKG"]
-
-          # 1. pyproject.toml — stamp the FIRST top-level ``version = "..."``
-          #    line under [project]. We don't fully parse TOML here on
-          #    purpose: the regex is constrained enough to be safe and
-          #    avoids a runtime dep on tomli-w.
-          pp = pkg_dir / "pyproject.toml"
-          text = pp.read_text()
-          new = re.sub(
-              r'^version\s*=\s*"[^"]*"',
-              f'version = "{v}"',
-              text,
-              count=1,
-              flags=re.M,
-          )
-          if new == text:
-              raise SystemExit(f"::error::no version line found in {pp}")
-          pp.write_text(new)
-          print(f"Stamped {pp} -> {v}")
-
-          # 2. ``__version__`` constant in any src/**/__init__.py.
-          for init in pkg_dir.glob("src/**/__init__.py"):
-              t = init.read_text()
-              if "__version__" not in t:
-                  continue
-              t2 = re.sub(
-                  r'__version__\s*=\s*"[^"]*"',
-                  f'__version__ = "{v}"',
-                  t,
-                  count=1,
-              )
-              if t2 != t:
-                  init.write_text(t2)
-                  print(f"Stamped {init} -> {v}")
-          PY
+      # NB: no version-stamping step — each package's ``pyproject.toml``
+      # reads ``python/VERSION`` directly via
+      # ``[tool.hatch.version] source = regex``. ``python -m build``
+      # picks up the canonical version at build time.
 
       - name: Install local sibling packages (so tests resolve from checkout)
         run: |

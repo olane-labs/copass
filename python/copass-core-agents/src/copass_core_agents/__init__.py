@@ -64,10 +64,7 @@ from copass_core_agents.tool_resolver import (
     ToolConflictPolicy,
 )
 
-__version__ = "0.1.0"
-
 __all__ = [
-    "__version__",
     # Core
     "BaseAgent",
     "AgentScope",

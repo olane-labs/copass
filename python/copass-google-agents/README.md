@@ -104,10 +104,15 @@ engine = deploy_adk_agent(
     project="my-gcp-project",
     system_prompt="You are a support agent...",
     copass_api_url="https://api.copass.id",
-    copass_api_key=os.environ["COPASS_API_KEY"],
 )
 print(engine.resource_name)  # feed into CopassGoogleAgent(reasoning_engine_id=...)
 ```
+
+The deployed engine no longer bakes a fixed API key. Per-call
+authentication flows through the ADK session: the calling Copass
+server populates `state["copass_api_key"]` on each session via
+`async_create_session(state={...})`; the proxy tool reads it from
+`tool_context.state` on every invocation.
 
 ## License
 

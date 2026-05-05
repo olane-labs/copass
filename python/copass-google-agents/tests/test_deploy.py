@@ -9,15 +9,23 @@ before the network call.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from types import MappingProxyType
 from typing import Any, List
 
+import httpx
 import pytest
+import respx
 
 from copass_google_agents._proxy_tool import (
     DEFAULT_DISPATCH_PATH,
     copass_dispatch,
 )
-from copass_google_agents.deploy import DEFAULT_REQUIREMENTS, deploy_adk_agent
+from copass_google_agents.deploy import (
+    DEFAULT_MCP_PROXY_REQUIREMENTS,
+    DEFAULT_REQUIREMENTS,
+    deploy_adk_agent,
+    deploy_adk_agent_with_mcp_proxy,
+)
 
 
 @dataclass
@@ -45,7 +53,6 @@ def _base_kwargs(**overrides: Any) -> dict:
         "project": "my-proj",
         "system_prompt": "You are helpful.",
         "copass_api_url": "https://api.copass.id",
-        "copass_api_key": "olk_test",
         "staging_bucket": "gs://my-bucket",
         "vertex_client": _FakeVertexClient(),
     }
@@ -60,7 +67,6 @@ def _base_kwargs(**overrides: Any) -> dict:
         "project",
         "system_prompt",
         "copass_api_url",
-        "copass_api_key",
     ],
 )
 def test_rejects_missing_required_arg(missing: str) -> None:
@@ -81,6 +87,34 @@ def test_rejects_missing_staging_bucket() -> None:
         deploy_adk_agent(**kwargs)
 
 
+def test_deploy_adk_agent_no_longer_accepts_copass_api_key() -> None:
+    """The 1.0 breaking change: passing the deprecated kwarg raises.
+
+    Python's strict-kwargs check on ``def f(*, ...)`` rejects unknown
+    keyword arguments with ``TypeError``. This test pins the breaking
+    change so callers get a clear migration signal at import time
+    rather than a silent no-op.
+    """
+    with pytest.raises(TypeError):
+        deploy_adk_agent(  # type: ignore[call-arg]
+            **_base_kwargs(copass_api_key="olk_test")
+        )
+
+
+def test_deploy_adk_agent_with_mcp_proxy_no_longer_accepts_copass_api_key() -> None:
+    """The 1.0 breaking change for the MCP-proxy variant."""
+    with pytest.raises(TypeError):
+        deploy_adk_agent_with_mcp_proxy(  # type: ignore[call-arg]
+            display_name="support-agent",
+            project="my-proj",
+            system_prompt="You are helpful.",
+            copass_mcp_url="https://mcp.copass.com/mcp",
+            copass_api_key="olk_test",  # type: ignore[arg-type]
+            staging_bucket="gs://my-bucket",
+            vertex_client=_FakeVertexClient(),
+        )
+
+
 # ──────────────────────────────────────────────────────────────────────
 # create() payload shape
 # ──────────────────────────────────────────────────────────────────────
@@ -97,9 +131,9 @@ def test_create_payload_bakes_env_vars_and_requirements() -> None:
     assert config["staging_bucket"] == "gs://my-bucket"
     assert config["requirements"] == DEFAULT_REQUIREMENTS
     assert config["agent_framework"] == "google-adk"
+    # COPASS_API_KEY is no longer baked in — only COPASS_API_URL.
     assert config["env_vars"] == {
         "COPASS_API_URL": "https://api.copass.id",
-        "COPASS_API_KEY": "olk_test",
     }
 
 
@@ -189,3 +223,89 @@ def test_extra_tools_appended_after_dispatch_proxy() -> None:
 
 def test_default_dispatch_path() -> None:
     assert DEFAULT_DISPATCH_PATH == "/api/v1/agents/dispatch"
+
+
+def test_default_mcp_proxy_requirements_pin_versions() -> None:
+    """Pin the upgraded floor versions so an accidental downgrade fails CI."""
+    assert "google-cloud-aiplatform[agent_engines,adk]==1.149.0" in DEFAULT_MCP_PROXY_REQUIREMENTS
+    assert "google-adk==1.32.0" in DEFAULT_MCP_PROXY_REQUIREMENTS
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Proxy-tool — API key flows from session state, not env vars
+# ──────────────────────────────────────────────────────────────────────
+
+
+@dataclass
+class _FakeToolContext:
+    """Minimal stand-in for ADK's ``ToolContext``.
+
+    ADK exposes ``state`` as a ``MappingProxyType`` view — match that
+    so the tool's ``hasattr(state, 'get')`` probe behaves the same as
+    in production.
+    """
+    state: Any
+    user_id: str = "user-abc"
+    session_id: str = "session-xyz"
+
+
+@respx.mock
+async def test_proxy_tool_reads_api_key_from_tool_context_state(monkeypatch) -> None:
+    """The 1.0 contract: copass_dispatch reads the API key from
+    ``tool_context.state['copass_api_key']`` and includes it as a
+    Bearer header on the outgoing POST."""
+    monkeypatch.setenv("COPASS_API_URL", "https://api.copass.id")
+    monkeypatch.delenv("COPASS_API_KEY", raising=False)
+
+    route = respx.post(
+        "https://api.copass.id/api/v1/agents/dispatch"
+    ).mock(return_value=httpx.Response(200, json={"ok": True}))
+
+    ctx = _FakeToolContext(
+        state=MappingProxyType({"copass_api_key": "olk_test"}),
+    )
+    result = await copass_dispatch(
+        tool_name="any.tool",
+        arguments={"foo": "bar"},
+        tool_context=ctx,
+    )
+
+    assert result == {"ok": True}
+    assert route.called
+    sent = route.calls.last.request
+    assert sent.headers["authorization"] == "Bearer olk_test"
+    assert sent.headers["content-type"] == "application/json"
+
+
+async def test_proxy_tool_returns_error_when_state_missing_api_key(monkeypatch) -> None:
+    """Without ``copass_api_key`` in session state, the tool must
+    return the documented error dict (NOT raise) — the agent surface
+    treats tool errors as recoverable per the ADK contract."""
+    monkeypatch.setenv("COPASS_API_URL", "https://api.copass.id")
+    monkeypatch.delenv("COPASS_API_KEY", raising=False)
+
+    ctx = _FakeToolContext(state=MappingProxyType({}))
+    result = await copass_dispatch(
+        tool_name="any.tool",
+        arguments={},
+        tool_context=ctx,
+    )
+
+    assert "error" in result
+    assert "copass_api_key" in result["error"]
+
+
+async def test_proxy_tool_returns_error_when_api_url_missing(monkeypatch) -> None:
+    """COPASS_API_URL stays env-var sourced; missing it yields an error."""
+    monkeypatch.delenv("COPASS_API_URL", raising=False)
+
+    ctx = _FakeToolContext(
+        state=MappingProxyType({"copass_api_key": "olk_test"}),
+    )
+    result = await copass_dispatch(
+        tool_name="any.tool",
+        arguments={},
+        tool_context=ctx,
+    )
+    assert "error" in result
+    assert "COPASS_API_URL" in result["error"]
