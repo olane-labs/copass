@@ -1,6 +1,6 @@
 {
   "name": "@copass/management",
-  "version": "0.5.6",
+  "version": "0.5.7",
   "description": "Spec-driven management tool registrar for Copass agents (read-only, Phase 1).",
   "publishConfig": {
     "access": "public",
