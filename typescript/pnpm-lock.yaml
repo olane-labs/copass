@@ -90,7 +90,7 @@ importers:
   packages/agent-router:
     devDependencies:
       '@copass/core':
-        specifier: ^0.5.0
+        specifier: ^0.5.1
         version: link:../core
       '@types/node':
         specifier: ^25.0.0
@@ -109,7 +109,7 @@ importers:
         version: link:../config
     devDependencies:
       '@copass/core':
-        specifier: ^0.5.0
+        specifier: ^0.5.1
         version: link:../core
       '@types/node':
         specifier: ^25.0.0
@@ -177,7 +177,7 @@ importers:
         version: 7.0.5
     devDependencies:
       '@copass/core':
-        specifier: ^0.5.0
+        specifier: ^0.5.1
         version: link:../core
       '@types/node':
         specifier: ^25.0.0
@@ -211,7 +211,7 @@ importers:
         version: 1.0.38
     devDependencies:
       '@copass/core':
-        specifier: ^0.5.0
+        specifier: ^0.5.1
         version: link:../core
       '@types/fs-extra':
         specifier: ^11.0.4
@@ -233,7 +233,7 @@ importers:
         version: link:../config
     devDependencies:
       '@copass/core':
-        specifier: ^0.5.0
+        specifier: ^0.5.1
         version: link:../core
       '@langchain/core':
         specifier: ^1.1.0
@@ -257,7 +257,7 @@ importers:
   packages/management:
     devDependencies:
       '@copass/core':
-        specifier: ^0.5.0
+        specifier: ^0.5.1
         version: link:../core
       '@modelcontextprotocol/sdk':
         specifier: ^1.29.0
@@ -285,7 +285,7 @@ importers:
         version: link:../config
     devDependencies:
       '@copass/core':
-        specifier: ^0.5.0
+        specifier: ^0.5.1
         version: link:../core
       '@mastra/core':
         specifier: ^1.26.0
@@ -309,7 +309,7 @@ importers:
         specifier: ^0.5.1
         version: link:../config
       '@copass/management':
-        specifier: ^0.5.4
+        specifier: ^0.5.5
         version: link:../management
       '@modelcontextprotocol/sdk':
         specifier: ^1.29.0
@@ -319,7 +319,7 @@ importers:
         version: 4.3.6
     devDependencies:
       '@copass/core':
-        specifier: ^0.5.0
+        specifier: ^0.5.1
         version: link:../core
       '@types/node':
         specifier: ^25.0.0
