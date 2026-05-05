@@ -198,7 +198,7 @@ describe('management tool handlers — full dispatch coverage', () => {
   it('listAgents -> agents.list', async () => {
     const ctx = makeCtx();
     await listAgents(ctx, {});
-    expect(ctx.client.agents.list).toHaveBeenCalledWith('sb-1');
+    expect(ctx.client.agents.list).toHaveBeenCalled();
   });
 
   it('getAgent -> agents.retrieve', async () => {

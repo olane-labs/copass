@@ -175,12 +175,24 @@ jobs:
             fi
           done
 
-      - name: Install + test
+      - name: Install package + dev deps
         working-directory: python/${{ matrix.package }}
-        run: |
-          pip install -e ".[dev]"
-          # Tolerate exit 5 (no tests collected) — some packages ship without tests.
-          pytest -q || [ $? -eq 5 ]
+        run: pip install -e ".[dev]"
+
+      # ── SDK CONTRACT GUARD (pre-publish) ───────────────────────────
+      # Runs the full mock-based test suite for this package. This is
+      # the deploy guard the README + integration/README.md reference:
+      # if a refactor breaks any wire-format / response-shape contract,
+      # the matching test in ``tests/test_full/`` (copass-core) or
+      # ``tests/test_*.py`` (other packages) fails here BEFORE the
+      # package is published to PyPI.
+      #
+      # Tolerates exit 5 (no tests collected) — some packages ship
+      # without tests. ANY other non-zero exit halts the matrix run
+      # for this package and skips the publish step.
+      - name: SDK contract guard (mock-based tests)
+        working-directory: python/${{ matrix.package }}
+        run: pytest -q || [ $? -eq 5 ]
 
       - name: Build (sdist + wheel)
         working-directory: python/${{ matrix.package }}

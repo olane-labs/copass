@@ -35,7 +35,8 @@ describe('langchain discover wrapper — copass/2.0 propagation', () => {
     const tools = copassTools({ client, sandbox_id: 'sb-1', preset: 'copass/copass_2.0' });
     await tools.discover.invoke({ query: 'q' });
     expect(client.retrieval.discover).toHaveBeenCalledWith(
-      expect.objectContaining({ sandbox_id: 'sb-1', preset: 'copass/copass_2.0' }),
+      'sb-1',
+      expect.objectContaining({ preset: 'copass/copass_2.0' }),
     );
   });
 
