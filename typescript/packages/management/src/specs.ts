@@ -1,8 +1,32 @@
 import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join, resolve } from 'node:path';
 
-declare const __dirname: string | undefined;
+// `__dirname` is provided by tsup's `shims: true` in both the ESM and
+// CJS bundles (see tsup.config.ts). In CJS it's a Node built-in; in ESM
+// it's emitted by esbuild as `dirname(fileURLToPath(import.meta.url))`.
+// Either way, `__dirname` resolves to the directory of the running
+// bundle file, so we don't need format-conditional logic.
+declare const __dirname: string;
+
+// Walk up from `start` looking for a directory whose `<sub>` subdir
+// exists. Returns the resolved subdir or null. Used to locate either
+// the bundled `dist/specs/v1` (whose anchor varies between the two
+// tsup entry points — `dist/` for `index.{js,cjs}`, `dist/adapters/`
+// for `adapters/mcp.{js,cjs}`) or the dev-mode source-tree
+// `spec/management/v1` from the harness root.
+function findUpwards(start: string, sub: string[], maxDepth = 8): string | null {
+  let here = start;
+  for (let depth = 0; depth < maxDepth; depth++) {
+    const candidate = resolve(here, ...sub);
+    if (existsSync(candidate) && statSync(candidate).isDirectory()) {
+      return candidate;
+    }
+    const parent = resolve(here, '..');
+    if (parent === here) return null;
+    here = parent;
+  }
+  return null;
+}
 
 export const MIN_SPEC_VERSION = 'v1';
 export const MAX_SPEC_VERSION = 'v1';
@@ -32,33 +56,25 @@ export interface LoadOptions {
 
 const ENV_OVERRIDE = 'COPASS_MANAGEMENT_SPEC_DIR';
 
-function resolveModuleDir(): string {
-  // CJS bundles inject `__dirname` directly; prefer it when present so we
-  // don't trip the `import.meta` constraint in `verbatimModuleSyntax`.
-  if (typeof __dirname === 'string') return __dirname;
-  // ESM path: read `import.meta.url` via an indirect lookup so TS doesn't
-  // require `module: esnext` for the file (it's still emitted as ESM).
-  const metaUrl = (Function('return import.meta.url')() as string) ?? '';
-  if (metaUrl) return dirname(fileURLToPath(metaUrl));
-  return process.cwd();
-}
-
 function resolveDefaultSpecDir(): string {
   const envDir = process.env[ENV_OVERRIDE];
   if (envDir && envDir.trim().length > 0) {
     return resolve(envDir);
   }
 
-  const here = resolveModuleDir();
+  // Production: bundled specs at `<package-root>/dist/specs/v1`. Search
+  // upward from `__dirname` since the entry-point bundle file may be at
+  // either `dist/index.{js,cjs}` (one level up) or
+  // `dist/adapters/mcp.{js,cjs}` (two levels up).
+  const bundled = findUpwards(__dirname, ['specs', 'v1']);
+  if (bundled) return bundled;
 
-  const bundled = resolve(here, 'specs', 'v1');
-  if (existsSync(bundled)) return bundled;
-
-  const sourceTree = resolve(here, '..', '..', '..', '..', 'spec', 'management', 'v1');
-  if (existsSync(sourceTree)) return sourceTree;
+  // Dev fallback: source-tree specs at `<harness-root>/spec/management/v1`.
+  const sourceTree = findUpwards(__dirname, ['spec', 'management', 'v1']);
+  if (sourceTree) return sourceTree;
 
   throw new Error(
-    `loadManagementSpecs: could not locate spec directory. Tried bundled ${bundled} and source ${sourceTree}. Set ${ENV_OVERRIDE} to override.`,
+    `loadManagementSpecs: could not locate spec directory. Searched upward from ${__dirname} for both \`specs/v1\` (bundled) and \`spec/management/v1\` (source). Set ${ENV_OVERRIDE} to override.`,
   );
 }
 
