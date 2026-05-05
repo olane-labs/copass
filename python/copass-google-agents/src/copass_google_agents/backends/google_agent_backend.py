@@ -45,7 +45,7 @@ vendor-neutral.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, AsyncIterator, List, Optional, Union
+from typing import TYPE_CHECKING, Any, AsyncIterator, Dict, List, Optional, Union
 
 from copass_core_agents.backends.base_backend import (
     AgentBackend,
@@ -314,7 +314,19 @@ class GoogleAgentBackend(AgentBackend):
         if supplied_session_id:
             session_id = str(supplied_session_id)
         else:
-            session_payload = await adk_app.async_create_session(user_id=user_id)
+            # Per-request ADK session state — flows from the calling Copass server
+            # via context.handles["adk_session_state"]. Populated when the caller
+            # wants to inject runtime config (e.g., copass_api_key for the
+            # embedded _proxy_tool / _header_provider auth — see deploy.py for
+            # the engine-side reads). Empty / missing → no state passed (legacy
+            # engines that bake their own env vars keep working).
+            adk_session_state = (
+                (context.handles or {}).get("adk_session_state") if context else None
+            )
+            create_kwargs: Dict[str, Any] = {"user_id": user_id}
+            if adk_session_state:
+                create_kwargs["state"] = adk_session_state
+            session_payload = await adk_app.async_create_session(**create_kwargs)
             session_id = _extract_session_id(session_payload)
             created_session_id = session_id
             logger.info(

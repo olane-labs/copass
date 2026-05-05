@@ -4,6 +4,11 @@ All Python packages in `python/<pkg>/` ship at a single, lockstep
 version sourced from [`python/VERSION`](./VERSION). Each entry below
 covers changes across **every** package in this repo at that version.
 
+## 1.0.2 — 2026-05-05
+
+### Additive
+- `GoogleAgentBackend.stream()` now forwards `context.handles["adk_session_state"]` to `adk_app.async_create_session(state=...)`. Enables the calling Copass server to inject per-session bearer for the deployed engine's tool callbacks (closes the bake-out loop from 1.0.0). No breaking changes; absent / missing state behaves as before.
+
 ## 1.0.0 — 2026-05-05
 
 ### BREAKING
