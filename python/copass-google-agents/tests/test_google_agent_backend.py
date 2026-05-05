@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Any, AsyncIterator, List, Optional
+from unittest.mock import AsyncMock
 
 import pytest
 
@@ -119,8 +120,18 @@ class FakeAdkApp:
     received: List[dict] = field(default_factory=list)
     next_session_id: str = "session-fresh"
 
-    async def async_create_session(self, *, user_id: str) -> _Session:
+    create_session_calls: List[dict] = field(default_factory=list)
+
+    async def async_create_session(
+        self, *, user_id: str, state: Optional[dict] = None
+    ) -> _Session:
         self.created_sessions.append(user_id)
+        # Record the full kwargs the backend passed so tests can assert
+        # ``state`` is forwarded only when the caller supplied it.
+        call: dict = {"user_id": user_id}
+        if state is not None:
+            call["state"] = state
+        self.create_session_calls.append(call)
         return _Session(id=self.next_session_id)
 
     async def async_stream_query(
@@ -353,6 +364,90 @@ async def test_stream_rejects_empty_messages() -> None:
     ctx = AgentInvocationContext(scope=AgentScope(user_id="u-1"))
     with pytest.raises(ValueError, match="user-role message"):
         _ = [evt async for evt in agent.backend.stream(agent, "", ctx)]
+
+
+async def test_stream_forwards_adk_session_state_when_supplied() -> None:
+    """When the caller stashes ``adk_session_state`` in ``context.handles``,
+    the backend must forward it to ``async_create_session(state=...)`` so the
+    deployed engine's ``_proxy_tool`` / ``_header_provider`` can read
+    ``copass_api_key`` from session state per-request (closes the bake-out
+    loop from copass-google-agents 1.0.0).
+    """
+    fake_app = AsyncMock()
+    fake_app.async_create_session = AsyncMock(return_value=_Session(id="sess-from-mock"))
+
+    async def _empty_stream(**_: Any) -> AsyncIterator[dict]:
+        if False:  # pragma: no cover — generator with no yields
+            yield {}
+
+    fake_app.async_stream_query = _empty_stream
+
+    backend = GoogleAgentBackend(
+        project="p",
+        reasoning_engine_id="r",
+        adk_app=fake_app,
+    )
+    reg = AgentToolRegistry()
+    reg.add(_EchoTool())
+    agent = CopassGoogleAgent(
+        identity="support",
+        system_prompt="prompt",
+        project="p",
+        reasoning_engine_id="r",
+    )
+    agent.backend = backend
+
+    ctx = AgentInvocationContext(
+        scope=AgentScope(user_id="u-1"),
+        handles={"adk_session_state": {"copass_api_key": "olk_test"}},
+    )
+
+    _ = [evt async for evt in backend.stream(agent, "hi", ctx)]
+
+    fake_app.async_create_session.assert_awaited_once_with(
+        user_id="u_u-1",
+        state={"copass_api_key": "olk_test"},
+    )
+
+
+async def test_stream_omits_state_kwarg_when_no_adk_session_state() -> None:
+    """Negative case: when no ``adk_session_state`` is in handles, the
+    backend must NOT pass ``state=`` to ``async_create_session`` — legacy
+    engines that bake their own env vars keep working unchanged.
+    """
+    fake_app = AsyncMock()
+    fake_app.async_create_session = AsyncMock(return_value=_Session(id="sess-from-mock"))
+
+    async def _empty_stream(**_: Any) -> AsyncIterator[dict]:
+        if False:  # pragma: no cover — generator with no yields
+            yield {}
+
+    fake_app.async_stream_query = _empty_stream
+
+    backend = GoogleAgentBackend(
+        project="p",
+        reasoning_engine_id="r",
+        adk_app=fake_app,
+    )
+    reg = AgentToolRegistry()
+    reg.add(_EchoTool())
+    agent = CopassGoogleAgent(
+        identity="support",
+        system_prompt="prompt",
+        project="p",
+        reasoning_engine_id="r",
+    )
+    agent.backend = backend
+
+    ctx = AgentInvocationContext(scope=AgentScope(user_id="u-1"))
+
+    _ = [evt async for evt in backend.stream(agent, "hi", ctx)]
+
+    fake_app.async_create_session.assert_awaited_once_with(user_id="u_u-1")
+    # Verify ``state`` is absent (not just falsy) — distinguishes "didn't
+    # pass it" from "passed it as None/empty dict".
+    _, kwargs = fake_app.async_create_session.call_args
+    assert "state" not in kwargs
 
 
 async def test_stream_joins_multiple_user_messages() -> None:
