@@ -55,7 +55,9 @@ function makeCtx(): ToolContext {
     sandboxes: { list: vi.fn().mockResolvedValue({ sandboxes: [], count: 0 }) },
     sandboxConnections: {
       create: vi.fn().mockResolvedValue({ connection_id: 'conn-1' }),
-      list: vi.fn().mockResolvedValue({ connections: [], count: 0 }),
+      // SDK returns a bare SandboxConnection[]; the handler wraps it
+      // into the {connections, count} envelope MCP requires.
+      list: vi.fn().mockResolvedValue([]),
       revoke: vi.fn().mockResolvedValue({ revoked: true }),
     },
     sources: {
@@ -249,8 +251,48 @@ describe('management tool handlers — full dispatch coverage', () => {
 
   it('listAgentTools -> agents.listTools', async () => {
     const ctx = makeCtx();
-    await listAgentTools(ctx, {});
+    const result = await listAgentTools(ctx, {});
     expect(ctx.client.agents.listTools).toHaveBeenCalledWith('sb-1');
+    expect(result).toEqual({ tools: [], by_app: {}, count: 0 });
+  });
+
+  it('listAgentTools groups tools by app_slug', async () => {
+    const ctx = makeCtx();
+    (ctx.client.agents.listTools as ReturnType<typeof vi.fn>).mockResolvedValue({
+      tools: [
+        { name: 'pd_slack_post', app_slug: 'slack', description: 'Post' },
+        { name: 'pd_slack_react', app_slug: 'slack', description: 'React' },
+        { name: 'pd_gmail_send', app_slug: 'gmail', description: 'Send' },
+      ],
+      count: 3,
+    });
+    const result = (await listAgentTools(ctx, {})) as {
+      tools: unknown[];
+      by_app: Record<string, unknown[]>;
+      count: number;
+    };
+    expect(result.count).toBe(3);
+    expect(Object.keys(result.by_app).sort()).toEqual(['gmail', 'slack']);
+    expect(result.by_app.slack).toHaveLength(2);
+    expect(result.by_app.gmail).toHaveLength(1);
+  });
+
+  it('listAgentTools filters by app_slug input', async () => {
+    const ctx = makeCtx();
+    (ctx.client.agents.listTools as ReturnType<typeof vi.fn>).mockResolvedValue({
+      tools: [
+        { name: 'pd_slack_post', app_slug: 'slack' },
+        { name: 'pd_gmail_send', app_slug: 'gmail' },
+      ],
+      count: 2,
+    });
+    const result = (await listAgentTools(ctx, { app_slug: 'slack' })) as {
+      tools: unknown[];
+      by_app: Record<string, unknown[]>;
+      count: number;
+    };
+    expect(result.count).toBe(1);
+    expect(Object.keys(result.by_app)).toEqual(['slack']);
   });
 
   it('listRuns -> agents.listRuns', async () => {

@@ -203,10 +203,13 @@ async def test_grant_sandbox_connection_dispatches_to_sandbox_connections_create
 
 @pytest.mark.asyncio
 async def test_list_sandbox_connections_dispatches_to_sandbox_connections_list() -> None:
-    listfn = AsyncMock(return_value={"connections": [], "count": 0})
+    # SDK returns a bare list of SandboxConnection rows; the handler
+    # wraps it in the {connections, count} envelope MCP requires.
+    listfn = AsyncMock(return_value=[])
     ctx = _ctx({"sandbox_connections.list": listfn})
-    await list_sandbox_connections(ctx, {})
+    result = await list_sandbox_connections(ctx, {})
     listfn.assert_awaited_once()
+    assert result == {"connections": [], "count": 0}
 
 
 @pytest.mark.asyncio
@@ -316,8 +319,46 @@ async def test_wire_integration_to_agent_dispatches() -> None:
 async def test_list_agent_tools_dispatches() -> None:
     list_tools = AsyncMock(return_value={"tools": []})
     ctx = _ctx({"agents.list_tools": list_tools})
-    await list_agent_tools(ctx, {})
+    result = await list_agent_tools(ctx, {})
     list_tools.assert_awaited_once()
+    assert result == {"tools": [], "by_app": {}, "count": 0}
+
+
+@pytest.mark.asyncio
+async def test_list_agent_tools_groups_by_app_slug() -> None:
+    list_tools = AsyncMock(
+        return_value={
+            "tools": [
+                {"name": "pd_slack_post", "app_slug": "slack", "description": "Post"},
+                {"name": "pd_slack_react", "app_slug": "slack", "description": "React"},
+                {"name": "pd_gmail_send", "app_slug": "gmail", "description": "Send"},
+            ],
+            "count": 3,
+        }
+    )
+    ctx = _ctx({"agents.list_tools": list_tools})
+    result = await list_agent_tools(ctx, {})
+    assert result["count"] == 3
+    assert set(result["by_app"].keys()) == {"slack", "gmail"}
+    assert len(result["by_app"]["slack"]) == 2
+    assert len(result["by_app"]["gmail"]) == 1
+
+
+@pytest.mark.asyncio
+async def test_list_agent_tools_filters_by_app_slug() -> None:
+    list_tools = AsyncMock(
+        return_value={
+            "tools": [
+                {"name": "pd_slack_post", "app_slug": "slack"},
+                {"name": "pd_gmail_send", "app_slug": "gmail"},
+            ],
+            "count": 2,
+        }
+    )
+    ctx = _ctx({"agents.list_tools": list_tools})
+    result = await list_agent_tools(ctx, {"app_slug": "slack"})
+    assert result["count"] == 1
+    assert list(result["by_app"].keys()) == ["slack"]
 
 
 @pytest.mark.asyncio
