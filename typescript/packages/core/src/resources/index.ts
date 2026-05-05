@@ -7,5 +7,4 @@ export { UsageResource } from './usage.js';
 export { SandboxesResource } from './sandboxes.js';
 export { SandboxConnectionsResource } from './sandbox-connections.js';
 export { SourcesResource } from './sources.js';
-export { VaultResource } from './vault.js';
 export { IngestResource } from './ingest.js';

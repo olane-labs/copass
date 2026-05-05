@@ -13,7 +13,6 @@ import { UsageResource } from './resources/usage.js';
 import { SandboxesResource } from './resources/sandboxes.js';
 import { SandboxConnectionsResource } from './resources/sandbox-connections.js';
 import { SourcesResource } from './resources/sources.js';
-import { VaultResource } from './resources/vault.js';
 import { IngestResource } from './resources/ingest.js';
 import { IntegrationsResource } from './resources/integrations.js';
 import { AgentsResource } from './resources/agents.js';
@@ -74,7 +73,6 @@ export class CopassClient {
   readonly sandboxConnections: SandboxConnectionsResource;
   readonly sources: SourcesResource;
   readonly projects: ProjectsResource;
-  readonly vault: VaultResource;
   readonly ingest: IngestResource;
   readonly entities: EntitiesResource;
   readonly retrieval: RetrievalResource;
@@ -106,7 +104,6 @@ export class CopassClient {
     this.sandboxConnections = new SandboxConnectionsResource(http);
     this.sources = new SourcesResource(http);
     this.projects = new ProjectsResource(http);
-    this.vault = new VaultResource(http);
     this.ingest = new IngestResource(http);
     this.entities = new EntitiesResource(http);
     this.retrieval = new RetrievalResource(http);

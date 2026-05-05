@@ -10,7 +10,6 @@ describe('CopassClient', () => {
     expect(client.sandboxes).toBeDefined();
     expect(client.sources).toBeDefined();
     expect(client.projects).toBeDefined();
-    expect(client.vault).toBeDefined();
     expect(client.ingest).toBeDefined();
     expect(client.entities).toBeDefined();
     expect(client.retrieval).toBeDefined();

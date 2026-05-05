@@ -1,28 +1,26 @@
-/** Request to create or promote a user profile. */
+/** Request to create a user profile.
+ *
+ * The platform auto-provisions a primary sandbox and default project on
+ * first profile creation; those identifiers come back on the response
+ * but are not part of the request.
+ */
 export interface CreateProfileRequest {
   /** Display name for a new profile. */
-  display_name?: string;
-  /** Canonical ID to promote an existing entity. */
-  canonical_id?: string;
-  /** Additional semantic tags (``"person"`` is auto-added). */
-  semantic_tags?: string[];
-  /** Arbitrary metadata to persist on the canonical. */
-  metadata?: Record<string, unknown>;
+  display_name: string;
 }
 
-/** User profile response — mirrors backend ``UserProfileResponse``. */
+/** Public user profile shape.
+ *
+ * Internal ontology fields (``canonical_id``, ``is_user_root``,
+ * ``was_created``, ``semantic_tags``, ``metadata``) are intentionally
+ * not exposed. Consumers that need their auto-provisioned primary
+ * sandbox / project read them off this response once at setup time.
+ */
 export interface UserProfile {
   user_id: string;
-  canonical_id: string;
   display_name: string;
-  is_user_root: boolean;
-  semantic_tags?: string[];
-  /** ``true`` for a fresh creation, ``false`` for promote / fetch. */
-  was_created?: boolean;
-  created_at?: string;
-  metadata?: Record<string, unknown>;
-  /** Auto-provisioned primary sandbox. */
+  /** Auto-provisioned primary sandbox id, surfaced for first-run setup. */
   sandbox_id?: string;
-  /** Auto-provisioned default project inside ``sandbox_id``. */
+  /** Auto-provisioned default project id inside ``sandbox_id``. */
   project_id?: string;
 }

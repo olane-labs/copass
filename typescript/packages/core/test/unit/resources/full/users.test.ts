@@ -1,7 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { jsonResponse, lastFetchCall, makeClient, mockFetch } from './_helpers.js';
 
-const FULL_PROFILE = {
+// The backend returns more than the SDK exposes (canonical_id, is_user_root,
+// was_created, semantic_tags, metadata). The mock mirrors the wire shape;
+// the SDK's UserProfile type intentionally narrows what consumers see.
+const BACKEND_PROFILE = {
   user_id: 'u-1',
   canonical_id: 'c-root',
   display_name: 'Alice',
@@ -18,25 +21,23 @@ describe('users', () => {
   beforeEach(() => mockFetch.mockReset());
 
   it('createProfile POSTs to /users/me/profile', async () => {
-    mockFetch.mockResolvedValue(jsonResponse(FULL_PROFILE));
+    mockFetch.mockResolvedValue(jsonResponse(BACKEND_PROFILE));
     const client = makeClient();
     const resp = await client.users.createProfile({ display_name: 'Alice' });
     const call = lastFetchCall();
     expect(call.url).toContain('/api/v1/users/me/profile');
     expect((call.body as { display_name: string }).display_name).toBe('Alice');
     expect(resp.user_id).toBe('u-1');
-    expect(resp.canonical_id).toBe('c-root');
+    expect(resp.display_name).toBe('Alice');
     expect(resp.sandbox_id).toBe('sb-primary');
-    expect(resp.was_created).toBe(true);
   });
 
   it('getProfile GETs /users/me/profile', async () => {
-    mockFetch.mockResolvedValue(jsonResponse({ ...FULL_PROFILE, was_created: false }));
+    mockFetch.mockResolvedValue(jsonResponse({ ...BACKEND_PROFILE, was_created: false }));
     const client = makeClient();
     const resp = await client.users.getProfile();
     expect(lastFetchCall().url).toContain('/api/v1/users/me/profile');
     expect(resp.display_name).toBe('Alice');
-    expect(resp.is_user_root).toBe(true);
-    expect(resp.was_created).toBe(false);
+    expect(resp.user_id).toBe('u-1');
   });
 });

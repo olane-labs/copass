@@ -7,5 +7,4 @@ export type * from './sandboxes.js';
 export type * from './sandbox-connections.js';
 export type * from './sources.js';
 export type * from './storage-projects.js';
-export type * from './vault.js';
 export type * from './ingest.js';

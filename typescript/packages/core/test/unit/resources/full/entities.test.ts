@@ -4,33 +4,27 @@ import { jsonResponse, lastFetchCall, makeClient, mockFetch } from './_helpers.j
 describe('entities', () => {
   beforeEach(() => mockFetch.mockReset());
 
-  it('list unwraps {canonical_entities: [...]} envelope', async () => {
+  it('search passes q + limit and unwraps the results envelope', async () => {
     mockFetch.mockResolvedValue(
       jsonResponse({
-        canonical_entities: [{ canonical_id: 'c-1' }, { canonical_id: 'c-2' }],
+        results: [
+          { canonical_id: 'c-1', name: 'Stripe', similarity: 0.91 },
+          { canonical_id: 'c-2', name: 'Stripe Webhook', similarity: 0.88 },
+        ],
+        count: 2,
+        query: 'stripe',
+        record_type: 'entity',
+        sandbox_id: 'sb-1',
       }),
     );
     const client = makeClient();
-    const resp = await client.entities.list();
-    expect(resp).toHaveLength(2);
-    expect(lastFetchCall().url).toContain('/api/v1/users/me/canonical-entities');
-  });
-
-  it('getPerspective hits the perspective subpath', async () => {
-    mockFetch.mockResolvedValue(jsonResponse({ canonical_id: 'cid', tree: { nodes: [] } }));
-    const client = makeClient();
-    const resp = await client.entities.getPerspective('cid');
-    expect(lastFetchCall().url).toContain('/canonical-entities/cid/perspective');
-    expect(resp.canonical_id).toBe('cid');
-  });
-
-  it('search passes q as positional and limit as option', async () => {
-    mockFetch.mockResolvedValue(jsonResponse({ results: [] }));
-    const client = makeClient();
-    await client.entities.search('sb-1', 'stripe', { limit: 5 });
+    const resp = await client.entities.search('sb-1', 'stripe', { limit: 5 });
     const call = lastFetchCall();
     expect(call.url).toContain('/sandboxes/sb-1/entities/search');
     expect(call.url).toContain('q=stripe');
     expect(call.url).toContain('limit=5');
+    expect(resp).toHaveLength(2);
+    expect(resp[0].canonical_id).toBe('c-1');
+    expect(resp[0].similarity).toBe(0.91);
   });
 });

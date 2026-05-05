@@ -4,8 +4,8 @@ Hand-ported from ``typescript/packages/core/src/client.ts``. v0.2
 ships the full resource surface (matching the TS package):
 
 - ``sandboxes`` / ``sources`` / ``ingest`` / ``projects`` / ``entities``
-- ``retrieval`` / ``context``
-- ``vault`` / ``users`` / ``api_keys`` / ``usage``
+- ``retrieval``
+- ``users`` / ``api_keys`` / ``usage``
 - ``context_window`` (builds on ``sources`` + ``ingest``)
 
 Only the Supabase auth provider + crypto module remain deferred to a
@@ -39,7 +39,6 @@ from copass_core.resources.sandboxes import SandboxesResource
 from copass_core.resources.sources import SourcesResource
 from copass_core.resources.usage import UsageResource
 from copass_core.resources.users import UsersResource
-from copass_core.resources.vault import VaultResource
 from copass_core.types import RetryConfig
 
 
@@ -105,7 +104,6 @@ class CopassClient:
     sources: SourcesResource
     ingest: IngestResource
     projects: ProjectsResource
-    vault: VaultResource
 
     # Knowledge graph
     entities: EntitiesResource
@@ -154,7 +152,6 @@ class CopassClient:
         self.sources = SourcesResource(http)
         self.ingest = IngestResource(http)
         self.projects = ProjectsResource(http)
-        self.vault = VaultResource(http)
 
         # Knowledge graph
         self.entities = EntitiesResource(http)

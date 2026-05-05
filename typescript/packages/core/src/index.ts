@@ -48,7 +48,6 @@ export { SandboxesResource } from './resources/sandboxes.js';
 export { SandboxConnectionsResource } from './resources/sandbox-connections.js';
 export { SourcesResource } from './resources/sources.js';
 export { ProjectsResource } from './resources/projects.js';
-export { VaultResource } from './resources/vault.js';
 export { IngestResource } from './resources/ingest.js';
 export { EntitiesResource } from './resources/entities.js';
 export { RetrievalResource } from './resources/retrieval.js';

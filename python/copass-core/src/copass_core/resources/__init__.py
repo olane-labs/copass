@@ -9,10 +9,8 @@ from copass_core.resources.agents import (
 from copass_core.resources.api_keys import ApiKeysResource
 from copass_core.resources.base import BaseResource
 from copass_core.resources.entities import (
-    Behavior,
     CanonicalEntity,
     EntitiesResource,
-    ProvenanceMetadata,
 )
 from copass_core.resources.ingest import IngestResource
 from copass_core.resources.integrations import IntegrationsResource
@@ -43,7 +41,6 @@ from copass_core.resources.sources import (
 )
 from copass_core.resources.usage import UsageResource
 from copass_core.resources.users import UsersResource
-from copass_core.resources.vault import VaultResource
 
 __all__ = [
     "BaseResource",
@@ -73,10 +70,6 @@ __all__ = [
     # Entities
     "EntitiesResource",
     "CanonicalEntity",
-    "Behavior",
-    "ProvenanceMetadata",
-    # Vault
-    "VaultResource",
     # Users
     "UsersResource",
     # API keys

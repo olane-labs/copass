@@ -1,5 +1,5 @@
 import { BaseResource } from './base.js';
-import type { CanonicalEntity, EntityPerspective } from '../types/entities.js';
+import type { CanonicalEntity } from '../types/entities.js';
 
 export interface EntitySearchOptions {
   limit?: number;
@@ -10,35 +10,20 @@ export interface EntitySearchOptions {
 }
 
 /**
- * Entities resource — query canonical entities in the knowledge graph.
+ * Entities resource — sandbox-scoped entity name search.
  *
- * Search is **sandbox-scoped**: every call to {@link search} is constrained to
- * the supplied `sandboxId`, and may optionally be further narrowed by
- * `projectId`. The legacy `/api/v1/users/me/entities/search` endpoint is not
- * used by this SDK.
+ * Used to resolve a free-text entity name (e.g. "Stripe") to a canonical
+ * id before passing it into a retrieval call. The full ontology surface
+ * (per-canonical perspective trees, behavior listings, raw containment)
+ * is intentionally not exposed through the public SDK.
  */
 export class EntitiesResource extends BaseResource {
-  async list(): Promise<CanonicalEntity[]> {
-    const response = await this.get<{ canonical_entities: CanonicalEntity[] }>(
-      '/api/v1/users/me/canonical-entities',
-    );
-    return response.canonical_entities;
-  }
-
-  async getPerspective(canonicalId: string): Promise<EntityPerspective> {
-    return this.get<EntityPerspective>(
-      `/api/v1/users/me/canonical-entities/${canonicalId}/perspective`,
-    );
-  }
-
   /**
    * Sandbox-scoped entity search.
    *
    * Hits `GET /api/v1/storage/sandboxes/{sandboxId}/entities/search`, which
    * filters vector results to canonical **entities** (record_type `entity`)
-   * ingested under that sandbox — internal record types like `node_path`,
-   * `extraction_chunk`, and `behavior` are not returned. Pass `projectId` to
-   * narrow further.
+   * ingested under that sandbox. Pass `projectId` to narrow further.
    */
   async search(
     sandboxId: string,
