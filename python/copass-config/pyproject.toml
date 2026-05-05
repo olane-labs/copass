@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "copass-config"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Canonical tool descriptions, parameter descriptions, and system prompts shared across every Copass Python adapter"
 readme = "README.md"
 license = { text = "MIT" }
@@ -30,6 +30,11 @@ dev = [
 [project.urls]
 Homepage = "https://github.com/olane-labs/copass"
 Repository = "https://github.com/olane-labs/copass.git"
+
+[tool.hatch.version]
+source = "regex"
+path = "../VERSION"
+pattern = "^(?P<version>.+)$"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/copass_config"]

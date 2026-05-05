@@ -2,10 +2,12 @@
 #
 # Bump the lockstep release version for every Python package.
 #
-# Single source of truth is ``python/VERSION``. This script writes the
-# new version there; the ``release-python.yml`` workflow stamps it
-# into every package's ``pyproject.toml`` + ``__version__`` at build
-# time on push to ``production``.
+# Single source of truth is ``python/VERSION``. Each package's
+# ``pyproject.toml`` reads ``python/VERSION`` directly via
+# ``[tool.hatch.version] source = regex`` — no stamping needed.
+# The ``release-python.yml`` workflow simply runs ``python -m build``
+# from each package directory; hatchling resolves the version at
+# build time.
 #
 # Usage:
 #   python/scripts/bump-lockstep-version.sh patch     # 0.4.0 -> 0.4.1

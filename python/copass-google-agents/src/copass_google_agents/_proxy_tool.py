@@ -3,8 +3,16 @@
 ADK serializes function tools by reference; closures over deploy-time
 variables do not round-trip into Agent Engine's remote runtime.
 This module defines the tool at module scope and reads its
-configuration from environment variables baked into the deployed
-engine (``COPASS_API_URL``, ``COPASS_API_KEY``, ``COPASS_DISPATCH_PATH``).
+configuration from a mix of:
+
+- Environment variables baked into the deployed engine
+  (``COPASS_API_URL``, optional ``COPASS_DISPATCH_PATH``) — these are
+  deployment-target config (the *where*), not user-secret material.
+- The per-session ADK ``tool_context.state`` (``copass_api_key``) —
+  authenticates the *who* on every invocation. The calling Copass
+  server populates the key on the ADK session via
+  ``async_create_session(state={"copass_api_key": ...})`` so the
+  deployed engine never bakes a fixed credential.
 
 The function's signature and docstring are what ADK exposes to the
 model as the tool schema — keep both pedagogical.
@@ -39,9 +47,12 @@ async def copass_dispatch(
         tool_name: The logical name of the tool to invoke (as
             advertised in the agent's system prompt).
         arguments: JSON-serializable arguments for the tool.
-        tool_context: ADK-injected context providing ``user_id`` and
-            ``session_id`` when available. ADK populates this
-            automatically at invocation time.
+        tool_context: ADK-injected context providing ``user_id``,
+            ``session_id``, and ``state`` (a mapping populated by the
+            calling server at ``async_create_session`` time). The
+            ``copass_api_key`` for backend authentication is read from
+            ``tool_context.state``. ADK populates this automatically
+            at invocation time.
 
     Returns:
         The tool result dict, passed straight from the Copass
@@ -50,14 +61,31 @@ async def copass_dispatch(
     import httpx  # deferred import — keeps cold-start lean
 
     api_url = os.environ.get("COPASS_API_URL")
-    api_key = os.environ.get("COPASS_API_KEY")
-    if not api_url or not api_key:
+    if not api_url:
         return {
             "error": (
-                "copass_dispatch misconfigured: COPASS_API_URL / "
-                "COPASS_API_KEY env vars not set on the deployed agent."
+                "copass_dispatch misconfigured: COPASS_API_URL env var "
+                "not set on the deployed agent."
             )
         }
+
+    api_key: Optional[str] = None
+    if tool_context is not None:
+        state = getattr(tool_context, "state", None)
+        if state is not None and hasattr(state, "get"):
+            value = state.get("copass_api_key")
+            if value:
+                api_key = str(value)
+    if not api_key:
+        return {
+            "error": (
+                "copass_dispatch misconfigured: tool_context.state is "
+                "missing 'copass_api_key'. The calling Copass server "
+                "must populate it on the ADK session via "
+                "async_create_session(state={'copass_api_key': ...})."
+            )
+        }
+
     path = os.environ.get("COPASS_DISPATCH_PATH", DEFAULT_DISPATCH_PATH)
 
     user_id = None

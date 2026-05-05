@@ -58,10 +58,7 @@ from copass_context_agents import (
     copass_retrieval_tools,
 )
 
-__version__ = "0.1.0"
-
 __all__ = [
-    "__version__",
     # Hermes-specific
     "CopassHermesAgent",
     "DEFAULT_MODEL",

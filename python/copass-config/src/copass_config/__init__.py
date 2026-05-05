@@ -30,7 +30,13 @@ from copass_config.tool_descriptions import (
     SEARCH_DESCRIPTION,
 )
 
-__version__ = "0.1.0"
+from importlib.metadata import PackageNotFoundError, version as _v
+
+try:
+    __version__ = _v("copass-config")
+except PackageNotFoundError:  # pragma: no cover — running from source tree
+    __version__ = "0.0.0+dev"
+del _v, PackageNotFoundError
 
 __all__ = [
     "__version__",

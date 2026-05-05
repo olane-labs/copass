@@ -18,10 +18,7 @@ from copass_context_agents.ingest_tool import copass_ingest_tool
 from copass_context_agents.retrieval_tools import copass_retrieval_tools
 from copass_context_agents.turn_recorder import CopassTurnRecorder
 
-__version__ = "0.1.0"
-
 __all__ = [
-    "__version__",
     "copass_retrieval_tools",
     "copass_ingest_tool",
     "CopassTurnRecorder",
