@@ -1,7 +1,7 @@
 {
   "name": "@copass/datasource-fs",
-  "version": "0.5.0",
-  "description": "Filesystem data source driver for Copass \u2014 scans, watches, and pushes file events through the copass-id storage layer",
+  "version": "0.5.1",
+  "description": "Filesystem data source driver for Copass — scans, watches, and pushes file events through the copass-id storage layer",
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"

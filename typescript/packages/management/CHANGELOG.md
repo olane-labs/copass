@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.5.2](https://github.com/olane-labs/copass/compare/@copass/management@0.4.2...@copass/management@0.5.2) (2026-05-05)
+
+### Bug Fixes
+
+- **management:** replace Function('return import.meta.url')() shim that broke ESM consumers ([b488efc](https://github.com/olane-labs/copass/commit/b488efcd1b7b42e1167a2383c2fb7207317ab152))
+
 ## [0.4.2](https://github.com/olane-labs/copass/compare/@copass/management@0.4.1...@copass/management@0.4.2) (2026-05-04)
 
 **Note:** Version bump only for package @copass/management
