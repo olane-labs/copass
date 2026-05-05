@@ -60,7 +60,8 @@
     "@olane/o-node": "^0.8.18",
     "@olane/os": "^0.8.18",
     "fs-extra": "^11.3.4",
-    "portfinder": "^1.0.38"
+    "portfinder": "^1.0.38",
+    "uuid": "^11.0.0"
   },
   "peerDependencies": {
     "@copass/core": "^0.5.0"
