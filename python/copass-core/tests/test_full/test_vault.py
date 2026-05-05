@@ -1,8 +1,13 @@
-"""Wire-level mock tests for ``CopassClient.vault``."""
+"""Wire-level mock tests for ``CopassClient.vault``.
+
+Mocks mirror the real backend (``frame_graph/copass_id/api/vault.py``):
+- ``store`` returns ``VaultStoreResponse {key, full_key, size_bytes, encrypted, ...}``
+- ``delete`` returns ``StatusResponse {success, message}``
+- The SDK preserves literal ``/`` in keys (segment-encoded), so the
+  request URL keeps slashes literal — the mock asserts on that path.
+"""
 
 from __future__ import annotations
-
-import urllib.parse
 
 import httpx
 import respx
@@ -14,12 +19,19 @@ _BASE = "http://test/api/v1/storage/sandboxes/sb-1/vault"
 
 @respx.mock
 async def test_store_puts_raw_bytes(client: CopassClient) -> None:
-    """Vault.store sends raw bytes (not JSON) via PUT to the encoded key."""
-    encoded = urllib.parse.quote("copass/agent/fixture", safe="")
-    route = respx.put(f"{_BASE}/{encoded}").mock(
-        return_value=httpx.Response(200, json={"key": "copass/agent/fixture", "stored": True})
+    """Vault.store sends raw bytes (not JSON) via PUT to the literal key path."""
+    route = respx.put(f"{_BASE}/copass/agent/fixture").mock(
+        return_value=httpx.Response(
+            201,
+            json={
+                "key": "copass/agent/fixture",
+                "full_key": "sandboxes/sb-1/vault/copass/agent/fixture",
+                "size_bytes": 17,
+                "encrypted": False,
+            },
+        )
     )
-    await client.vault.store(
+    resp = await client.vault.store(
         sandbox_id="sb-1",
         key="copass/agent/fixture",
         data=b"raw-bytes-payload",
@@ -28,12 +40,13 @@ async def test_store_puts_raw_bytes(client: CopassClient) -> None:
     # Verify Content-Type header was set (defaults to application/octet-stream)
     headers = route.calls.last.request.headers
     assert "octet-stream" in headers["content-type"]
+    assert resp["key"] == "copass/agent/fixture"
+    assert resp["size_bytes"] == 17
 
 
 @respx.mock
 async def test_retrieve_returns_raw_bytes(client: CopassClient) -> None:
-    encoded = urllib.parse.quote("k1", safe="")
-    respx.get(f"{_BASE}/{encoded}").mock(
+    respx.get(f"{_BASE}/k1").mock(
         return_value=httpx.Response(200, content=b"binary-content")
     )
     resp = await client.vault.retrieve(sandbox_id="sb-1", key="k1")
@@ -42,12 +55,12 @@ async def test_retrieve_returns_raw_bytes(client: CopassClient) -> None:
 
 @respx.mock
 async def test_delete(client: CopassClient) -> None:
-    encoded = urllib.parse.quote("k1", safe="")
-    route = respx.delete(f"{_BASE}/{encoded}").mock(
-        return_value=httpx.Response(200, json={"deleted": True})
+    route = respx.delete(f"{_BASE}/k1").mock(
+        return_value=httpx.Response(200, json={"success": True, "message": "deleted"})
     )
-    await client.vault.delete(sandbox_id="sb-1", key="k1")
+    resp = await client.vault.delete(sandbox_id="sb-1", key="k1")
     assert route.called
+    assert resp["success"] is True
 
 
 @respx.mock

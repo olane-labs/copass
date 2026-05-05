@@ -4,7 +4,7 @@ Hand-ported from ``typescript/packages/core/src/client.ts``. v0.2
 ships the full resource surface (matching the TS package):
 
 - ``sandboxes`` / ``sources`` / ``ingest`` / ``projects`` / ``entities``
-- ``matrix`` / ``retrieval`` / ``context``
+- ``retrieval`` / ``context``
 - ``vault`` / ``users`` / ``api_keys`` / ``usage``
 - ``context_window`` (builds on ``sources`` + ``ingest``)
 
@@ -29,11 +29,9 @@ from copass_core.http.http_client import (
 )
 from copass_core.resources.agents import AgentsResource
 from copass_core.resources.api_keys import ApiKeysResource
-from copass_core.resources.context import ContextResource
 from copass_core.resources.entities import EntitiesResource
 from copass_core.resources.ingest import IngestResource
 from copass_core.resources.integrations import IntegrationsResource
-from copass_core.resources.matrix import MatrixResource
 from copass_core.resources.projects import ProjectsResource
 from copass_core.resources.retrieval import RetrievalResource
 from copass_core.resources.sandbox_connections import SandboxConnectionsResource
@@ -101,7 +99,6 @@ class CopassClient:
 
     # Narrow retrieval
     retrieval: RetrievalResource
-    context: ContextResource
 
     # Storage layer
     sandboxes: SandboxesResource
@@ -112,7 +109,6 @@ class CopassClient:
 
     # Knowledge graph
     entities: EntitiesResource
-    matrix: MatrixResource
 
     # Account
     users: UsersResource
@@ -152,7 +148,6 @@ class CopassClient:
 
         # Narrow
         self.retrieval = RetrievalResource(http)
-        self.context = ContextResource(http)
 
         # Storage
         self.sandboxes = SandboxesResource(http)
@@ -163,7 +158,6 @@ class CopassClient:
 
         # Knowledge graph
         self.entities = EntitiesResource(http)
-        self.matrix = MatrixResource(http)
 
         # Account
         self.users = UsersResource(http)

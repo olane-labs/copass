@@ -79,20 +79,6 @@ async def test_retrieval_interpret_passes_items_and_preset(client: CopassClient)
 
 
 @respx.mock
-async def test_context_for_agent_posts_to_tier_path(client: CopassClient) -> None:
-    route = respx.post("http://test/api/v1/context/for-agent/minimal").mock(
-        return_value=httpx.Response(200, json={"context": "..."})
-    )
-    result = await client.context.for_agent(sandbox_id="sb-1", tier="minimal", query="q")
-    assert route.called
-    assert result == {"context": "..."}
-    import json as _json
-
-    body = _json.loads(route.calls.last.request.content)
-    assert body == {"sandbox_id": "sb-1", "query": "q"}
-
-
-@respx.mock
 async def test_api_error_surfaces_status_and_body(client: CopassClient) -> None:
     respx.post("http://test/api/v1/query/sandboxes/sb-1/discover").mock(
         return_value=httpx.Response(400, json={"detail": "bad query"})

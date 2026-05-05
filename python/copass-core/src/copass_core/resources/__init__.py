@@ -8,7 +8,6 @@ from copass_core.resources.agents import (
 )
 from copass_core.resources.api_keys import ApiKeysResource
 from copass_core.resources.base import BaseResource
-from copass_core.resources.context import ContextResource, ContextTier
 from copass_core.resources.entities import (
     Behavior,
     CanonicalEntity,
@@ -17,7 +16,6 @@ from copass_core.resources.entities import (
 )
 from copass_core.resources.ingest import IngestResource
 from copass_core.resources.integrations import IntegrationsResource
-from copass_core.resources.matrix import MatrixDetailLevel, MatrixPreset, MatrixResource
 from copass_core.resources.projects import (
     ProjectsResource,
     StorageProject,
@@ -50,8 +48,6 @@ from copass_core.resources.vault import VaultResource
 __all__ = [
     "BaseResource",
     "RetrievalResource",
-    "ContextResource",
-    "ContextTier",
     # Sandboxes
     "SandboxesResource",
     "Sandbox",
@@ -79,10 +75,6 @@ __all__ = [
     "CanonicalEntity",
     "Behavior",
     "ProvenanceMetadata",
-    # Matrix
-    "MatrixResource",
-    "MatrixDetailLevel",
-    "MatrixPreset",
     # Vault
     "VaultResource",
     # Users

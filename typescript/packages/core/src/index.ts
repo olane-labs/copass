@@ -51,7 +51,6 @@ export { ProjectsResource } from './resources/projects.js';
 export { VaultResource } from './resources/vault.js';
 export { IngestResource } from './resources/ingest.js';
 export { EntitiesResource } from './resources/entities.js';
-export { MatrixResource } from './resources/matrix.js';
 export { RetrievalResource } from './resources/retrieval.js';
 export type {
   ChatRole,

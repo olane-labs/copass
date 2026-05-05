@@ -101,13 +101,17 @@ describe('management tool handlers — full dispatch coverage', () => {
 
   it('listConnectedAccounts -> integrations.listAccounts', async () => {
     const ctx = makeCtx();
-    await listConnectedAccounts(ctx, { app: 'slack' });
+    await listConnectedAccounts(ctx, { app_slug: 'slack' });
     expect(ctx.client.integrations.listAccounts).toHaveBeenCalled();
   });
 
   it('startIntegrationConnect -> integrations.connect', async () => {
     const ctx = makeCtx();
-    await startIntegrationConnect(ctx, { app: 'slack', external_account_id: 'acct-1' });
+    await startIntegrationConnect(ctx, {
+      app_slug: 'slack',
+      success_redirect_uri: 'https://app.example/ok',
+      error_redirect_uri: 'https://app.example/err',
+    });
     expect(ctx.client.integrations.connect).toHaveBeenCalled();
   });
 
@@ -119,7 +123,7 @@ describe('management tool handlers — full dispatch coverage', () => {
 
   it('grantSandboxConnection -> sandboxConnections.create', async () => {
     const ctx = makeCtx();
-    await grantSandboxConnection(ctx, { target_user_id: 'u-2', scope: 'read' });
+    await grantSandboxConnection(ctx, { user_id: 'u-2', role: 'viewer' });
     expect(ctx.client.sandboxConnections.create).toHaveBeenCalled();
   });
 
@@ -143,7 +147,7 @@ describe('management tool handlers — full dispatch coverage', () => {
 
   it('provisionSource -> sources.register', async () => {
     const ctx = makeCtx();
-    await provisionSource(ctx, { name: 'demo', kind: 'manual' });
+    await provisionSource(ctx, { provider: 'manual', name: 'demo' });
     expect(ctx.client.sources.register).toHaveBeenCalled();
   });
 
@@ -155,13 +159,13 @@ describe('management tool handlers — full dispatch coverage', () => {
 
   it('getSource -> sources.retrieve', async () => {
     const ctx = makeCtx();
-    await getSource(ctx, { source_id: 'ds-1' });
+    await getSource(ctx, { data_source_id: 'ds-1' });
     expect(ctx.client.sources.retrieve).toHaveBeenCalled();
   });
 
   it('updateSource -> sources.update', async () => {
     const ctx = makeCtx();
-    await updateSource(ctx, { source_id: 'ds-1', name: 'renamed' });
+    await updateSource(ctx, { data_source_id: 'ds-1', name: 'renamed' });
     expect(ctx.client.sources.update).toHaveBeenCalled();
   });
 
@@ -173,19 +177,23 @@ describe('management tool handlers — full dispatch coverage', () => {
 
   it('addUserMcpSource -> sources.registerUserMcp', async () => {
     const ctx = makeCtx();
-    await addUserMcpSource(ctx, { url: 'https://mcp.example', name: 'my-mcp' });
+    await addUserMcpSource(ctx, {
+      name: 'my-mcp',
+      base_url: 'https://mcp.example',
+      auth_kind: 'none',
+    });
     expect(ctx.client.sources.registerUserMcp).toHaveBeenCalled();
   });
 
   it('testUserMcpSource -> sources.testUserMcp', async () => {
     const ctx = makeCtx();
-    await testUserMcpSource(ctx, { source_id: 'ds-mcp-1' });
+    await testUserMcpSource(ctx, { data_source_id: 'ds-mcp-1' });
     expect(ctx.client.sources.testUserMcp).toHaveBeenCalled();
   });
 
   it('revokeUserMcpSource -> sources.revokeUserMcp', async () => {
     const ctx = makeCtx();
-    await revokeUserMcpSource(ctx, { source_id: 'ds-mcp-1' });
+    await revokeUserMcpSource(ctx, { data_source_id: 'ds-mcp-1' });
     expect(ctx.client.sources.revokeUserMcp).toHaveBeenCalled();
   });
 
@@ -209,33 +217,33 @@ describe('management tool handlers — full dispatch coverage', () => {
 
   it('updateAgentPrompt -> agents.update', async () => {
     const ctx = makeCtx();
-    await updateAgentPrompt(ctx, { slug: 'bot', system_prompt: 'new' });
+    await updateAgentPrompt(ctx, { agent_slug: 'bot', system_prompt: 'new' });
     expect(ctx.client.agents.update).toHaveBeenCalled();
   });
 
   it('updateAgentTools -> agents.update', async () => {
     const ctx = makeCtx();
-    await updateAgentTools(ctx, { slug: 'bot', tool_allowlist: ['discover'] });
+    await updateAgentTools(ctx, { agent_slug: 'bot', tool_allowlist: ['discover'] });
     expect(ctx.client.agents.update).toHaveBeenCalled();
   });
 
   it('updateAgentToolSources -> agents.updateToolSources', async () => {
     const ctx = makeCtx();
-    await updateAgentToolSources(ctx, { slug: 'bot', tool_sources: ['slack'] });
+    await updateAgentToolSources(ctx, { agent_slug: 'bot', tool_sources: ['slack'] });
     expect(ctx.client.agents.updateToolSources).toHaveBeenCalled();
   });
 
   it('updateAgentModelSettings -> agents.updateModelSettings', async () => {
     const ctx = makeCtx();
     await updateAgentModelSettings(ctx, {
-      slug: 'bot', backend: 'anthropic', model: 'claude-opus-4-7',
+      agent_slug: 'bot', backend: 'anthropic', model: 'claude-opus-4-7',
     });
     expect(ctx.client.agents.updateModelSettings).toHaveBeenCalled();
   });
 
   it('wireIntegrationToAgent -> agents.wireIntegration', async () => {
     const ctx = makeCtx();
-    await wireIntegrationToAgent(ctx, { slug: 'bot', app_slug: 'slack' });
+    await wireIntegrationToAgent(ctx, { agent_slug: 'bot', app_slug: 'slack' });
     expect(ctx.client.agents.wireIntegration).toHaveBeenCalled();
   });
 
@@ -247,7 +255,7 @@ describe('management tool handlers — full dispatch coverage', () => {
 
   it('listRuns -> agents.listRuns', async () => {
     const ctx = makeCtx();
-    await listRuns(ctx, { slug: 'bot', limit: 5 });
+    await listRuns(ctx, { agent_slug: 'bot', limit: 5 });
     expect(ctx.client.agents.listRuns).toHaveBeenCalled();
   });
 
@@ -265,13 +273,17 @@ describe('management tool handlers — full dispatch coverage', () => {
 
   it('createTrigger -> agents.triggers.create', async () => {
     const ctx = makeCtx();
-    await createTrigger(ctx, { slug: 'bot', source_id: 'src-1', kind: 'webhook' });
+    await createTrigger(ctx, {
+      agent_slug: 'bot',
+      data_source_id: 'ds-1',
+      event_type_filter: '*',
+    });
     expect(ctx.client.agents.triggers.create).toHaveBeenCalled();
   });
 
   it('listTriggers -> agents.triggers.list', async () => {
     const ctx = makeCtx();
-    await listTriggers(ctx, { slug: 'bot' });
+    await listTriggers(ctx, { agent_slug: 'bot' });
     expect(ctx.client.agents.triggers.list).toHaveBeenCalled();
   });
 

@@ -6,18 +6,33 @@ export interface CreateApiKeyRequest {
 
 /** Response from creating an API key (raw key shown only once). */
 export interface CreateApiKeyResponse {
-  key_id: string;
+  id: string;
+  name: string;
   key: string;
-  name: string;
-  created_at: string;
-}
-
-/** API key info (masked). */
-export interface ApiKeyInfo {
-  key_id: string;
-  name: string;
-  prefix: string;
+  key_prefix: string;
   created_at: string;
   expires_at?: string;
+  jwt_expires_at?: string;
+  warning?: string;
+}
+
+/** API key info (masked). One row of the list response. */
+export interface ApiKeyInfo {
+  id: string;
+  name: string;
+  key_prefix: string;
+  expires_at?: string;
+  jwt_expires_at?: string;
   last_used_at?: string;
+  use_count?: number;
+  created_at: string;
+  is_expired?: boolean;
+  jwt_needs_refresh?: boolean;
+}
+
+/** Response from revoking an API key. */
+export interface RevokeApiKeyResponse {
+  revoked: boolean;
+  id: string;
+  name: string;
 }

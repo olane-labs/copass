@@ -56,9 +56,10 @@ async def test_connect_returns_oauth_url(client: CopassClient) -> None:
 
 @respx.mock
 async def test_list_active_connections(client: CopassClient) -> None:
-    """``list`` returns DataSource rows, hits ``/connections`` subpath."""
+    """``list`` returns ``ConnectionsListResponse {items: [...]}`` from
+    the ``/connections`` subpath."""
     route = respx.get(f"{_BASE}/connections").mock(
-        return_value=httpx.Response(200, json={"connections": [], "count": 0})
+        return_value=httpx.Response(200, json={"items": []})
     )
     await client.integrations.list(sandbox_id="sb-1", app="slack")
     params = route.calls.last.request.url.params
@@ -67,8 +68,9 @@ async def test_list_active_connections(client: CopassClient) -> None:
 
 @respx.mock
 async def test_disconnect(client: CopassClient) -> None:
+    """Backend returns 204 No Content; assert the SDK accepts it."""
     route = respx.delete(f"{_BASE}/connections/src-1").mock(
-        return_value=httpx.Response(200, json={"deleted": True})
+        return_value=httpx.Response(204)
     )
     await client.integrations.disconnect(sandbox_id="sb-1", source_id="src-1")
     assert route.called

@@ -6,18 +6,19 @@ const BASE = '/api/v1/storage/sandboxes/sb-1/connections';
 describe('sandboxConnections', () => {
   beforeEach(() => mockFetch.mockReset());
 
-  it('create POSTs body', async () => {
+  it('create POSTs body with user_id + role', async () => {
     mockFetch.mockResolvedValue(
-      jsonResponse({ connection_id: 'conn-1', scope: 'read' }),
+      jsonResponse({ connection_id: 'conn-1', role: 'viewer' }),
     );
     const client = makeClient();
     const resp = await client.sandboxConnections.create('sb-1', {
-      target_user_id: 'u-2',
-      scope: 'read',
+      user_id: 'u-2',
+      role: 'viewer',
     });
     const call = lastFetchCall();
     expect(call.url).toContain(BASE);
-    expect((call.body as { target_user_id: string }).target_user_id).toBe('u-2');
+    expect((call.body as { user_id: string }).user_id).toBe('u-2');
+    expect((call.body as { role: string }).role).toBe('viewer');
     expect(resp.connection_id).toBe('conn-1');
   });
 
@@ -37,13 +38,18 @@ describe('sandboxConnections', () => {
     expect(call.url).toContain(`${BASE}/conn-1`);
   });
 
-  it('spawnApiKey POSTs to /api-key', async () => {
+  it('spawnApiKey POSTs to /api-keys (plural)', async () => {
     mockFetch.mockResolvedValue(
-      jsonResponse({ key_id: 'k-1', key: 'olk_conn_abc' }),
+      jsonResponse({
+        api_key_id: 'k-1',
+        plaintext_key: 'olk_conn_abc',
+        key_prefix: 'olk_conn_abc',
+      }),
     );
     const client = makeClient();
     const resp = await client.sandboxConnections.spawnApiKey('sb-1', 'conn-1');
-    expect(lastFetchCall().url).toContain(`${BASE}/conn-1/api-key`);
-    expect(resp.key).toBe('olk_conn_abc');
+    expect(lastFetchCall().url).toContain(`${BASE}/conn-1/api-keys`);
+    expect(resp.plaintext_key).toBe('olk_conn_abc');
+    expect(resp.api_key_id).toBe('k-1');
   });
 });

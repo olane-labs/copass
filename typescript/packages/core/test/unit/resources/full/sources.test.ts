@@ -8,13 +8,14 @@ describe('sources', () => {
 
   it('register POSTs body', async () => {
     mockFetch.mockResolvedValue(
-      jsonResponse({ data_source_id: 'ds-1', name: 'demo', kind: 'manual' }),
+      jsonResponse({ data_source_id: 'ds-1', name: 'demo', provider: 'manual', kind: 'durable' }),
     );
     const client = makeClient();
-    const resp = await client.sources.register('sb-1', { name: 'demo', kind: 'manual' });
+    const resp = await client.sources.register('sb-1', { provider: 'manual', name: 'demo' });
     const call = lastFetchCall();
     expect(call.url).toContain(BASE);
     expect(call.method).toBe('POST');
+    expect((call.body as { provider: string }).provider).toBe('manual');
     expect(resp.data_source_id).toBe('ds-1');
   });
 
@@ -80,28 +81,29 @@ describe('sources', () => {
     mockFetch.mockResolvedValue(
       jsonResponse({
         data_source_id: 'ds-mcp-1',
-        kind: 'user_mcp',
-        url: 'https://mcp.example',
+        status: 'active',
+        name: 'my-mcp',
       }),
     );
     const client = makeClient();
     const resp = await client.sources.registerUserMcp('sb-1', {
-      url: 'https://mcp.example',
       name: 'my-mcp',
+      base_url: 'https://mcp.example',
+      auth_kind: 'none',
     });
     expect(lastFetchCall().url).toContain(`${BASE}/user-mcp`);
     expect(resp.data_source_id).toBe('ds-mcp-1');
   });
 
   it('testUserMcp POSTs to /sources/{id}/user-mcp/test', async () => {
-    mockFetch.mockResolvedValue(jsonResponse({ reachable: true, tools: [] }));
+    mockFetch.mockResolvedValue(jsonResponse({ data_source_id: 'ds-mcp-1', status: 'active' }));
     const client = makeClient();
     await client.sources.testUserMcp('sb-1', 'ds-mcp-1');
     expect(lastFetchCall().url).toContain(`${BASE}/ds-mcp-1/user-mcp/test`);
   });
 
   it('revokeUserMcp POSTs to /sources/{id}/user-mcp/revoke', async () => {
-    mockFetch.mockResolvedValue(jsonResponse({ revoked: true }));
+    mockFetch.mockResolvedValue(jsonResponse({ data_source_id: 'ds-mcp-1', status: 'revoked' }));
     const client = makeClient();
     await client.sources.revokeUserMcp('sb-1', 'ds-mcp-1');
     expect(lastFetchCall().url).toContain(`${BASE}/ds-mcp-1/user-mcp/revoke`);

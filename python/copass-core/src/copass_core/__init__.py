@@ -7,8 +7,8 @@ surface matching the TS package, plus the ``ContextWindow`` /
 - ``CopassClient`` top-level entry point
 - Auth: ``ApiKeyAuthProvider``, ``BearerAuthProvider``
 - ``HttpClient`` with retry + middleware + raw body / raw response
-- Resources: ``retrieval``, ``context``, ``sandboxes``, ``sources``,
-  ``ingest``, ``projects``, ``entities``, ``matrix``, ``vault``,
+- Resources: ``retrieval``, ``sandboxes``, ``sources``,
+  ``ingest``, ``projects``, ``entities``, ``vault``,
   ``users``, ``api_keys``, ``usage``
 - Higher-order: ``context_window`` (ephemeral data source wrapping
   agent conversations), ``BaseDataSource`` + ``ensure_data_source``
@@ -59,8 +59,6 @@ from copass_core.resources import (
     BaseResource,
     Behavior,
     CanonicalEntity,
-    ContextResource,
-    ContextTier,
     DataSource,
     DataSourceIngestionMode,
     DataSourceKind,
@@ -69,9 +67,6 @@ from copass_core.resources import (
     EntitiesResource,
     IngestResource,
     IntegrationsResource,
-    MatrixDetailLevel,
-    MatrixPreset,
-    MatrixResource,
     ProjectsResource,
     ProvenanceMetadata,
     RetrievalResource,
@@ -129,8 +124,6 @@ __all__ = [
     # Resources — narrow
     "BaseResource",
     "RetrievalResource",
-    "ContextResource",
-    "ContextTier",
     # Resources — storage
     "SandboxesResource",
     "Sandbox",
@@ -156,9 +149,6 @@ __all__ = [
     "CanonicalEntity",
     "Behavior",
     "ProvenanceMetadata",
-    "MatrixResource",
-    "MatrixDetailLevel",
-    "MatrixPreset",
     # Resources — account
     "UsersResource",
     "ApiKeysResource",

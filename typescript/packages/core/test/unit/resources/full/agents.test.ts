@@ -95,9 +95,13 @@ describe('agents', () => {
   it('testFire POSTs to /test', async () => {
     mockFetch.mockResolvedValue(jsonResponse({ run_id: 'run-1', status: 'queued' }));
     const client = makeClient();
-    await client.agents.testFire('sb-1', 'support-bot', { message: 'hello' });
+    await client.agents.testFire('sb-1', 'support-bot', {
+      event_payload: { hello: 'world' },
+    });
     expect(lastFetchCall().url).toContain(`${BASE}/support-bot/test`);
-    expect((lastFetchCall().body as { message: string }).message).toBe('hello');
+    expect(
+      (lastFetchCall().body as { event_payload: Record<string, unknown> }).event_payload,
+    ).toEqual({ hello: 'world' });
   });
 
   it('listRuns GETs /runs with limit', async () => {

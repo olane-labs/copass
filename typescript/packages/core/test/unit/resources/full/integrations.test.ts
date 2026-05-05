@@ -38,15 +38,18 @@ describe('integrations', () => {
     );
   });
 
-  it('list passes app query param', async () => {
-    mockFetch.mockResolvedValue(jsonResponse({ connections: [], count: 0 }));
+  it('list passes app query param and returns ConnectionsListResponse {items}', async () => {
+    mockFetch.mockResolvedValue(jsonResponse({ items: [] }));
     const client = makeClient();
-    await client.integrations.list('sb-1', { app: 'slack' });
+    const resp = await client.integrations.list('sb-1', { app: 'slack' });
     expect(lastFetchCall().url).toContain('app=slack');
+    expect(resp.items).toEqual([]);
   });
 
-  it('disconnect DELETEs /connections/{src}', async () => {
-    mockFetch.mockResolvedValue(jsonResponse({ deleted: true }));
+  it('disconnect DELETEs /connections/{src} (204 No Content)', async () => {
+    // Backend returns 204 with no body — provide a 204 Response so the
+    // SDK's no-body path is exercised end-to-end.
+    mockFetch.mockResolvedValue(new Response(null, { status: 204 }));
     const client = makeClient();
     await client.integrations.disconnect('sb-1', 'src-1');
     const call = lastFetchCall();
