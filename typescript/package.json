@@ -3,7 +3,7 @@
   "private": true,
   "packageManager": "pnpm@10.23.0",
   "scripts": {
-    "build": "pnpm -F @copass/core run build && pnpm -r --filter='!@copass/core' run build",
+    "build": "pnpm -F @copass/config -F @copass/core run build && pnpm -F @copass/management run build && pnpm -r --filter='!@copass/config' --filter='!@copass/core' --filter='!@copass/management' run build",
     "typecheck": "pnpm -r run typecheck",
     "lint": "pnpm -r run lint",
     "test": "pnpm -r run test",
