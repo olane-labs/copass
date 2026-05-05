@@ -71,13 +71,25 @@ async def test_discover_forwards_query_and_trims_response() -> None:
     result = await discover(query="checkout")
 
     client.discover.assert_awaited_once_with(  # type: ignore[attr-defined]
-        "sb1", query="checkout", project_id=None, window=None
+        "sb1", query="checkout", project_id=None, window=None, preset="copass/copass_1.0"
     )
     assert result == {
         "header": "stub header",
         "items": [
-            {"score": 0.9, "summary": "Checkout", "canonical_ids": ["c1", "c2"]},
-            {"score": 0.7, "summary": "Webhooks", "canonical_ids": ["c3"]},
+            {
+                "score": 0.9,
+                "summary": "Checkout",
+                "canonical_ids": ["c1", "c2"],
+                "subgraph": None,
+                "matched_query_nodes": None,
+            },
+            {
+                "score": 0.7,
+                "summary": "Webhooks",
+                "canonical_ids": ["c3"],
+                "subgraph": None,
+                "matched_query_nodes": None,
+            },
         ],
         "next_steps": "Pick items and call interpret",
     }
@@ -101,7 +113,7 @@ async def test_discover_forwards_project_and_window() -> None:
     await discover(query="x")
 
     client.discover.assert_awaited_once_with(  # type: ignore[attr-defined]
-        "sb1", query="x", project_id="proj_42", window=window
+        "sb1", query="x", project_id="proj_42", window=window, preset="copass/copass_1.0"
     )
 
 
@@ -130,7 +142,7 @@ async def test_interpret_defaults_preset_to_copass_1_0() -> None:
 
     await interpret(query="q", items=[["c1"]])
 
-    assert client.interpret.await_args.kwargs["preset"] == "copass/1.0"  # type: ignore[attr-defined]
+    assert client.interpret.await_args.kwargs["preset"] == "copass/copass_1.0"  # type: ignore[attr-defined]
 
 
 @pytest.mark.asyncio
