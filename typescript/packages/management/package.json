@@ -1,6 +1,6 @@
 {
   "name": "@copass/management",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "description": "Spec-driven management tool registrar for Copass agents (read-only, Phase 1).",
   "publishConfig": {
     "access": "public",
@@ -38,7 +38,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "node scripts/copy-spec.mjs && tsup",
+    "build": "tsup && node scripts/copy-spec.mjs",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
