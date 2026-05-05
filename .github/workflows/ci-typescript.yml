@@ -3,10 +3,18 @@ name: CI - TypeScript
 on:
   push:
     branches: [main]
-    paths: ['typescript/**']
+    paths:
+      - 'typescript/**'
+      - '.github/workflows/ci-typescript.yml'
   pull_request:
     branches: [main]
-    paths: ['typescript/**']
+    paths:
+      - 'typescript/**'
+      - '.github/workflows/ci-typescript.yml'
+  # Allow manual re-runs from the Actions tab — useful when a previous
+  # run failed for environmental reasons or when verifying a fix that
+  # only touched workflow YAML.
+  workflow_dispatch:
 
 jobs:
   build:
