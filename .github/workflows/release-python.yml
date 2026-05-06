@@ -52,6 +52,7 @@ on:
           - copass-context-agents
           - copass-anthropic-agents
           - copass-google-agents
+          - copass-hermes-agents
           - both
           - all
       release_mode:
@@ -140,6 +141,7 @@ jobs:
           - copass-context-agents
           - copass-anthropic-agents
           - copass-google-agents
+          - copass-hermes-agents
           - copass-agent-router
           - copass-config
           - copass-langchain
