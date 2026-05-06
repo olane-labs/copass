@@ -50,6 +50,7 @@ export { SourcesResource } from './resources/sources.js';
 export { ProjectsResource } from './resources/projects.js';
 export { IngestResource } from './resources/ingest.js';
 export { EntitiesResource } from './resources/entities.js';
+export type { EntitySearchOptions } from './resources/entities.js';
 export { RetrievalResource } from './resources/retrieval.js';
 export type {
   ChatRole,
