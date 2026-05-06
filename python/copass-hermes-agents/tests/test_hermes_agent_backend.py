@@ -101,6 +101,76 @@ async def test_stream_attaches_caller_bearer_on_every_call() -> None:
 
 
 @pytest.mark.asyncio
+async def test_stream_attaches_preview_token_when_set() -> None:
+    """Daytona's edge proxy gates private-sandbox traffic with the
+    ``x-daytona-preview-token`` header. When the caller wires a token
+    in, every request must carry it alongside the bearer."""
+    captured: Dict[str, Any] = {}
+    transport = httpx.MockTransport(_make_handler(captured))
+    client = httpx.AsyncClient(transport=transport)
+    backend = HermesAgentBackend(
+        endpoint_url="https://abc-8642.daytonaproxy01.net",
+        api_server_key="bearer-the-secret",
+        preview_token="preview-token-xyz",
+        client=client,
+    )
+    ctx = AgentInvocationContext(scope=AgentScope(user_id="u-1"))
+    async for _ in backend.stream(_StubAgent(), "ping", ctx):
+        pass
+    await client.aclose()
+
+    headers_lower = {k.lower(): v for k, v in captured["headers"].items()}
+    assert headers_lower.get("x-daytona-preview-token") == "preview-token-xyz"
+    # Bearer is still attached — both auth layers run together.
+    assert headers_lower.get("authorization") == "Bearer bearer-the-secret"
+
+
+@pytest.mark.asyncio
+async def test_stream_omits_preview_token_when_unset() -> None:
+    """Backward-compat: when no token is wired (e.g. local Hermes at
+    localhost), the header must NOT be sent."""
+    captured: Dict[str, Any] = {}
+    transport = httpx.MockTransport(_make_handler(captured))
+    client = httpx.AsyncClient(transport=transport)
+    backend = HermesAgentBackend(
+        endpoint_url="https://x.example.com",
+        api_server_key="b",
+        client=client,
+    )
+    ctx = AgentInvocationContext(scope=AgentScope(user_id="u-1"))
+    async for _ in backend.stream(_StubAgent(), "ping", ctx):
+        pass
+    await client.aclose()
+
+    headers_lower = {k.lower() for k in captured["headers"].keys()}
+    assert "x-daytona-preview-token" not in headers_lower
+
+
+@pytest.mark.asyncio
+async def test_set_preview_token_rotates_for_subsequent_requests() -> None:
+    """Daytona rotates the token on sandbox restart; the runtime must
+    be able to refresh without rebuilding the backend instance."""
+    captured: Dict[str, Any] = {}
+    transport = httpx.MockTransport(_make_handler(captured))
+    client = httpx.AsyncClient(transport=transport)
+    backend = HermesAgentBackend(
+        endpoint_url="https://x.example.com",
+        api_server_key="b",
+        preview_token="old-token",
+        client=client,
+    )
+    backend.set_preview_token("new-token")
+    assert backend.preview_token == "new-token"
+    ctx = AgentInvocationContext(scope=AgentScope(user_id="u-1"))
+    async for _ in backend.stream(_StubAgent(), "ping", ctx):
+        pass
+    await client.aclose()
+
+    headers_lower = {k.lower(): v for k, v in captured["headers"].items()}
+    assert headers_lower.get("x-daytona-preview-token") == "new-token"
+
+
+@pytest.mark.asyncio
 async def test_stream_strips_hermes_prefix_from_model() -> None:
     captured: Dict[str, Any] = {}
     transport = httpx.MockTransport(_make_handler(captured))
