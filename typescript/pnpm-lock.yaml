@@ -315,7 +315,7 @@ importers:
         specifier: ^0.5.1
         version: link:../config
       '@copass/management':
-        specifier: ^0.5.8
+        specifier: ^0.5.9
         version: link:../management
       '@modelcontextprotocol/sdk':
         specifier: ^1.29.0

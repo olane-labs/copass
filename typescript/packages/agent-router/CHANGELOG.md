@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.5.5](https://github.com/olane-labs/copass/compare/@copass/agent-router@0.5.4...@copass/agent-router@0.5.5) (2026-05-08)
+
+### Bug Fixes
+
+- **peer-deps:** bump @copass/core peer dependency to ^0.6.0 ([#9](https://github.com/olane-labs/copass/issues/9)) ([3afa9a7](https://github.com/olane-labs/copass/commit/3afa9a7a80671ceb72ff9433bede752df9d81079))
+
 ## [0.5.4](https://github.com/olane-labs/copass/compare/@copass/agent-router@0.5.3...@copass/agent-router@0.5.4) (2026-05-08)
 
 **Note:** Version bump only for package @copass/agent-router
