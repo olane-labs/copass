@@ -89,6 +89,55 @@ describe('ContextWindow', () => {
     );
   });
 
+  it('addTurn forwards constructor-time participants on every push', async () => {
+    const window = new ContextWindow({
+      client,
+      sandboxId: 'sb1',
+      dataSourceId: 'ds1',
+      participants: ['User', 'Alice'],
+    });
+    await window.addTurn({ role: 'user', content: 'hello' });
+    expect(client.sources.ingest).toHaveBeenCalledWith(
+      'sb1',
+      'ds1',
+      expect.objectContaining({
+        participants: ['User', 'Alice'],
+      }),
+    );
+  });
+
+  it('addTurn per-call participants override the constructor default', async () => {
+    const window = new ContextWindow({
+      client,
+      sandboxId: 'sb1',
+      dataSourceId: 'ds1',
+      participants: ['User', 'Alice'],
+    });
+    await window.addTurn(
+      { role: 'user', content: 'hi' },
+      { participants: ['User', 'Bob', 'Carol'] },
+    );
+    expect(client.sources.ingest).toHaveBeenCalledWith(
+      'sb1',
+      'ds1',
+      expect.objectContaining({
+        participants: ['User', 'Bob', 'Carol'],
+      }),
+    );
+  });
+
+  it('addTurn omits participants when neither constructor nor call-site set it', async () => {
+    const window = new ContextWindow({
+      client,
+      sandboxId: 'sb1',
+      dataSourceId: 'ds1',
+    });
+    await window.addTurn({ role: 'user', content: 'hi' });
+    const call = (client.sources.ingest as ReturnType<typeof vi.fn>).mock
+      .calls[0]![2] as Record<string, unknown>;
+    expect(call.participants).toBeUndefined();
+  });
+
   it('addTurn forwards projectId when the window was created with one', async () => {
     const window = new ContextWindow({
       client,
