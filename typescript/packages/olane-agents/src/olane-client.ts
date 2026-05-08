@@ -60,7 +60,14 @@ async function resolveRunningOs(instanceName?: string): Promise<ResolvedOs> {
     };
   }
 
-  const all = await listOS();
+  let all: Awaited<ReturnType<typeof listOS>>;
+  try {
+    all = await listOS();
+  } catch {
+    // listOS reads + JSON-parses every os-instances config file; an empty
+    // or malformed file from a prior aborted run shouldn't block us.
+    all = [];
+  }
   const live = (all || []).filter(
     (entry) =>
       entry.alive && entry.config?.peerId && entry.config.transports?.length,

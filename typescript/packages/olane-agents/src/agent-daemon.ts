@@ -39,7 +39,12 @@ async function resolveLeaderTransports(): Promise<{
   leaderAddress: string;
   transports: string[];
 }> {
-  const all = await listOS();
+  let all: Awaited<ReturnType<typeof listOS>>;
+  try {
+    all = await listOS();
+  } catch {
+    all = [];
+  }
   const live = (all || []).filter(
     (entry) =>
       entry.alive && entry.config?.peerId && entry.config.transports?.length,
