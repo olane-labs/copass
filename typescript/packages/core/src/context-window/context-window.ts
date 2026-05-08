@@ -30,10 +30,21 @@ export class ContextWindow extends BaseDataSource {
    *
    * Awaits the push so ingestion failures surface at the call site. Callers
    * wanting fire-and-forget can drop the `await` or wrap in `void`.
+   *
+   * The turn's `name` (if set) is forwarded as the envelope's
+   * `speaker` field; absent `name` falls back to the capitalized
+   * `role` (`'user'` → `'User'`, `'assistant'` → `'Assistant'`). The
+   * `${role}: ${content}` content-prefix munging the prior version
+   * used has been retired — the wire body is now the message
+   * `content` verbatim, with `speaker` riding on the envelope.
    */
   async addTurn(turn: ChatMessage): Promise<void> {
     this.turns.push(turn);
-    await this.push(`${turn.role}: ${turn.content}`, { sourceType: 'conversation' });
+    const speaker = turn.name ?? capitalizeRole(turn.role);
+    await this.push(turn.content, {
+      sourceType: 'conversation',
+      speaker,
+    });
   }
 
   /** Current turn log — returned as a defensive copy so callers can't mutate internal state. */
@@ -45,4 +56,9 @@ export class ContextWindow extends BaseDataSource {
   async close(): Promise<void> {
     await this.disconnect();
   }
+}
+
+function capitalizeRole(role: string): string {
+  if (!role) return role;
+  return role[0]!.toUpperCase() + role.slice(1);
 }
