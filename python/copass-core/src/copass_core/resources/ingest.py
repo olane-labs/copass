@@ -9,12 +9,30 @@ quick-start experiments or for polling job status.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from copass_core.resources.base import BaseResource
 
 
-IngestSourceType = str  # "text" | "conversation" | "markdown" | "code" | "json" | custom
+# Hint describing the kind of payload being ingested. Treated as an
+# advisory string by the API — not a strict enum. Conventional values:
+#
+#   Content-shape tokens (describe how the body is encoded):
+#     "text"      — free-form text (default)
+#     "markdown"  — markdown-formatted text
+#     "code"      — source code; downstream extractors may apply
+#                   code-aware handling
+#     "json"      — JSON-encoded payload
+#
+#   Artifact-kind tokens (describe the underlying artifact):
+#     "conversation" — chat / IM / dialogue between participants;
+#                      pairs naturally with `speaker` / `participants`
+#     "ticket"       — ticketing system entry (Jira, Linear, GitHub)
+#     "email"        — email message; pairs with `participants`
+#     "note"         — personal / shared note
+#
+# Custom values are accepted; the API does not gate on this field.
+IngestSourceType = str
 IngestJobState = str  # "queued" | "pending" | "processing" | "completed" | "failed" | "cancelled" | custom
 
 _SHORTHAND = "/api/v1/storage/ingest"
@@ -44,7 +62,31 @@ class IngestResource(BaseResource):
         project_id: Optional[str] = None,
         data_source_id: Optional[str] = None,
         occurred_at: Optional[str] = None,
+        speaker: Optional[str] = None,
+        participants: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
+        """Submit text to the caller's primary sandbox.
+
+        Args:
+            text: The body of the payload.
+            source_type: Hint describing the payload kind. Conventional
+                values are documented on :data:`IngestSourceType`.
+            storage_only: If True, chunk and store but do not run
+                downstream ontology ingestion.
+            project_id: Optional project override.
+            data_source_id: Optional data source association.
+            occurred_at: ISO 8601 timestamp anchoring this payload to
+                a real-world moment.
+            speaker: Optional name of the participant who uttered this
+                payload. Caller decides the literal value (``"User"``,
+                ``"Assistant"``, ``"Alice"``, an email address, etc.);
+                the SDK does not auto-derive from any other field. Most
+                useful on conversation-shaped sources.
+            participants: Optional roster of participants present in
+                the conversation / thread / artifact this payload
+                belongs to. Per-message — pass the snapshot at the
+                time of utterance.
+        """
         body = _build_ingest_body(
             text=text,
             source_type=source_type,
@@ -52,6 +94,8 @@ class IngestResource(BaseResource):
             project_id=project_id,
             data_source_id=data_source_id,
             occurred_at=occurred_at,
+            speaker=speaker,
+            participants=participants,
         )
         return await self._post(_SHORTHAND, body)
 
@@ -68,7 +112,13 @@ class IngestResource(BaseResource):
         project_id: Optional[str] = None,
         data_source_id: Optional[str] = None,
         occurred_at: Optional[str] = None,
+        speaker: Optional[str] = None,
+        participants: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
+        """Submit text to a specific sandbox. See :meth:`text` for arg
+        semantics; ``speaker`` / ``participants`` are the per-message
+        conversation metadata fields.
+        """
         body = _build_ingest_body(
             text=text,
             source_type=source_type,
@@ -76,6 +126,8 @@ class IngestResource(BaseResource):
             project_id=project_id,
             data_source_id=data_source_id,
             occurred_at=occurred_at,
+            speaker=speaker,
+            participants=participants,
         )
         return await self._post(_explicit_base(sandbox_id), body)
 
@@ -91,6 +143,8 @@ def _build_ingest_body(
     project_id: Optional[str],
     data_source_id: Optional[str],
     occurred_at: Optional[str] = None,
+    speaker: Optional[str] = None,
+    participants: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
     body: Dict[str, Any] = {"text": text}
     if source_type is not None:
@@ -103,6 +157,10 @@ def _build_ingest_body(
         body["data_source_id"] = data_source_id
     if occurred_at is not None:
         body["occurred_at"] = occurred_at
+    if speaker is not None:
+        body["speaker"] = speaker
+    if participants is not None:
+        body["participants"] = participants
     return body
 
 
