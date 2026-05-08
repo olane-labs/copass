@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.5.4](https://github.com/olane-labs/copass/compare/@copass/datasource-fs@0.5.3...@copass/datasource-fs@0.5.4) (2026-05-08)
+
+### Bug Fixes
+
+- **datasource-fs:** drop unused DataSource type import ([e95c5a3](https://github.com/olane-labs/copass/commit/e95c5a39198f3812a2cba2e96388746f13ea4d44))
+
 ## [0.5.3](https://github.com/olane-labs/copass/compare/@copass/datasource-fs@0.5.2...@copass/datasource-fs@0.5.3) (2026-05-05)
 
 **Note:** Version bump only for package @copass/datasource-fs

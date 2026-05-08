@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.6.0](https://github.com/olane-labs/copass/compare/@copass/core@0.5.2...@copass/core@0.6.0) (2026-05-08)
+
+### Features
+
+- **core:** export EntitySearchOptions type from public surface ([c3bb60b](https://github.com/olane-labs/copass/commit/c3bb60b79fc60529332973736dd16bc42bf42968))
+
 ## [0.5.2](https://github.com/olane-labs/copass/compare/@copass/core@0.5.1...@copass/core@0.5.2) (2026-05-05)
 
 **Note:** Version bump only for package @copass/core
