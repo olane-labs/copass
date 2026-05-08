@@ -56,10 +56,10 @@
   },
   "dependencies": {
     "@olane/o-client": "^0.8.21",
-    "@olane/o-core": "^0.8.21",
-    "@olane/o-node": "^0.8.21",
-    "@olane/o-storage": "^0.8.21",
-    "@olane/os": "^0.8.21",
+    "@olane/o-core": "^0.9.0",
+    "@olane/o-node": "^0.9.0",
+    "@olane/o-storage": "^0.9.0",
+    "@olane/os": "^0.9.0",
     "fs-extra": "^11.3.4",
     "portfinder": "^1.0.38",
     "uuid": "^11.0.0"

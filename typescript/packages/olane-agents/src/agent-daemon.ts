@@ -23,9 +23,12 @@ import { sessionFilePath, sessionsDir } from './paths.js';
 import { OlaneOSNotRunningError } from './olane-client.js';
 
 function addressFor(user: string, kind: string, sessionId: string): string {
-  // Single-segment slug — multi-segment constructor addresses break
-  // olane's cross-process registration handshake. See @olane/o-agent
-  // README "Address scheme" for the full rationale.
+  // Single-segment slug — olane convention: node tools must declare
+  // exactly ONE path segment in their constructor address. Hierarchical
+  // routing happens via either child-node registration or in-node
+  // sub-path resolvers, never via multi-segment constructor addresses.
+  // The structured `user`/`kind`/`session-id` components are preserved
+  // on the AgentCard's `card.olane` fields for filtering / display.
   const safe = (s: string) =>
     s
       .toLowerCase()
