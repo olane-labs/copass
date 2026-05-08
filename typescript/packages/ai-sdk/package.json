@@ -59,7 +59,7 @@
     "@copass/config": "^0.5.1"
   },
   "peerDependencies": {
-    "@copass/core": "^0.5.0",
+    "@copass/core": "^0.6.0",
     "ai": ">=5.0.0",
     "zod": ">=3.23.0"
   },

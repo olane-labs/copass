@@ -58,7 +58,7 @@
     "ignore": "^7.0.5"
   },
   "peerDependencies": {
-    "@copass/core": "^0.5.0"
+    "@copass/core": "^0.6.0"
   },
   "devDependencies": {
     "@copass/core": "^0.6.0",
