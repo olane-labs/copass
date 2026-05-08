@@ -107,6 +107,7 @@ def test_corpus_loads_phase1_reads_and_phase2_writes(corpus) -> None:
         "grant_sandbox_connection",
         "pause_trigger",
         "provision_source",
+        "purge_source_context",
         "resume_trigger",
         "revoke_sandbox_connection",
         "revoke_user_mcp_source",
@@ -117,7 +118,7 @@ def test_corpus_loads_phase1_reads_and_phase2_writes(corpus) -> None:
         "update_trigger",
     }
     assert set(corpus.specs.keys()) == expected
-    assert len(corpus.specs) == 33
+    assert len(corpus.specs) == 34
 
 
 def test_handler_bound_for_every_tool(corpus) -> None:

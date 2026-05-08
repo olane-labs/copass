@@ -44,8 +44,8 @@ class IntegrationsResource(BaseResource):
     ) -> Dict[str, Any]:
         """List or search the app catalog for a sandbox.
 
-        Apps with curated ``pull_tool_calls`` defaults are tagged
-        ``supported``; only those can be passed to :meth:`connect`.
+        Every item has ``supported: true``. Use ``has_ingestion_defaults``
+        to see which slugs ship curated firehose pull defaults after OAuth.
         """
         query: Dict[str, Any] = {}
         if q is not None:

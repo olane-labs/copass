@@ -30,6 +30,7 @@ import { listTriggerComponents } from '../src/tools/list_trigger_components.js';
 import { listTriggers } from '../src/tools/list_triggers.js';
 import { pauseTrigger } from '../src/tools/pause_trigger.js';
 import { provisionSource } from '../src/tools/provision_source.js';
+import { purgeSourceContext } from '../src/tools/purge_source_context.js';
 import { resumeTrigger } from '../src/tools/resume_trigger.js';
 import { revokeSandboxConnection } from '../src/tools/revoke_sandbox_connection.js';
 import { revokeUserMcpSource } from '../src/tools/revoke_user_mcp_source.js';
@@ -65,6 +66,7 @@ function makeCtx(): ToolContext {
       list: vi.fn().mockResolvedValue({ sources: [], count: 0 }),
       retrieve: vi.fn().mockResolvedValue({ data_source_id: 'ds-1' }),
       update: vi.fn().mockResolvedValue({ data_source_id: 'ds-1' }),
+      purge: vi.fn().mockResolvedValue({ success: true, delete_source_applied: false }),
       connectLinear: vi.fn().mockResolvedValue({ data_source_id: 'ds-linear' }),
       registerUserMcp: vi.fn().mockResolvedValue({ data_source_id: 'ds-mcp-1' }),
       testUserMcp: vi.fn().mockResolvedValue({ reachable: true }),
@@ -151,6 +153,14 @@ describe('management tool handlers — full dispatch coverage', () => {
     const ctx = makeCtx();
     await provisionSource(ctx, { provider: 'manual', name: 'demo' });
     expect(ctx.client.sources.register).toHaveBeenCalled();
+  });
+
+  it('purgeSourceContext -> sources.purge', async () => {
+    const ctx = makeCtx();
+    await purgeSourceContext(ctx, { data_source_id: 'ds-1', delete_source: true });
+    expect(ctx.client.sources.purge).toHaveBeenCalledWith('sb-1', 'ds-1', {
+      delete_source: true,
+    });
   });
 
   it('listSources -> sources.list', async () => {

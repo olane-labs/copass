@@ -110,6 +110,8 @@ export type {
   ListTriggerComponentsOptions,
   ListTriggersOptions,
   RunStatus,
+  StartAgentChatRunRequest,
+  StartAgentChatRunResponse,
   TestFireRequest,
   TriggerComponent,
   TriggerComponentListResponse,

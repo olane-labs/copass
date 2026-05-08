@@ -9,7 +9,7 @@ Per ``copass-management`` design: handlers are stateless modules under
 ``copass_management/tools/``. The ``ToolContext`` carries the SDK
 ``client`` + ``sandbox_id`` injected by the registrar at call time.
 
-This suite exercises ALL 33 handlers (one test each) — when a new
+This suite exercises ALL 34 handlers (one test each) — when a new
 handler is added under ``tools/``, add a matching test here.
 """
 
@@ -42,6 +42,7 @@ from copass_management.tools import (
     list_triggers,
     pause_trigger,
     provision_source,
+    purge_source_context,
     resume_trigger,
     revoke_sandbox_connection,
     revoke_user_mcp_source,
@@ -85,6 +86,14 @@ async def test_provision_source_dispatches_to_sources_register() -> None:
     ctx = _ctx({"sources.register": register})
     await provision_source(ctx, {"name": "demo", "kind": "manual"})
     register.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_purge_source_context_dispatches_to_sources_purge() -> None:
+    purge = AsyncMock(return_value={"success": True})
+    ctx = _ctx({"sources.purge": purge})
+    await purge_source_context(ctx, {"data_source_id": "ds-1", "delete_source": True})
+    purge.assert_awaited_once()
 
 
 @pytest.mark.asyncio

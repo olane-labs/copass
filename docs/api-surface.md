@@ -104,7 +104,34 @@ Query: `provider?`, `status?`.
 ### `POST /api/v1/storage/sandboxes/{sandbox_id}/sources/{source_id}/pause`
 ### `POST /api/v1/storage/sandboxes/{sandbox_id}/sources/{source_id}/resume`
 ### `POST /api/v1/storage/sandboxes/{sandbox_id}/sources/{source_id}/disconnect`
+### `POST /api/v1/storage/sandboxes/{sandbox_id}/sources/{source_id}/pull`
+
+Queue a `data_source_pull` job for this source (Tier-3 adapter pull). The worker resolves the registered adapter for `DataSource.provider` and streams `adapter.pull()` records into ontology ingestion.
+
+**Request body (all fields optional):**
+```json
+{ "since": "2026-01-01T00:00:00Z", "vault_only": false }
+```
+
+- `since` — ISO 8601 datetime; incremental cursor with adapter-defined semantics.
+- `vault_only` — when `true`, rows go to vault only and no `ontology_ingestion` jobs are dispatched.
+
+**Response (HTTP 202):** `{ "job_id": "...", "job_type": "data_source_pull", "status": "queued" }`.
+
+### `POST /api/v1/storage/sandboxes/{sandbox_id}/sources/{source_id}/purge`
+
+Remove ingested knowledge attributed to this data source (ontology events and related rows, vectors, sandbox-scoped objects under the source prefix). Does **not** remove the `copass_data_sources` row unless the body sets `delete_source: true`.
+
+**Request body:**
+```json
+{ "delete_source": false }
+```
+
+**Response:** counts per plane (`events_deleted`, `extractions_deleted`, `entity_vectors_deleted`, `vault_objects_deleted`, …) plus `delete_source_applied`.
+
 ### `DELETE /api/v1/storage/sandboxes/{sandbox_id}/sources/{source_id}`
+
+Removes the data source **registration** row only. Ingested knowledge is **not** cascaded; use **`POST …/purge`** first if you need to undo mistaken ingest.
 
 ---
 

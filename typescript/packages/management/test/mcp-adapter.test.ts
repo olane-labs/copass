@@ -49,6 +49,7 @@ function makeStubClient(overrides: Record<string, unknown> = {}): CopassClient {
       list: vi.fn().mockResolvedValue({ sources: [], count: 0 }),
       retrieve: vi.fn().mockResolvedValue({ data_source_id: 'ds-1' }),
       update: vi.fn().mockResolvedValue({ data_source_id: 'ds-1' }),
+      purge: vi.fn().mockResolvedValue({ success: true, delete_source_applied: false }),
       connectLinear: vi.fn().mockResolvedValue({ data_source_id: 'ds-linear' }),
       registerUserMcp: vi.fn().mockResolvedValue({ data_source_id: 'ds-mcp-1' }),
       testUserMcp: vi.fn().mockResolvedValue({ reachable: true }),
@@ -102,13 +103,13 @@ async function connectPair(server: McpServer): Promise<Client> {
 describe('registerToMcpServer — registration', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('registers all 33 management tools without crashing on _zod', async () => {
+  it('registers all 34 management tools without crashing on _zod', async () => {
     // The pre-fix adapter blew up with "Cannot read properties of
     // undefined (reading '_zod')" on tools whose outputSchema used
     // `oneOf` at the top level. This test would have caught it.
     const server = makeMcpServer();
     const regs = registerToMcpServer(server, makeStubClient(), { sandboxId: 'sb-1' });
-    expect(regs.length).toBeGreaterThanOrEqual(33);
+    expect(regs.length).toBeGreaterThanOrEqual(34);
   });
 
   it('exposes every management tool through MCP listTools', async () => {
@@ -117,7 +118,7 @@ describe('registerToMcpServer — registration', () => {
     const mcpClient = await connectPair(server);
     try {
       const { tools } = await mcpClient.listTools();
-      expect(tools.length).toBeGreaterThanOrEqual(33);
+      expect(tools.length).toBeGreaterThanOrEqual(34);
       const names = new Set(tools.map((t) => t.name));
       // Spot-check the surfaces from each management area.
       for (const required of [

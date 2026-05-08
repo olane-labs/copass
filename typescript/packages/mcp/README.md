@@ -82,7 +82,7 @@ All retrieval tools are **automatically window-aware** when a window has been cr
 
 ## Management Tools
 
-The server also exposes the full Copass management surface — agents, sources, triggers, runs, integrations, API keys — so an MCP-speaking client can manage your sandbox by conversation. All 20 tools share the same `COPASS_API_KEY` and `COPASS_SANDBOX_ID` as the retrieval tools and are scoped to that sandbox.
+The server also exposes the full Copass management surface — agents, sources, triggers, runs, integrations, API keys — so an MCP-speaking client can manage your sandbox by conversation. Those tools share the same `COPASS_API_KEY` and `COPASS_SANDBOX_ID` as the retrieval tools and are scoped to that sandbox.
 
 ### Read (14)
 
@@ -101,11 +101,12 @@ The server also exposes the full Copass management surface — agents, sources, 
 - `create_agent` — provision a new agent with prompt, model, and tool config
 - `update_agent_prompt` / `update_agent_tools` / `update_agent_tool_sources` — update agent configuration
 - `add_user_mcp_source` — register a user-owned MCP source
+- `purge_source_context` — remove ingested knowledge for a data source (undo wrong-sandbox ingest)
 - `wire_integration_to_agent` — attach a third-party integration to an agent
 
-Destructive operations (key revocation, sandbox-grant changes, raw key minting) stay on the CLI by policy. The full spec corpus that drives this surface lives in [`@copass/management`](../management) — embed it directly if you're building a custom MCP server.
+Some destructive operations remain CLI-first by policy; the spec corpus is the source of truth for the exact tool list. The corpus lives in [`@copass/management`](../management) — embed it directly if you're building a custom MCP server.
 
-> **Role gating.** Management tools are scoped to the `COPASS_SANDBOX_ID` environment variable. Viewer-role users see all 20 tools in the catalog but write attempts return permission-denied errors at call time. The MCP server does not pre-filter by role — denial happens at the service layer to avoid an extra HTTP round-trip at startup.
+> **Role gating.** Management tools are scoped to the `COPASS_SANDBOX_ID` environment variable. Viewer-role users see the full tool catalog but write attempts return permission-denied errors at call time. The MCP server does not pre-filter by role — denial happens at the service layer to avoid an extra HTTP round-trip at startup.
 
 ## Why this, not the direct SDK adapters
 

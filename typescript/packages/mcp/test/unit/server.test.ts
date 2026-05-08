@@ -45,7 +45,7 @@ const EXPECTED_TOOL_NAMES = new Set<string>([
   'context_window_close',
   // ingest (1)
   'ingest',
-  // management — full management corpus (33). Surface count grows as
+  // management — full management corpus (34). Surface count grows as
   // new specs land in spec/management/v1/.
   'add_user_mcp_source',
   'connect_linear',
@@ -68,6 +68,7 @@ const EXPECTED_TOOL_NAMES = new Set<string>([
   'list_triggers',
   'pause_trigger',
   'provision_source',
+  'purge_source_context',
   'resume_trigger',
   'revoke_sandbox_connection',
   'revoke_user_mcp_source',

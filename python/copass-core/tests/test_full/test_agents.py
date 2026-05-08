@@ -147,6 +147,32 @@ async def test_test_fire(client: CopassClient) -> None:
 
 
 @respx.mock
+async def test_start_chat_run(client: CopassClient) -> None:
+    """start_chat_run posts message+session_id and returns the new run_id."""
+    route = respx.post(f"{_BASE}/support-bot/invoke-async").mock(
+        return_value=httpx.Response(202, json={"run_id": "run-async-1"})
+    )
+    resp = await client.agents.start_chat_run(
+        sandbox_id="sb-1",
+        slug="support-bot",
+        message="hello",
+        session_id="sesn_prev",
+    )
+    assert resp == {"run_id": "run-async-1"}
+    body = json.loads(route.calls.last.request.content)
+    assert body == {"message": "hello", "session_id": "sesn_prev"}
+
+    route2 = respx.post(f"{_BASE}/support-bot-2/invoke-async").mock(
+        return_value=httpx.Response(202, json={"run_id": "run-async-2"})
+    )
+    await client.agents.start_chat_run(
+        sandbox_id="sb-1", slug="support-bot-2", message="hi",
+    )
+    body2 = json.loads(route2.calls.last.request.content)
+    assert body2 == {"message": "hi"}
+
+
+@respx.mock
 async def test_list_runs(client: CopassClient) -> None:
     route = respx.get(f"{_BASE}/support-bot/runs").mock(
         return_value=httpx.Response(200, json={"runs": [], "count": 0})

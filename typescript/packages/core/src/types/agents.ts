@@ -171,7 +171,8 @@ export type RunStatus =
   | 'running'
   | 'succeeded'
   | 'failed'
-  | 'timeout';
+  | 'timeout'
+  | 'cancelled';
 
 export interface AgentRun {
   run_id: string;
@@ -192,6 +193,8 @@ export interface AgentRun {
   error_message?: string | null;
   started_at?: string;
   finished_at?: string | null;
+  /** Set when the run succeeds — pass as `session_id` on the next `startChatRun`. */
+  provider_session_id?: string | null;
 }
 
 export interface AgentRunListResponse {
@@ -217,7 +220,19 @@ export interface AgentRunDetail {
   started_at?: string | null;
   finished_at?: string | null;
   error_message?: string | null;
+  output_text?: string | null;
+  provider_session_id?: string | null;
   tool_resolution_trace?: Record<string, unknown> | null;
+}
+
+/** POST `/agents/{slug}/invoke-async` — starts a background run (HTTP 202). */
+export interface StartAgentChatRunRequest {
+  message: string;
+  session_id?: string | null;
+}
+
+export interface StartAgentChatRunResponse {
+  run_id: string;
 }
 
 export interface ListAgentRunsOptions {

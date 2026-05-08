@@ -49,6 +49,30 @@ describe('sources', () => {
     expect(lastFetchCall().url).toContain(`${BASE}/linear`);
   });
 
+  it('pull POSTs to /sources/{id}/pull with optional body', async () => {
+    mockFetch.mockResolvedValue(
+      jsonResponse(
+        {
+          job_id: 'job-1',
+          job_type: 'data_source_pull',
+          status: 'queued',
+        },
+        202,
+      ),
+    );
+    const client = makeClient();
+    const resp = await client.sources.pull('sb-1', 'ds-1', {
+      since: '2026-01-01T00:00:00Z',
+      vault_only: true,
+    });
+    const call = lastFetchCall();
+    expect(call.url).toContain(`${BASE}/ds-1/pull`);
+    expect(call.method).toBe('POST');
+    expect((call.body as { since: string; vault_only: boolean }).since).toBe('2026-01-01T00:00:00Z');
+    expect((call.body as { vault_only: boolean }).vault_only).toBe(true);
+    expect(resp.job_id).toBe('job-1');
+  });
+
   it('pause POSTs to /pause', async () => {
     mockFetch.mockResolvedValue(jsonResponse({ status: 'paused' }));
     const client = makeClient();

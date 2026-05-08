@@ -73,6 +73,30 @@ async def test_connect_linear(client: CopassClient) -> None:
 
 
 @respx.mock
+async def test_pull(client: CopassClient) -> None:
+    route = respx.post(f"{_BASE}/ds-1/pull").mock(
+        return_value=httpx.Response(
+            202,
+            json={
+                "job_id": "job-1",
+                "job_type": "data_source_pull",
+                "status": "queued",
+            },
+        )
+    )
+    resp = await client.sources.pull(
+        sandbox_id="sb-1",
+        source_id="ds-1",
+        since="2026-01-01T00:00:00Z",
+        vault_only=True,
+    )
+    assert resp["job_id"] == "job-1"
+    body = json.loads(route.calls.last.request.content)
+    assert body["since"] == "2026-01-01T00:00:00Z"
+    assert body["vault_only"] is True
+
+
+@respx.mock
 async def test_pause(client: CopassClient) -> None:
     route = respx.post(f"{_BASE}/ds-1/pause").mock(
         return_value=httpx.Response(200, json={"status": "paused"})
@@ -106,6 +130,63 @@ async def test_delete(client: CopassClient) -> None:
     )
     await client.sources.delete(sandbox_id="sb-1", source_id="ds-1")
     assert route.called
+
+
+@respx.mock
+async def test_purge(client: CopassClient) -> None:
+    route = respx.post(f"{_BASE}/ds-1/purge").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "success": True,
+                "delete_source_applied": False,
+                "events_deleted": 1,
+                "extractions_deleted": 0,
+                "canonical_index_rows_deleted": 0,
+                "entity_vectors_deleted": 2,
+                "triggers_deleted": 0,
+                "webhooks_deleted": 0,
+                "event_seen_deleted": 0,
+                "project_links_deleted": 0,
+                "strategy_artifacts_deleted": 0,
+                "pull_artifacts_deleted": 0,
+                "user_strategies_deleted": 0,
+                "vault_objects_deleted": 0,
+            },
+        )
+    )
+    await client.sources.purge(sandbox_id="sb-1", source_id="ds-1")
+    assert route.called
+    body = json.loads(route.calls.last.request.content)
+    assert body == {}
+
+    route2 = respx.post(f"{_BASE}/ds-2/purge").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "success": True,
+                "delete_source_applied": True,
+                "events_deleted": 0,
+                "extractions_deleted": 0,
+                "canonical_index_rows_deleted": 0,
+                "entity_vectors_deleted": 0,
+                "triggers_deleted": 0,
+                "webhooks_deleted": 0,
+                "event_seen_deleted": 0,
+                "project_links_deleted": 0,
+                "strategy_artifacts_deleted": 0,
+                "pull_artifacts_deleted": 0,
+                "user_strategies_deleted": 0,
+                "vault_objects_deleted": 0,
+            },
+        )
+    )
+    await client.sources.purge(
+        sandbox_id="sb-1", source_id="ds-2", delete_source=True,
+    )
+    assert route2.called
+    body2 = json.loads(route2.calls.last.request.content)
+    assert body2 == {"delete_source": True}
 
 
 @respx.mock

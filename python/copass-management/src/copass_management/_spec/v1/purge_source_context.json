@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "name": "purge_source_context",
+  "description": "Remove ingested knowledge attributed to a data source: graph events and related rows, vectors, and sandbox-scoped binary objects stored under that source prefix. Does not remove the source registration unless delete_source is true. Use when content was ingested into the wrong sandbox or you need a clean slate for that source without destroying the sandbox.",
+  "inputSchema": {
+    "type": "object",
+    "required": ["data_source_id"],
+    "properties": {
+      "data_source_id": {
+        "type": "string",
+        "description": "UUID of the data source whose attributed knowledge should be removed."
+      },
+      "delete_source": {
+        "type": "boolean",
+        "description": "When true, delete the data source registration after purging (same as the DELETE source route)."
+      }
+    },
+    "additionalProperties": false
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "success": { "type": "boolean" },
+      "delete_source_applied": { "type": "boolean" },
+      "events_deleted": { "type": "integer" },
+      "extractions_deleted": { "type": "integer" },
+      "canonical_index_rows_deleted": { "type": "integer" },
+      "entity_vectors_deleted": { "type": "integer" },
+      "triggers_deleted": { "type": "integer" },
+      "webhooks_deleted": { "type": "integer" },
+      "event_seen_deleted": { "type": "integer" },
+      "project_links_deleted": { "type": "integer" },
+      "strategy_artifacts_deleted": { "type": "integer" },
+      "pull_artifacts_deleted": { "type": "integer" },
+      "user_strategies_deleted": { "type": "integer" },
+      "vault_objects_deleted": { "type": "integer" }
+    },
+    "additionalProperties": true
+  },
+  "since": "v1.3"
+}
