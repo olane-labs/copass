@@ -39,7 +39,7 @@ def test_registers_all_tools_with_spec_names(client: CopassClient) -> None:
         client,
         RegistrarOptions(sandbox_id="sb_test", spec_dir=SPEC_DIR),
     )
-    assert len(registered) == 33
+    assert len(registered) == 34
     names = sorted(r.name for r in registered)
     assert names == sorted(
         [
@@ -64,6 +64,7 @@ def test_registers_all_tools_with_spec_names(client: CopassClient) -> None:
             "list_triggers",
             "pause_trigger",
             "provision_source",
+            "purge_source_context",
             "resume_trigger",
             "revoke_sandbox_connection",
             "revoke_user_mcp_source",

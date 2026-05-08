@@ -1,4 +1,38 @@
-export type IngestSourceType = 'text' | 'conversation' | 'markdown' | 'code' | 'json' | string;
+/**
+ * Hint describing the kind of payload being ingested. Treated as an
+ * advisory string by the API — not a strict enum. Conventional values:
+ *
+ * **Content-shape tokens** (describe how the body is encoded):
+ *   - `'text'` — free-form text (default).
+ *   - `'markdown'` — markdown-formatted text.
+ *   - `'code'` — source code; downstream extractors may apply
+ *     code-aware handling.
+ *   - `'json'` — JSON-encoded payload.
+ *
+ * **Artifact-kind tokens** (describe the underlying artifact):
+ *   - `'conversation'` — chat / IM / dialogue between participants.
+ *     Pairs naturally with `speaker` and `participants` on the
+ *     envelope.
+ *   - `'ticket'` — ticketing system entry (Jira, Linear, GitHub
+ *     issue, etc.).
+ *   - `'email'` — email message; pairs with `participants` for
+ *     to/cc/from.
+ *   - `'note'` — personal / shared note.
+ *
+ * Custom values are accepted; the API does not gate on this field.
+ * Use whatever string best describes the payload to a downstream
+ * reader.
+ */
+export type IngestSourceType =
+  | 'text'
+  | 'markdown'
+  | 'code'
+  | 'json'
+  | 'conversation'
+  | 'ticket'
+  | 'email'
+  | 'note'
+  | string;
 
 export type IngestJobState =
   | 'queued'
@@ -27,6 +61,26 @@ export interface IngestTextRequest {
    * doesn't pull dates out of the text body.
    */
   occurred_at?: string;
+  /**
+   * Optional name of the participant who uttered this payload. Caller
+   * decides the literal value (`'User'`, `'Assistant'`, `'Alice'`, an
+   * email address, etc.); the SDK does not auto-derive it from any
+   * other field. Most useful on conversation-shaped sources where
+   * downstream extraction benefits from knowing who is speaking.
+   * Adapters that work in role-typed worlds (`user` / `assistant`)
+   * should capitalize the role themselves before passing it here.
+   */
+  speaker?: string;
+  /**
+   * Optional roster of participants present in the conversation /
+   * thread / artifact this payload belongs to. Per-message — pass the
+   * roster snapshot at the time of utterance. Useful for pronoun
+   * resolution (e.g. resolving "you" / "your" against the other
+   * listed participants when `speaker` is set). For single-participant
+   * sources (a personal note), supplying `[speaker]` is fine; for
+   * sources without participant semantics (a doc file), omit.
+   */
+  participants?: string[];
 }
 
 export interface IngestJobResponse {

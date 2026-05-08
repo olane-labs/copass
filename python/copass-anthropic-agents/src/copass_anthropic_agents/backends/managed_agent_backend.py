@@ -258,42 +258,49 @@ class ManagedAgentBackend(AgentBackend):
                     # same id that surfaces later in
                     # `requires_action.event_ids` and that we send back as
                     # `custom_tool_use_id` on `user.custom_tool_result`.
-                    # If `id` is missing the buffer key collides with any
-                    # other id-less event ("") and the lookup at execute
-                    # time produces "tool event not found" — log loudly so
-                    # we catch this in the field rather than rely on the
-                    # silent overwrite.
+                    # Without it we cannot route a result back, so abort
+                    # loudly rather than silently bucket every id-less
+                    # event under "" (the prior behaviour produced
+                    # "tool event not found" placeholders that the API
+                    # then rejected with "waiting on responses to
+                    # events [...]" when the placeholder used the wrong
+                    # event protocol).
+                    name = getattr(sdk_event, "name", "") or ""
                     if not evt_id:
-                        logger.warning(
-                            "ManagedAgentBackend: agent.custom_tool_use missing id",
+                        logger.error(
+                            "ManagedAgentBackend: agent.custom_tool_use missing id — aborting run",
                             extra={
                                 "session_id": session_id,
-                                "name": getattr(sdk_event, "name", None),
+                                "name": name,
                                 "event_repr": repr(sdk_event)[:500],
                             },
                         )
-                    call_id = evt_id or ""
-                    name = getattr(sdk_event, "name", "") or ""
-                    raw_input = getattr(sdk_event, "input", None) or {}
-                    arguments = dict(raw_input) if isinstance(raw_input, dict) else {}
-                    if call_id in pending_tool_events:
-                        # Same key arriving twice means the previous entry
-                        # is being silently overwritten — almost certainly
-                        # the missing-id collision above. Surface it.
+                        raise RuntimeError(
+                            "ManagedAgentBackend: agent.custom_tool_use event "
+                            f"arrived without an id (name={name!r}); cannot "
+                            "respond — aborting run"
+                        )
+                    if evt_id in pending_tool_events:
+                        # Real id collision — distinct from the empty-key
+                        # case above. Anthropic should never re-emit the
+                        # same event id, so this points to either an SDK
+                        # bug or a session being driven by two clients.
                         logger.error(
-                            "ManagedAgentBackend: duplicate buffer key — overwriting prior tool event",
+                            "ManagedAgentBackend: duplicate event id in buffer",
                             extra={
                                 "session_id": session_id,
-                                "call_id": call_id,
+                                "event_id": evt_id,
                                 "incoming_name": name,
                                 "buffered_name": getattr(
-                                    pending_tool_events[call_id], "name", None
+                                    pending_tool_events[evt_id], "name", None
                                 ),
                             },
                         )
-                    pending_tool_events[call_id] = sdk_event
+                    raw_input = getattr(sdk_event, "input", None) or {}
+                    arguments = dict(raw_input) if isinstance(raw_input, dict) else {}
+                    pending_tool_events[evt_id] = sdk_event
                     yield AgentToolCall(
-                        call_id=call_id,
+                        call_id=evt_id,
                         name=name,
                         arguments=arguments,
                     )
@@ -304,14 +311,21 @@ class ManagedAgentBackend(AgentBackend):
 
                     if stop_type == "requires_action":
                         event_ids = list(getattr(stop, "event_ids", None) or [])
-                        # Diagnostic: log the requested vs buffered ids so
-                        # we can see exactly which lookups will miss in
-                        # `_execute_pending_tools` rather than just seeing
-                        # "tool event not found" downstream.
+                        # If `event_ids` references an event the harness
+                        # never buffered, the agent is blocked on
+                        # something we don't know how to answer (e.g. an
+                        # ``agent.tool_use`` / ``agent.mcp_tool_use``
+                        # event whose response is ``user.tool_confirmation``,
+                        # not ``user.custom_tool_result``). Sending the
+                        # wrong response shape leaves the session
+                        # deadlocked — the API rejects subsequent batches
+                        # with "waiting on responses to events [...]".
+                        # Send ``user.interrupt`` to terminate cleanly
+                        # and surface the failure to the caller.
                         missing = [eid for eid in event_ids if eid not in pending_tool_events]
                         if missing:
                             logger.error(
-                                "ManagedAgentBackend: requires_action ids not buffered",
+                                "ManagedAgentBackend: requires_action ids not buffered — interrupting session",
                                 extra={
                                     "session_id": session_id,
                                     "requested_ids": event_ids,
@@ -323,6 +337,22 @@ class ManagedAgentBackend(AgentBackend):
                                     },
                                 },
                             )
+                            try:
+                                await self._client.beta.sessions.events.send(
+                                    session_id,
+                                    events=[{"type": "user.interrupt"}],
+                                )
+                            except Exception:
+                                logger.exception(
+                                    "ManagedAgentBackend: user.interrupt send failed",
+                                    extra={"session_id": session_id},
+                                )
+                            yield AgentFinish(
+                                stop_reason="error",
+                                usage=dict(usage_accumulator),
+                                session_id=session_id,
+                            )
+                            break
                         results = await self._execute_pending_tools(
                             effective_tools=effective_tools,
                             context=context,

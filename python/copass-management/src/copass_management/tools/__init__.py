@@ -29,6 +29,7 @@ from copass_management.tools.list_trigger_components import list_trigger_compone
 from copass_management.tools.list_triggers import list_triggers
 from copass_management.tools.pause_trigger import pause_trigger
 from copass_management.tools.provision_source import provision_source
+from copass_management.tools.purge_source_context import purge_source_context
 from copass_management.tools.resume_trigger import resume_trigger
 from copass_management.tools.revoke_sandbox_connection import revoke_sandbox_connection
 from copass_management.tools.revoke_user_mcp_source import revoke_user_mcp_source
@@ -66,6 +67,7 @@ TOOL_HANDLERS: Dict[str, ToolHandler] = {
     "add_user_mcp_source": add_user_mcp_source,
     "wire_integration_to_agent": wire_integration_to_agent,
     "provision_source": provision_source,
+    "purge_source_context": purge_source_context,
     "update_source": update_source,
     "start_integration_connect": start_integration_connect,
     "connect_linear": connect_linear,
@@ -104,6 +106,7 @@ __all__ = [
     "list_triggers",
     "pause_trigger",
     "provision_source",
+    "purge_source_context",
     "resume_trigger",
     "revoke_sandbox_connection",
     "revoke_user_mcp_source",

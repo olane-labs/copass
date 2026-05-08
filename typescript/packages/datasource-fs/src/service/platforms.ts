@@ -17,6 +17,7 @@ export function renderLaunchdPlist(def: WatchServiceDefinition): string {
     <string>${def.cliEntrypoint}</string>
     <string>watch</string>
     <string>--service</string>
+    <string>--project-path</string>
     <string>${def.projectPath}</string>
   </array>
   <key>RunAtLoad</key>
@@ -39,7 +40,7 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=${def.cliEntrypoint} watch --service ${def.projectPath}
+ExecStart=${def.cliEntrypoint} watch --service --project-path ${def.projectPath}
 Restart=on-failure
 RestartSec=10
 StandardOutput=append:${def.logDir}/stdout.log
@@ -51,6 +52,6 @@ WantedBy=default.target`;
 
 /** Build a Windows schtasks command string. */
 export function buildWindowsTaskCommand(def: WatchServiceDefinition): string {
-  const args = `watch --service "${def.projectPath}"`;
+  const args = `watch --service --project-path "${def.projectPath}"`;
   return `schtasks /create /tn "${def.serviceId}" /tr "${def.cliEntrypoint} ${args}" /sc onlogon /rl limited /f`;
 }

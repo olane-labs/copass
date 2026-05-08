@@ -64,7 +64,7 @@ describe('@copass/management conformance', () => {
     expect(MAX_SPEC_VERSION).toBe('v1');
   });
 
-  it('loads the 14 Phase 1 read tools, 6 Phase 2 write specs, and 13 Chunk B write specs', () => {
+  it('loads the 14 Phase 1 read tools, 6 Phase 2 write specs, 13 Chunk B write specs, and 1 v1.3 write', () => {
     const names = Object.keys(corpus.specs).sort();
     expect(names).toEqual(
       [
@@ -96,6 +96,7 @@ describe('@copass/management conformance', () => {
         'grant_sandbox_connection',
         'pause_trigger',
         'provision_source',
+        'purge_source_context',
         'resume_trigger',
         'revoke_sandbox_connection',
         'revoke_user_mcp_source',
@@ -106,7 +107,7 @@ describe('@copass/management conformance', () => {
         'update_trigger',
       ].sort(),
     );
-    expect(names.length).toBe(33);
+    expect(names.length).toBe(34);
   });
 
   it('has a fixture for every tool', () => {

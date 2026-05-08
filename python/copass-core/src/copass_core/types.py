@@ -45,10 +45,18 @@ ChatRole = Literal["user", "assistant", "system"]
 
 @dataclass(frozen=True)
 class ChatMessage:
-    """One chat turn. Mirrors the TS ``ChatMessage``."""
+    """One chat turn. Mirrors the TS ``ChatMessage``.
+
+    The optional ``name`` field carries the named participant for this
+    turn. Adapters that forward chat messages to the ingestion API
+    use it as the envelope's ``speaker`` field, retiring the legacy
+    ``[author=…]`` content-prefix convention. When absent, adapters
+    typically fall back to capitalizing ``role``.
+    """
 
     role: ChatRole
     content: str
+    name: Optional[str] = None
 
 
 class WindowLike(Protocol):

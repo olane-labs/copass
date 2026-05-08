@@ -8,29 +8,49 @@
  * boundary swapped names. The DB column is still `model_config`.
  */
 
-export type AgentBackend = 'anthropic' | 'google';
+export type AgentBackend = 'anthropic' | 'google' | 'hermes';
 export type AgentStatus = 'active' | 'archived';
+
+/**
+ * Compute provider for sandboxed runtimes. Required when
+ * ``backend === 'hermes'``; must be omitted otherwise. The server-side
+ * validator enforces the pairing — see ADR 0008 (Hermes runtime) +
+ * ADR 0008 Phase 2b (E2B as second concrete provider).
+ */
+export type AgentComputeProvider = 'daytona' | 'e2b';
 
 /**
  * Default model id per backend used when ``create_agent`` callers
  * leave ``model`` unset. Single source of truth — both the harness
  * SDKs and the backend Concierge handler import this constant
  * rather than inlining the conditional.
+ *
+ * Hermes models are namespaced ``hermes/<openrouter-model-id>`` —
+ * the ``hermes/`` prefix is consumed by Hermes' provider router; the
+ * remaining segment is forwarded to the managed LLM gateway as the
+ * literal OpenRouter model id.
  */
 export const DEFAULT_MODEL_BY_BACKEND: Readonly<Record<AgentBackend, string>> = {
   anthropic: 'claude-sonnet-4-6',
   google: 'gemini-2.5-flash',
+  hermes: 'hermes/anthropic/claude-sonnet-4-5',
 };
 
 export interface AgentModelSettings {
   /** Which shared agent runtime services this agent. */
   backend: AgentBackend;
-  /** Backend-specific model id (e.g. "claude-sonnet-4-6"). */
+  /** Backend-specific model id (e.g. "claude-sonnet-4-6", "hermes/anthropic/claude-sonnet-4-5"). */
   model: string;
   temperature?: number;
   max_tokens?: number;
   max_turns?: number;
   timeout_s?: number;
+  /**
+   * REQUIRED when ``backend === 'hermes'``; MUST be omitted otherwise.
+   * Server-side validator (`validate_model_settings`) rejects mismatched
+   * pairings.
+   */
+  compute_provider?: AgentComputeProvider;
 }
 
 export interface Agent {
@@ -151,7 +171,8 @@ export type RunStatus =
   | 'running'
   | 'succeeded'
   | 'failed'
-  | 'timeout';
+  | 'timeout'
+  | 'cancelled';
 
 export interface AgentRun {
   run_id: string;
@@ -172,6 +193,8 @@ export interface AgentRun {
   error_message?: string | null;
   started_at?: string;
   finished_at?: string | null;
+  /** Set when the run succeeds — pass as `session_id` on the next `startChatRun`. */
+  provider_session_id?: string | null;
 }
 
 export interface AgentRunListResponse {
@@ -197,7 +220,19 @@ export interface AgentRunDetail {
   started_at?: string | null;
   finished_at?: string | null;
   error_message?: string | null;
+  output_text?: string | null;
+  provider_session_id?: string | null;
   tool_resolution_trace?: Record<string, unknown> | null;
+}
+
+/** POST `/agents/{slug}/invoke-async` — starts a background run (HTTP 202). */
+export interface StartAgentChatRunRequest {
+  message: string;
+  session_id?: string | null;
+}
+
+export interface StartAgentChatRunResponse {
+  run_id: string;
 }
 
 export interface ListAgentRunsOptions {

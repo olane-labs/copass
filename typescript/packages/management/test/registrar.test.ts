@@ -9,7 +9,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const sourceSpecDir = resolve(here, '..', '..', '..', '..', 'spec', 'management', 'v1');
 
 describe('registerManagementTools', () => {
-  it('registers all 33 tools (14 Phase 1 reads + 6 Phase 2 writes + 13 Chunk B writes) with handlers bound', () => {
+  it('registers all 34 tools (14 Phase 1 reads + 6 Phase 2 writes + 13 Chunk B writes + 1 v1.3) with handlers bound', () => {
     const client = new CopassClient({
       apiUrl: 'http://test',
       auth: { type: 'api-key', key: 'olk_test' },
@@ -25,7 +25,7 @@ describe('registerManagementTools', () => {
       },
     );
 
-    expect(registered.length).toBe(33);
+    expect(registered.length).toBe(34);
     const names = registered.map((r) => r.name).sort();
     expect(names).toEqual(
       [
@@ -50,6 +50,7 @@ describe('registerManagementTools', () => {
         'list_triggers',
         'pause_trigger',
         'provision_source',
+        'purge_source_context',
         'resume_trigger',
         'revoke_sandbox_connection',
         'revoke_user_mcp_source',

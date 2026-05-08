@@ -3,6 +3,38 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.5.11](https://github.com/olane-labs/copass/compare/@copass/management@0.5.9...@copass/management@0.5.11) (2026-05-08)
+
+**Note:** Version bump only for package @copass/management
+
+## [0.5.9](https://github.com/olane-labs/copass/compare/@copass/management@0.5.8...@copass/management@0.5.9) (2026-05-08)
+
+### Bug Fixes
+
+- **peer-deps:** bump @copass/core peer dependency to ^0.6.0 ([#9](https://github.com/olane-labs/copass/issues/9)) ([3afa9a7](https://github.com/olane-labs/copass/commit/3afa9a7a80671ceb72ff9433bede752df9d81079))
+
+## [0.5.8](https://github.com/olane-labs/copass/compare/@copass/management@0.5.7...@copass/management@0.5.8) (2026-05-08)
+
+**Note:** Version bump only for package @copass/management
+
+## [0.5.7](https://github.com/olane-labs/copass/compare/@copass/management@0.5.6...@copass/management@0.5.7) (2026-05-05)
+
+**Note:** Version bump only for package @copass/management
+
+## [0.5.6](https://github.com/olane-labs/copass/compare/@copass/management@0.5.5...@copass/management@0.5.6) (2026-05-05)
+
+**Note:** Version bump only for package @copass/management
+
+## [0.5.5](https://github.com/olane-labs/copass/compare/@copass/management@0.5.4...@copass/management@0.5.5) (2026-05-05)
+
+**Note:** Version bump only for package @copass/management
+
+## [0.5.4](https://github.com/olane-labs/copass/compare/@copass/management@0.5.2...@copass/management@0.5.4) (2026-05-05)
+
+### Bug Fixes
+
+- **management:** copy specs after tsup so they survive `clean: true` ([9330cf1](https://github.com/olane-labs/copass/commit/9330cf130e68ca5b9e1e7d79d8b61efdad68fb05))
+
 ## [0.5.2](https://github.com/olane-labs/copass/compare/@copass/management@0.4.2...@copass/management@0.5.2) (2026-05-05)
 
 ### Bug Fixes

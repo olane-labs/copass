@@ -71,6 +71,25 @@ def _as_dict(obj: Any) -> dict:
         return {"value": obj}
 
 
+class AdkUpstreamError(RuntimeError):
+    """Raised when an ADK stream surfaces a top-level ``{code, message}``
+    error envelope instead of a normal model event.
+
+    Agent Engine occasionally yields these for invalid model ids, quota
+    exhaustion, or publisher-model-not-found responses. They have no
+    ``content.parts``, so the part-walking translator below would emit
+    zero neutral events and the run would silent-succeed at the runtime
+    layer (no ``AgentTextDelta`` accumulated, no exception raised). We
+    surface them as a real exception so the backend's ``stream`` /
+    ``run`` paths fail loudly the way callers expect.
+    """
+
+    def __init__(self, code: Any, message: str) -> None:
+        super().__init__(f"ADK upstream error {code}: {message}")
+        self.code = code
+        self.message = message
+
+
 def adk_event_to_agent_events(adk_event: Any) -> List[AgentEvent]:
     """Translate a single ADK event into zero or more :class:`AgentEvent`.
 
@@ -91,7 +110,22 @@ def adk_event_to_agent_events(adk_event: Any) -> List[AgentEvent]:
         parts → :class:`AgentToolResult`. Terminal events
         (:class:`AgentFinish`) are emitted by the backend based on
         stream exhaustion, not by this adapter.
+
+    Raises:
+        AdkUpstreamError: When the event is a top-level error envelope
+            (``{"code": <int>, "message": <str>}``) rather than a
+            normal content event. The backend should let this propagate
+            so the run is marked FAILED instead of silently succeeding
+            with zero text.
     """
+    # Detect a top-level error envelope BEFORE the normal walk —
+    # error events have no ``content.parts`` and would otherwise
+    # translate to an empty list, masking the failure.
+    err_code = _get(adk_event, "code")
+    err_message = _get(adk_event, "message")
+    if err_code is not None and err_message and _get(adk_event, "content") is None:
+        raise AdkUpstreamError(err_code, str(err_message))
+
     out: List[AgentEvent] = []
     event_id = _get(adk_event, "id") or ""
     content = _get(adk_event, "content")
@@ -172,4 +206,4 @@ def extract_usage_metadata(adk_event: Any) -> dict:
     return out
 
 
-__all__ = ["adk_event_to_agent_events", "extract_usage_metadata"]
+__all__ = ["adk_event_to_agent_events", "extract_usage_metadata", "AdkUpstreamError"]

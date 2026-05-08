@@ -16,7 +16,7 @@ one.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 if TYPE_CHECKING:
     from copass_core.client import CopassClient
@@ -54,9 +54,19 @@ class BaseDataSource:
         source_type: Optional[str] = None,
         storage_only: Optional[bool] = None,
         project_id: Optional[str] = None,
+        occurred_at: Optional[str] = None,
+        speaker: Optional[str] = None,
+        participants: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         """Push bytes through this data source. Every ingestion in
-        subclasses should route here so attribution stays coherent."""
+        subclasses should route here so attribution stays coherent.
+
+        ``occurred_at`` / ``speaker`` / ``participants`` are envelope-
+        level metadata. ``speaker`` and ``participants`` are useful on
+        conversation-shaped sources (chat history, support tickets);
+        non-conversational sources can omit them. See
+        :meth:`SourcesResource.ingest` for the full semantics.
+        """
         return await self._client.sources.ingest(
             self.sandbox_id,
             self.data_source_id,
@@ -64,6 +74,9 @@ class BaseDataSource:
             source_type=source_type,
             storage_only=storage_only,
             project_id=project_id if project_id is not None else self.project_id,
+            occurred_at=occurred_at,
+            speaker=speaker,
+            participants=participants,
         )
 
     async def get_job(self, job_id: str) -> Dict[str, Any]:

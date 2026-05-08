@@ -1,0 +1,17 @@
+{
+  "name": "copass-integration-typescript",
+  "version": "0.1.0",
+  "description": "Live contract probe — TS SDK against deployed Copass API",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@copass/core": ">=0.5.0"
+  },
+  "devDependencies": {
+    "vitest": "^2.0.0",
+    "typescript": "^5.6.0"
+  }
+}

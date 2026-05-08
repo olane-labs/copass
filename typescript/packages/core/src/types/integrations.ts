@@ -11,9 +11,15 @@
  * flow.
  */
 
-/** One app in the catalog. `supported=true` iff Copass has curated
- * `pull_tool_calls` defaults for this slug. When `false`, `connect()`
- * will 400. */
+/**
+ * One app in the integration provider catalog.
+ *
+ * - `supported` — true for every app returned by the active provider's
+ *   catalog (OAuth connect is allowed for that slug).
+ * - `has_ingestion_defaults` — true when Copass ships curated
+ *   `pull_tool_calls` for that app so Tier-3 `data_source_pull` can
+ *   drain MCP tools without hand-authored adapter config.
+ */
 export interface AppCatalogItem {
   slug: string;
   name: string;
@@ -22,6 +28,7 @@ export interface AppCatalogItem {
   auth_type: string;
   icon_url?: string | null;
   supported: boolean;
+  has_ingestion_defaults?: boolean;
 }
 
 export interface AppCatalogResponse {

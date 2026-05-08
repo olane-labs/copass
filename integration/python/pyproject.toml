@@ -1,0 +1,17 @@
+[project]
+name = "copass-integration-python"
+version = "0.1.0"
+description = "Live contract probe — Python SDK against deployed Copass API"
+requires-python = ">=3.10"
+
+# Pin to PUBLISHED SDK versions (not local source). The whole point of
+# this suite is to verify the published SDK still works against the API.
+dependencies = [
+    "copass-core>=0.7.0",
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["."]

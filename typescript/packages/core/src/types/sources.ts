@@ -92,6 +92,24 @@ export interface DataSourceListResponse {
   count: number;
 }
 
+/** Body for ``POST /sources/{source_id}/pull`` (adapter-driven ingestion). */
+export interface PullDataSourceRequest {
+  /** ISO 8601 datetime — incremental cursor; semantics are adapter-defined. */
+  since?: string;
+  /**
+   * When true, rows go to vault only and no `ontology_ingestion` jobs
+   * are dispatched.
+   */
+  vault_only?: boolean;
+}
+
+/** Response from ``POST /sources/{source_id}/pull`` (HTTP 202). */
+export interface PullDataSourceResponse {
+  job_id: string;
+  job_type: string;
+  status: string;
+}
+
 /**
  * Body for ``POST /sources/linear``.
  *
@@ -178,4 +196,32 @@ export interface UserMcpSourceResult {
   health_error?: string;
   error?: string;
   detail?: string;
+}
+
+/** Body for `POST /sources/{id}/purge`. */
+export interface PurgeDataSourceRequest {
+  /**
+   * When true, delete the data source registration after purging knowledge
+   * (same as `DELETE /sources/{id}`).
+   */
+  delete_source?: boolean;
+}
+
+/** Response from `POST /sources/{id}/purge`. */
+export interface DataSourcePurgeResponse {
+  success?: boolean;
+  delete_source_applied: boolean;
+  events_deleted: number;
+  extractions_deleted: number;
+  canonical_index_rows_deleted: number;
+  entity_vectors_deleted: number;
+  triggers_deleted: number;
+  webhooks_deleted: number;
+  event_seen_deleted: number;
+  project_links_deleted: number;
+  strategy_artifacts_deleted: number;
+  pull_artifacts_deleted: number;
+  user_strategies_deleted: number;
+  /** Binary storage objects removed for this source (field name from the API). */
+  vault_objects_deleted: number;
 }
