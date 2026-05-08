@@ -8,29 +8,49 @@
  * boundary swapped names. The DB column is still `model_config`.
  */
 
-export type AgentBackend = 'anthropic' | 'google';
+export type AgentBackend = 'anthropic' | 'google' | 'hermes';
 export type AgentStatus = 'active' | 'archived';
+
+/**
+ * Compute provider for sandboxed runtimes. Required when
+ * ``backend === 'hermes'``; must be omitted otherwise. The server-side
+ * validator enforces the pairing — see ADR 0008 (Hermes runtime) +
+ * ADR 0008 Phase 2b (E2B as second concrete provider).
+ */
+export type AgentComputeProvider = 'daytona' | 'e2b';
 
 /**
  * Default model id per backend used when ``create_agent`` callers
  * leave ``model`` unset. Single source of truth — both the harness
  * SDKs and the backend Concierge handler import this constant
  * rather than inlining the conditional.
+ *
+ * Hermes models are namespaced ``hermes/<openrouter-model-id>`` —
+ * the ``hermes/`` prefix is consumed by Hermes' provider router; the
+ * remaining segment is forwarded to the managed LLM gateway as the
+ * literal OpenRouter model id.
  */
 export const DEFAULT_MODEL_BY_BACKEND: Readonly<Record<AgentBackend, string>> = {
   anthropic: 'claude-sonnet-4-6',
   google: 'gemini-2.5-flash',
+  hermes: 'hermes/anthropic/claude-sonnet-4-5',
 };
 
 export interface AgentModelSettings {
   /** Which shared agent runtime services this agent. */
   backend: AgentBackend;
-  /** Backend-specific model id (e.g. "claude-sonnet-4-6"). */
+  /** Backend-specific model id (e.g. "claude-sonnet-4-6", "hermes/anthropic/claude-sonnet-4-5"). */
   model: string;
   temperature?: number;
   max_tokens?: number;
   max_turns?: number;
   timeout_s?: number;
+  /**
+   * REQUIRED when ``backend === 'hermes'``; MUST be omitted otherwise.
+   * Server-side validator (`validate_model_settings`) rejects mismatched
+   * pairings.
+   */
+  compute_provider?: AgentComputeProvider;
 }
 
 export interface Agent {

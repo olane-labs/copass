@@ -73,7 +73,7 @@ export class SupabaseAuthProvider implements AuthProvider {
    */
   async verifyOtp(email: string, otp: string): Promise<SupabaseSession> {
     const response = await fetch(
-      `${this.supabaseUrl}/auth/v1/token?grant_type=otp`,
+      `${this.supabaseUrl}/auth/v1/verify`,
       {
         method: 'POST',
         headers: this.headers(),

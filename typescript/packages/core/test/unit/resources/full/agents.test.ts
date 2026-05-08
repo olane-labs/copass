@@ -22,6 +22,46 @@ describe('agents', () => {
     expect((call.body as { slug: string }).slug).toBe('support-bot');
   });
 
+  it('create accepts Hermes-on-E2B model_settings', async () => {
+    // Type-checks `backend: 'hermes'` + `compute_provider: 'e2b'`
+    // and round-trips them through the wire body. Server-side
+    // validator (`validate_model_settings`) accepts this pairing —
+    // see ADR 0008 Phase 2b.
+    mockFetch.mockResolvedValue(
+      jsonResponse({
+        slug: 'hermes-bot',
+        name: 'Hermes',
+        version: 1,
+        model_settings: {
+          backend: 'hermes',
+          compute_provider: 'e2b',
+          model: 'hermes/anthropic/claude-sonnet-4-5',
+        },
+      }),
+    );
+    const client = makeClient();
+    await client.agents.create('sb-1', {
+      slug: 'hermes-bot',
+      name: 'Hermes',
+      system_prompt: 'You are a Hermes-powered agent.',
+      tool_allowlist: [],
+      model_settings: {
+        backend: 'hermes',
+        compute_provider: 'e2b',
+        model: 'hermes/anthropic/claude-sonnet-4-5',
+      },
+    });
+    const call = lastFetchCall();
+    expect(call.url).toContain(BASE);
+    expect(call.method).toBe('POST');
+    const body = call.body as {
+      model_settings: { backend: string; compute_provider: string; model: string };
+    };
+    expect(body.model_settings.backend).toBe('hermes');
+    expect(body.model_settings.compute_provider).toBe('e2b');
+    expect(body.model_settings.model).toBe('hermes/anthropic/claude-sonnet-4-5');
+  });
+
   it('list GETs /agents', async () => {
     mockFetch.mockResolvedValue(jsonResponse({ agents: [], count: 0 }));
     const client = makeClient();

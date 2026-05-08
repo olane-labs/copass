@@ -2,20 +2,47 @@
  * `AgentRouter` — high-level Copass agent-routing SDK.
  *
  * Sits on top of `@copass/core` and hides:
- *   - SSE parsing for `POST /sandboxes/{id}/agents/run`
+ *   - SSE parsing for `POST /sandboxes/{id}/agents/run` (stateless run —
+ *     ``provider: 'anthropic' | 'google'`` only)
+ *   - Persisted-agent CRUD + test-fire (`router.agents.*`) — covers
+ *     ``backend: 'hermes'`` (sandbox-bound runtimes) plus the
+ *     anthropic/google backends. Hermes agents pair ``backend: 'hermes'``
+ *     with a ``compute_provider`` (``'daytona' | 'e2b'``) at create time
+ *     and are exercised via `router.agents.testFire(slug, ...)` rather
+ *     than `router.run(...)`.
  *   - OAuth connect-flow (browser redirect + local listener + reconcile poll)
  *   - Per-sandbox defaults + typed event surface
  *
  * Usage:
  *   const router = new AgentRouter({ auth, sandboxId });
+ *
+ *   // OAuth a data source.
  *   const { connection } = await router.integrations.connect('github', {
  *     onConnectUrl: (url) => open(url),
  *   });
+ *
+ *   // Stateless run (anthropic/google).
  *   for await (const event of router.run({ provider: 'anthropic', model, system, message, endUserId })) { ... }
+ *
+ *   // Persisted Hermes-on-E2B agent.
+ *   await router.agents.create(sandboxId, {
+ *     slug: 'my-hermes-agent',
+ *     name: 'My Hermes Agent',
+ *     system_prompt: 'You are a helpful assistant.',
+ *     model_settings: {
+ *       backend: 'hermes',
+ *       compute_provider: 'e2b',
+ *       model: 'hermes/anthropic/claude-sonnet-4-5',
+ *     },
+ *   });
+ *   const run = await router.agents.testFire(sandboxId, 'my-hermes-agent', {
+ *     event_payload: { input: 'Say hello.' },
+ *   });
  */
 
 import {
   CopassClient,
+  type AgentsResource,
   type AuthConfig,
   type ConnectionItem,
   type ConnectionsListResponse,
@@ -42,8 +69,11 @@ export interface AgentRouterOptions {
 }
 
 export interface RunAgentOptions {
-  /** `'anthropic'` | `'google'`. */
-  provider: string;
+  /**
+   * Stateless-run providers: `'anthropic' | 'google'`. For Hermes agents
+   * use the persisted-agent surface instead — see `router.agents.testFire`.
+   */
+  provider: 'anthropic' | 'google' | (string & {});
   /** Model id. E.g. `'claude-opus-4-7'`, `'gemini-3.1-pro-preview'`. */
   model: string;
   /** System prompt. */
@@ -117,6 +147,17 @@ export class IntegrationsFacade {
 export class AgentRouter {
   readonly client: CopassClient;
   readonly integrations: IntegrationsFacade;
+  /**
+   * Persisted-agent surface — CRUD + test-fire + run history for the
+   * `/api/v1/storage/sandboxes/{id}/agents/*` endpoints. This is where
+   * Hermes-backed agents live; Anthropic/Google agents can be persisted
+   * here too (and run via `agents.testFire`) instead of using the
+   * stateless `router.run(...)` path.
+   *
+   * Aliases `router.client.agents` for ergonomic parity with
+   * `router.integrations`.
+   */
+  readonly agents: AgentsResource;
   private readonly defaultSandboxId: string;
   private readonly apiUrl: string;
 
@@ -126,6 +167,7 @@ export class AgentRouter {
     this.apiUrl = options.apiUrl ?? 'https://ai.copass.id';
     this.defaultSandboxId = options.sandboxId;
     this.integrations = new IntegrationsFacade(this.client, options.sandboxId);
+    this.agents = this.client.agents;
   }
 
   /** Run an agent turn and stream neutral `AgentEvent` values.
