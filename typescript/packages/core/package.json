@@ -1,6 +1,6 @@
 {
   "name": "@copass/core",
-  "version": "0.6.2",
+  "version": "0.6.3",
   "description": "Core client SDK for the Copass platform",
   "publishConfig": {
     "access": "public",
