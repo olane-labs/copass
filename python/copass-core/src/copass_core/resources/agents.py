@@ -415,6 +415,30 @@ class AgentsResource(BaseResource):
             f"{_agents_base(sandbox_id)}/{slug}/test", body
         )
 
+    async def start_chat_run(
+        self,
+        sandbox_id: str,
+        slug: str,
+        *,
+        message: str,
+        session_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Start a persisted agent chat turn that continues after disconnect.
+
+        Returns immediately with ``{"run_id": ...}`` (HTTP 202). Poll
+        :meth:`get_run` until ``status`` is terminal; read ``output_text``
+        and ``provider_session_id`` (pass the latter as ``session_id``
+        on the next call for multi-turn).
+
+        Mirrors TS ``AgentsResource.startChatRun``.
+        """
+        body: Dict[str, Any] = {"message": message}
+        if session_id is not None:
+            body["session_id"] = session_id
+        return await self._post(
+            f"{_agents_base(sandbox_id)}/{slug}/invoke-async", body,
+        )
+
     # ── Run reads ───────────────────────────────────────────────
 
     async def list_runs(

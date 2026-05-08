@@ -26,8 +26,8 @@ class ApiKeysResource(BaseResource):
         response = await self._get("/api/v1/api-keys")
         return response if isinstance(response, list) else []
 
-    async def revoke(self, key_id: str) -> None:
-        await self._delete(f"/api/v1/api-keys/{key_id}")
+    async def revoke(self, key_id: str) -> Dict[str, Any]:
+        return await self._delete(f"/api/v1/api-keys/{key_id}")
 
 
 __all__ = ["ApiKeysResource"]

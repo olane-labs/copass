@@ -28,9 +28,14 @@ const base = (sandboxId: string) =>
  * — Copass never persists them.
  */
 export class IntegrationsResource extends BaseResource {
-  /** List or search the app catalog for a sandbox. Apps with
-   * curated `pull_tool_calls` defaults are marked `supported`; only
-   * those can be passed to {@link connect}. */
+  /**
+   * List or search the app catalog for a sandbox.
+   *
+   * Every catalog entry has `supported: true`. Use
+   * `has_ingestion_defaults` to tell which slugs get curated firehose
+   * pull defaults after OAuth (vs agent-tools-only until a custom
+   * `pull_tool_calls` spec is added).
+   */
   async catalog(
     sandboxId: string,
     options: CatalogOptions = {},

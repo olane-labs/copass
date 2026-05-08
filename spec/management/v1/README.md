@@ -7,7 +7,7 @@ Concierge, `@copass/management` (TypeScript), and `copass-management`
 
 ## Surface
 
-`v1/` ships **33 tools**:
+`v1/` ships **34 tools**:
 
 - **14 read tools** (Phase 1, `since: "v1"`): `list_sandboxes`,
   `list_sources`, `get_source`, `list_agents`, `get_agent`,
@@ -25,6 +25,7 @@ Concierge, `@copass/management` (TypeScript), and `copass-management`
   `create_trigger`, `pause_trigger`, `resume_trigger`,
   `update_trigger`, `grant_sandbox_connection`,
   `revoke_sandbox_connection`.
+- **1 write tool** (`since: "v1.3"`): `purge_source_context`.
 
 Four destructive / sensitive Concierge tools remain BACKEND_ONLY by
 policy: `test_agent` (LLM cost-gate gap pending), `mint_agent_invoke_key`,

@@ -99,19 +99,66 @@ async def test_context_window_add_turn_pushes_through_source(
     await window.add_turn(ChatMessage(role="user", content="hello"))
     await window.add_turn(ChatMessage(role="assistant", content="hi!"))
 
+    # ADR 0022 Phase 2 — body is the verbatim message content; speaker
+    # rides on the envelope. Capitalized role is the fallback when the
+    # ChatMessage doesn't carry an explicit `name`.
     assert ingest_route.call_count == 2
     first_body = json.loads(ingest_route.calls[0].request.content)
     second_body = json.loads(ingest_route.calls[1].request.content)
-    assert first_body["text"] == "user: hello"
+    assert first_body["text"] == "hello"
     assert first_body["data_source_id"] == "ds-1"
     assert first_body["source_type"] == "conversation"
-    assert second_body["text"] == "assistant: hi!"
+    assert first_body["speaker"] == "User"
+    assert second_body["text"] == "hi!"
+    assert second_body["speaker"] == "Assistant"
 
     turns = window.get_turns()
     assert [(t.role, t.content) for t in turns] == [
         ("user", "hello"),
         ("assistant", "hi!"),
     ]
+
+
+@respx.mock
+async def test_add_turn_forwards_chat_message_name_as_speaker(
+    client: CopassClient,
+) -> None:
+    """ADR 0022 Phase 2 — when ChatMessage.name is set, it overrides
+    the role-derived speaker fallback."""
+    respx.post("http://test/api/v1/storage/sandboxes/sb-1/sources").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "data_source_id": "ds-1",
+                "user_id": "u",
+                "sandbox_id": "sb-1",
+                "provider": "custom",
+                "name": "w",
+                "ingestion_mode": "manual",
+                "status": "active",
+                "adapter_config": {},
+            },
+        )
+    )
+    ingest_route = respx.post("http://test/api/v1/storage/sandboxes/sb-1/ingest").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "job_id": "j", "status": "queued", "encrypted": False,
+                "sandbox_id": "sb-1", "status_url": "/",
+            },
+        )
+    )
+
+    window = await client.context_window.create(sandbox_id="sb-1")
+    await window.add_turn(
+        ChatMessage(role="user", content="Hey Bob, did you finish?", name="Alice"),
+    )
+
+    body = json.loads(ingest_route.calls.last.request.content)
+    assert body["text"] == "Hey Bob, did you finish?"
+    assert body["speaker"] == "Alice"  # ChatMessage.name wins over role
+    assert body["source_type"] == "conversation"
 
 
 @respx.mock

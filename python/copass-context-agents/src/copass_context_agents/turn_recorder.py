@@ -26,12 +26,15 @@ guarantee no turn is dropped. :meth:`record_stream` handles the flush
 in its ``finally`` block, so the default path through a provider's
 ``stream()`` override is leak-free without user work.
 
-Envelope caveat: ``copass_core.types.ChatMessage`` currently carries
-only ``{role, content}``. Richer provenance (agent_id, model,
-tool_calls) can't be a first-class field yet — if you need that
-today, pass ``author=...`` + ``include_author_prefix=True`` to embed
-it as a ``[author=...]`` prefix in ``content``. Promote to a real
-field in ``ChatMessage`` when the envelope is widened.
+Provenance: ``copass_core.types.ChatMessage`` carries an optional
+``name`` field (ADR 0022). Pass ``author=...`` to record assistant
+turns with that name; the recorder forwards it as
+``ChatMessage.name`` so the underlying ``ContextWindow`` lifts it
+onto the ingest envelope's ``speaker`` field. The legacy
+``include_author_prefix`` flag (which used to embed
+``"[author=...]\\n"`` into ``content``) still works for
+backward compat but is deprecated — prefer the typed ``author``
+path which keeps the body clean and the speaker structured.
 """
 
 from __future__ import annotations
@@ -66,15 +69,18 @@ class CopassTurnRecorder:
             double-count.
         author: Optional identifier for whoever is running the agent
             (``"agent"``, ``"user"``, or something richer like
-            ``"agent:support-bot"``). Recorded as a prefix on
-            assistant turns when ``include_author_prefix`` is True.
-            Until :class:`ChatMessage` grows an ``author`` field this
-            is the only way to carry provenance into the window.
-        include_author_prefix: When True, assistant turns are stored
-            as ``"[author=...]\\n<content>"`` so downstream retrieval
-            can distinguish agent-authored vs. user-authored turns.
-            Default False — most callers don't need provenance, and
-            the prefix marginally pollutes the embedding.
+            ``"agent:support-bot"``). Recorded on assistant turns as
+            ``ChatMessage.name`` (ADR 0022); the underlying
+            :class:`ContextWindow` forwards it as the envelope's
+            ``speaker`` field. When ``include_author_prefix`` is True,
+            also embedded as a legacy ``"[author=...]\\n"`` prefix in
+            ``content`` for backward compat with consumers that read
+            the body string directly.
+        include_author_prefix: Deprecated. When True, assistant turns
+            are stored as ``"[author=...]\\n<content>"`` in the body
+            in addition to the typed ``ChatMessage.name`` carry. Off
+            by default — the typed envelope path is preferred and the
+            prefix marginally pollutes the embedding.
     """
 
     def __init__(
@@ -186,9 +192,19 @@ class CopassTurnRecorder:
         self._pending_assistant_text.clear()
         if not text:
             return
+        # Legacy [author=...] prefix kept opt-in for body-reading
+        # consumers; the typed `name` field below is the preferred
+        # carrier and is always set when `author` is provided
+        # (ADR 0022).
         if self._include_author_prefix and self._author:
             text = f"[author={self._author}]\n{text}"
-        await self._record(ChatMessage(role="assistant", content=text))
+        await self._record(
+            ChatMessage(
+                role="assistant",
+                content=text,
+                name=self._author,
+            )
+        )
 
     async def _record(self, turn: ChatMessage) -> None:
         if not turn.content.strip():

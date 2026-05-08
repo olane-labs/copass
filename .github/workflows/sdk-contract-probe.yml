@@ -1,0 +1,78 @@
+name: SDK contract probe
+
+# Live-fire contract probe — runs the published SDK against the deployed
+# API and asserts response shapes match what the mock-based Tier 1 tests
+# assume. Catches "API drifted from mock" regressions.
+#
+# Runs nightly + on demand. The Tier 1 mock tests run on every PR via
+# the regular per-package test commands; this workflow is the
+# supplementary live check.
+
+on:
+  schedule:
+    # 09:00 UTC every day — early enough to catch issues before the
+    # Americas wake up.
+    - cron: "0 9 * * *"
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Which API to probe"
+        required: true
+        default: "staging"
+        type: choice
+        options:
+          - staging
+          - production
+
+concurrency:
+  group: sdk-contract-probe
+  cancel-in-progress: false
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    environment: sdk-integration
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install integration suite (pulls published SDK from PyPI)
+        working-directory: integration/python
+        run: pip install -e .
+
+      - name: Run contract probe
+        working-directory: integration/python
+        env:
+          COPASS_INTEGRATION_API_KEY: ${{ inputs.target == 'production' && secrets.COPASS_INTEGRATION_API_KEY_PROD || secrets.COPASS_INTEGRATION_API_KEY_STAGING }}
+          COPASS_INTEGRATION_SANDBOX_ID: ${{ inputs.target == 'production' && secrets.COPASS_INTEGRATION_SANDBOX_ID_PROD || secrets.COPASS_INTEGRATION_SANDBOX_ID_STAGING }}
+          COPASS_API_URL: ${{ inputs.target == 'production' && 'https://ai.copass.id' || 'https://ai.staging.copass.id' }}
+        run: pytest -v
+
+  typescript:
+    runs-on: ubuntu-latest
+    environment: sdk-integration
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install integration suite (pulls published SDK from npm)
+        working-directory: integration/typescript
+        run: pnpm install
+
+      - name: Run contract probe
+        working-directory: integration/typescript
+        env:
+          COPASS_INTEGRATION_API_KEY: ${{ inputs.target == 'production' && secrets.COPASS_INTEGRATION_API_KEY_PROD || secrets.COPASS_INTEGRATION_API_KEY_STAGING }}
+          COPASS_INTEGRATION_SANDBOX_ID: ${{ inputs.target == 'production' && secrets.COPASS_INTEGRATION_SANDBOX_ID_PROD || secrets.COPASS_INTEGRATION_SANDBOX_ID_STAGING }}
+          COPASS_API_URL: ${{ inputs.target == 'production' && 'https://ai.copass.id' || 'https://ai.staging.copass.id' }}
+        run: pnpm test

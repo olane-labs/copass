@@ -5,7 +5,6 @@ import type { SupabaseAuthOptions } from './auth/supabase.js';
 import type { AuthProvider } from './auth/types.js';
 import { HttpClient } from './http/http-client.js';
 import { EntitiesResource } from './resources/entities.js';
-import { MatrixResource } from './resources/matrix.js';
 import { RetrievalResource } from './resources/retrieval.js';
 import { ProjectsResource } from './resources/projects.js';
 import { UsersResource } from './resources/users.js';
@@ -14,7 +13,6 @@ import { UsageResource } from './resources/usage.js';
 import { SandboxesResource } from './resources/sandboxes.js';
 import { SandboxConnectionsResource } from './resources/sandbox-connections.js';
 import { SourcesResource } from './resources/sources.js';
-import { VaultResource } from './resources/vault.js';
 import { IngestResource } from './resources/ingest.js';
 import { IntegrationsResource } from './resources/integrations.js';
 import { AgentsResource } from './resources/agents.js';
@@ -66,7 +64,7 @@ const DEFAULT_API_URL = 'https://ai.copass.id';
  *   auth: { type: 'api-key', key: 'olk_...' },
  * });
  *
- * const result = await client.matrix.query({ query: 'How does auth work?' });
+ * const result = await client.retrieval.search('sb_...', { query: 'How does auth work?' });
  * ```
  */
 export class CopassClient {
@@ -75,10 +73,8 @@ export class CopassClient {
   readonly sandboxConnections: SandboxConnectionsResource;
   readonly sources: SourcesResource;
   readonly projects: ProjectsResource;
-  readonly vault: VaultResource;
   readonly ingest: IngestResource;
   readonly entities: EntitiesResource;
-  readonly matrix: MatrixResource;
   readonly retrieval: RetrievalResource;
   readonly users: UsersResource;
   readonly apiKeys: ApiKeysResource;
@@ -108,10 +104,8 @@ export class CopassClient {
     this.sandboxConnections = new SandboxConnectionsResource(http);
     this.sources = new SourcesResource(http);
     this.projects = new ProjectsResource(http);
-    this.vault = new VaultResource(http);
     this.ingest = new IngestResource(http);
     this.entities = new EntitiesResource(http);
-    this.matrix = new MatrixResource(http);
     this.retrieval = new RetrievalResource(http);
     this.users = new UsersResource(http);
     this.apiKeys = new ApiKeysResource(http);

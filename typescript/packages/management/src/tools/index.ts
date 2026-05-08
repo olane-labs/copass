@@ -20,6 +20,7 @@ import { listTriggerComponents } from './list_trigger_components.js';
 import { listTriggers } from './list_triggers.js';
 import { pauseTrigger } from './pause_trigger.js';
 import { provisionSource } from './provision_source.js';
+import { purgeSourceContext } from './purge_source_context.js';
 import { resumeTrigger } from './resume_trigger.js';
 import { revokeSandboxConnection } from './revoke_sandbox_connection.js';
 import { revokeUserMcpSource } from './revoke_user_mcp_source.js';
@@ -56,6 +57,7 @@ export const TOOL_HANDLERS: Record<string, ToolHandler> = {
   add_user_mcp_source: addUserMcpSource,
   wire_integration_to_agent: wireIntegrationToAgent,
   provision_source: provisionSource,
+  purge_source_context: purgeSourceContext,
   update_source: updateSource,
   start_integration_connect: startIntegrationConnect,
   connect_linear: connectLinear,
@@ -91,6 +93,7 @@ export {
   listTriggers,
   pauseTrigger,
   provisionSource,
+  purgeSourceContext,
   resumeTrigger,
   revokeSandboxConnection,
   revokeUserMcpSource,

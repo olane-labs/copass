@@ -2,7 +2,6 @@ import { BaseDataSource, ensureDataSource } from '@copass/core';
 import type {
   BaseDataSourceOptions,
   CopassClient,
-  DataSource,
   DataSourceIngestionMode,
   ProjectConfig,
 } from '@copass/core';

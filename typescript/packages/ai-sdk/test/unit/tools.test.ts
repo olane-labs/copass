@@ -76,8 +76,8 @@ describe('copassTools', () => {
       expect(result).toEqual({
         header: 'stub header',
         items: [
-          { score: 0.9, summary: 'Checkout ▸ Stripe', canonical_ids: ['c1', 'c2'] },
-          { score: 0.7, summary: 'Webhooks', canonical_ids: ['c3'] },
+          { score: 0.9, summary: 'Checkout ▸ Stripe', canonical_ids: ['c1', 'c2'], subgraph: null, matched_query_nodes: null },
+          { score: 0.7, summary: 'Webhooks', canonical_ids: ['c3'], subgraph: null, matched_query_nodes: null },
         ],
         next_steps: 'Pick items and call interpret',
       });
@@ -121,14 +121,14 @@ describe('copassTools', () => {
       expect(result).toEqual({ brief: 'Checkout retries on 5xx from Stripe.' });
     });
 
-    it('defaults preset to "copass/1.0" when not provided', async () => {
+    it('defaults preset to "copass/copass_1.0" when not provided', async () => {
       const tools = copassTools({ client, sandbox_id: 'sb1' });
 
       await tools.interpret.execute!({ query: 'q', items: [['c1']] }, execOpts);
 
       expect(client.retrieval.interpret).toHaveBeenCalledWith(
         'sb1',
-        expect.objectContaining({ preset: 'copass/1.0' }),
+        expect.objectContaining({ preset: 'copass/copass_1.0' }),
       );
     });
   });

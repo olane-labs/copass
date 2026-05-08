@@ -8,8 +8,6 @@ network I/O.
 
 from __future__ import annotations
 
-import pytest
-
 from copass_anthropic_agents import (
     AgentTool,
     AgentToolRegistry,

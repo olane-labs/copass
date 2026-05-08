@@ -7,6 +7,10 @@ import type {
   UpdateDataSourceRequest,
   ListDataSourcesOptions,
   DataSourceListResponse,
+  PurgeDataSourceRequest,
+  DataSourcePurgeResponse,
+  PullDataSourceRequest,
+  PullDataSourceResponse,
 } from '../types/sources.js';
 import type { StatusResponse } from '../types/sandboxes.js';
 import type { IngestTextRequest, IngestJobResponse } from '../types/ingest.js';
@@ -111,6 +115,31 @@ export class SourcesResource extends BaseResource {
     );
   }
 
+  /**
+   * Queue a `data_source_pull` job for this source (Tier-3 adapter pull).
+   *
+   * Targets `POST /sources/{sourceId}/pull`. The worker resolves the
+   * `CopassIdAdapter` from `DataSource.provider` and streams
+   * `adapter.pull()` into ontology ingestion.
+   */
+  async pull(
+    sandboxId: string,
+    sourceId: string,
+    request: PullDataSourceRequest = {},
+  ): Promise<PullDataSourceResponse> {
+    const body: Record<string, unknown> = {};
+    if (request.since !== undefined) {
+      body.since = request.since;
+    }
+    if (request.vault_only === true) {
+      body.vault_only = true;
+    }
+    return this.post<PullDataSourceResponse>(
+      `${base(sandboxId)}/${sourceId}/pull`,
+      body,
+    );
+  }
+
   async pause(sandboxId: string, sourceId: string): Promise<StatusResponse> {
     return this.post<StatusResponse>(`${base(sandboxId)}/${sourceId}/pause`);
   }
@@ -125,6 +154,22 @@ export class SourcesResource extends BaseResource {
 
   async del(sandboxId: string, sourceId: string): Promise<StatusResponse> {
     return this.delete<StatusResponse>(`${base(sandboxId)}/${sourceId}`);
+  }
+
+  /**
+   * Remove ingested knowledge for this data source (ontology, vectors,
+   * sandbox storage objects keyed under the source). Does not delete the
+   * `copass_data_sources` row unless `delete_source` is true.
+   */
+  async purge(
+    sandboxId: string,
+    sourceId: string,
+    body: PurgeDataSourceRequest = {},
+  ): Promise<DataSourcePurgeResponse> {
+    return this.post<DataSourcePurgeResponse>(
+      `${base(sandboxId)}/${sourceId}/purge`,
+      body,
+    );
   }
 
   /**
@@ -200,24 +245,6 @@ export class SourcesResource extends BaseResource {
   ): Promise<import('../types/sources.js').UserMcpSourceResult> {
     return this.post<import('../types/sources.js').UserMcpSourceResult>(
       `${base(sandboxId)}/${sourceId}/user-mcp/revoke`,
-    );
-  }
-
-  /**
-   * Mint a fresh webhook signing secret for a `realtime` data source whose
-   * provider has a registered ingestor. The plaintext
-   * `webhook_signing_secret` is returned ONCE on the response — paste it
-   * into your provider's HTTP step as `Authorization: Bearer <secret>`.
-   * After this call the server only stores the sha256 hash; lose the
-   * plaintext and you must rotate again.
-   *
-   * The previous active webhook flips to `rotating` so in-flight events
-   * keep authenticating during the grace window; new events use the new
-   * secret.
-   */
-  async rotateWebhookSecret(sandboxId: string, sourceId: string): Promise<DataSource> {
-    return this.post<DataSource>(
-      `${base(sandboxId)}/${sourceId}/rotate-webhook-secret`,
     );
   }
 }

@@ -33,7 +33,7 @@ importers:
     dependencies:
       '@ai-sdk/anthropic':
         specifier: ^3.0.0
-        version: 3.0.74(zod@4.3.6)
+        version: 3.0.76(zod@4.3.6)
       '@copass/ai-sdk':
         specifier: ^0.2.3
         version: 0.2.7(@copass/core@0.2.7)(ai@6.0.168(zod@4.3.6))(zod@4.3.6)
@@ -90,7 +90,7 @@ importers:
   packages/agent-router:
     devDependencies:
       '@copass/core':
-        specifier: ^0.5.0
+        specifier: ^0.6.3
         version: link:../core
       '@types/node':
         specifier: ^25.0.0
@@ -109,7 +109,7 @@ importers:
         version: link:../config
     devDependencies:
       '@copass/core':
-        specifier: ^0.5.0
+        specifier: ^0.6.3
         version: link:../core
       '@types/node':
         specifier: ^25.0.0
@@ -177,7 +177,7 @@ importers:
         version: 7.0.5
     devDependencies:
       '@copass/core':
-        specifier: ^0.5.0
+        specifier: ^0.6.3
         version: link:../core
       '@types/node':
         specifier: ^25.0.0
@@ -192,26 +192,32 @@ importers:
   packages/datasource-olane:
     dependencies:
       '@olane/o-client':
-        specifier: ^0.8.19
-        version: 0.8.20
+        specifier: ^0.8.21
+        version: 0.8.21
       '@olane/o-core':
-        specifier: ^0.8.18
-        version: 0.8.18
+        specifier: ^0.9.0
+        version: 0.9.0
       '@olane/o-node':
-        specifier: ^0.8.18
-        version: 0.8.18
+        specifier: ^0.9.0
+        version: 0.9.0
+      '@olane/o-storage':
+        specifier: ^0.9.0
+        version: 0.9.0
       '@olane/os':
-        specifier: ^0.8.18
-        version: 0.8.18(@browserbasehq/sdk@2.10.0(encoding@0.1.13))(@browserbasehq/stagehand@1.14.0(@playwright/test@1.59.1)(deepmerge@4.3.1)(dotenv@17.4.2)(encoding@0.1.13)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))(zod@4.3.6))(@cfworker/json-schema@4.1.1)(@ibm-cloud/watsonx-ai@1.7.11(typescript@5.9.3))(@langchain/anthropic@1.3.26(@langchain/core@0.3.61(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))))(@opentelemetry/api@1.9.0)(@supabase/supabase-js@2.104.0)(axios@1.15.0)(encoding@0.1.13)(handlebars@4.7.9)(ibm-cloud-sdk-core@5.4.11)(ignore@5.3.2)(interface-datastore@8.3.2)(it-all@3.0.11)(jsonwebtoken@9.0.3)(lodash@4.18.1)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))(playwright@1.59.1)(weaviate-client@3.12.1(encoding@0.1.13))(ws@8.20.0)(zod@4.3.6)
+        specifier: ^0.9.0
+        version: 0.9.0(@browserbasehq/sdk@2.10.0(encoding@0.1.13))(@browserbasehq/stagehand@1.14.0(@playwright/test@1.59.1)(deepmerge@4.3.1)(dotenv@17.4.2)(encoding@0.1.13)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))(zod@4.3.6))(@cfworker/json-schema@4.1.1)(@ibm-cloud/watsonx-ai@1.7.11(typescript@5.9.3))(@langchain/anthropic@1.3.26(@langchain/core@0.3.61(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))))(@opentelemetry/api@1.9.0)(@supabase/supabase-js@2.104.0)(axios@1.15.0)(encoding@0.1.13)(handlebars@4.7.9)(ibm-cloud-sdk-core@5.4.11)(ignore@5.3.2)(interface-datastore@8.3.2)(it-all@3.0.11)(jsonwebtoken@9.0.3)(lodash@4.18.1)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))(playwright@1.59.1)(weaviate-client@3.12.1(encoding@0.1.13))(ws@8.20.0)(zod@4.3.6)
       fs-extra:
         specifier: ^11.3.4
         version: 11.3.4
       portfinder:
         specifier: ^1.0.38
         version: 1.0.38
+      uuid:
+        specifier: ^11.0.0
+        version: 11.1.0
     devDependencies:
       '@copass/core':
-        specifier: ^0.5.0
+        specifier: ^0.6.3
         version: link:../core
       '@types/fs-extra':
         specifier: ^11.0.4
@@ -233,7 +239,7 @@ importers:
         version: link:../config
     devDependencies:
       '@copass/core':
-        specifier: ^0.5.0
+        specifier: ^0.6.3
         version: link:../core
       '@langchain/core':
         specifier: ^1.1.0
@@ -257,7 +263,7 @@ importers:
   packages/management:
     devDependencies:
       '@copass/core':
-        specifier: ^0.5.0
+        specifier: ^0.6.3
         version: link:../core
       '@modelcontextprotocol/sdk':
         specifier: ^1.29.0
@@ -285,7 +291,7 @@ importers:
         version: link:../config
     devDependencies:
       '@copass/core':
-        specifier: ^0.5.0
+        specifier: ^0.6.3
         version: link:../core
       '@mastra/core':
         specifier: ^1.26.0
@@ -309,7 +315,7 @@ importers:
         specifier: ^0.5.1
         version: link:../config
       '@copass/management':
-        specifier: ^0.5.2
+        specifier: ^0.5.11
         version: link:../management
       '@modelcontextprotocol/sdk':
         specifier: ^1.29.0
@@ -319,7 +325,44 @@ importers:
         version: 4.3.6
     devDependencies:
       '@copass/core':
-        specifier: ^0.5.0
+        specifier: ^0.6.3
+        version: link:../core
+      '@types/node':
+        specifier: ^25.0.0
+        version: 25.6.0
+      tsup:
+        specifier: ^8.5.0
+        version: 8.5.1(postcss@8.5.10)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
+      vitest:
+        specifier: ^4.1.0
+        version: 4.1.5(@opentelemetry/api@1.9.0)(@types/node@25.6.0)(vite@8.0.9(@types/node@25.6.0)(esbuild@0.27.7)(tsx@4.21.0)(yaml@2.8.3))
+
+  packages/olane-agents:
+    dependencies:
+      '@copass/datasource-olane':
+        specifier: ^0.6.1
+        version: link:../datasource-olane
+      '@olane/o-agent':
+        specifier: ^0.9.0
+        version: 0.9.0
+      '@olane/o-core':
+        specifier: ^0.9.0
+        version: 0.9.0
+      '@olane/o-node':
+        specifier: ^0.9.0
+        version: 0.9.0
+      '@olane/os':
+        specifier: ^0.9.0
+        version: 0.9.0(@browserbasehq/sdk@2.10.0(encoding@0.1.13))(@browserbasehq/stagehand@1.14.0(@playwright/test@1.59.1)(deepmerge@4.3.1)(dotenv@17.4.2)(encoding@0.1.13)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))(zod@4.3.6))(@cfworker/json-schema@4.1.1)(@ibm-cloud/watsonx-ai@1.7.11(typescript@5.9.3))(@langchain/anthropic@1.3.26(@langchain/core@1.1.40(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))(ws@8.20.0)))(@opentelemetry/api@1.9.0)(@supabase/supabase-js@2.104.0)(axios@1.15.2)(encoding@0.1.13)(handlebars@4.7.9)(ibm-cloud-sdk-core@5.4.11)(ignore@5.3.2)(interface-datastore@8.3.2)(it-all@3.0.11)(jsonwebtoken@9.0.3)(lodash@4.18.1)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))(playwright@1.59.1)(weaviate-client@3.12.1(encoding@0.1.13))(ws@8.20.0)(zod@4.3.6)
+      portfinder:
+        specifier: ^1.0.38
+        version: 1.0.38
+      uuid:
+        specifier: ^11.0.0
+        version: 11.1.0
+    devDependencies:
+      '@copass/core':
+        specifier: ^0.6.3
         version: link:../core
       '@types/node':
         specifier: ^25.0.0
@@ -339,10 +382,10 @@ packages:
       }
     engines: { node: '>=18' }
 
-  '@ai-sdk/anthropic@3.0.74':
+  '@ai-sdk/anthropic@3.0.76':
     resolution:
       {
-        integrity: sha512-Xew9rfz9WWhDSyF8rNhjT/XWOWelNfJrMlmG0Ahw210hStisRpQZ1s+7VeI9JTJOZ5y5tXqBi5kfPwYnCfyRTA==,
+        integrity: sha512-kOuvT9e6PygFvgYpkr4v9gjvmcMPfJp79jaXjeRl9Gpoj2OXdtc3ero7o1ic+tiSBw5IMubxXFO68BCA/axGJA==,
       }
     engines: { node: '>=18' }
     peerDependencies:
@@ -384,10 +427,10 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/provider-utils@4.0.26':
+  '@ai-sdk/provider-utils@4.0.27':
     resolution:
       {
-        integrity: sha512-CsKNLKsOpvPujRlIYvoz+Ybw+kGn7J4/fIZa/58+R7iWLLfwn6ifE2G6Yq8K9XvH/I/3bzaDAJ3NhRwEMsLBKQ==,
+        integrity: sha512-ubkAJ+xODouwtmN1tYlvTPphH1hPOBfZaEQe8U7skGvFAnIRs9PPpsq57bC2+Ky/MB4yzhd6YOsxTAx9sGpazw==,
       }
     engines: { node: '>=18' }
     peerDependencies:
@@ -2406,125 +2449,168 @@ packages:
         integrity: sha512-ifLaO34EbbPj0Xgro4G5lP5asESjwHracYJvVaPIyXMuiuXLlhic3S47cBdTb+jfODkTE5YtGCLt3Ay3+J97sA==,
       }
 
-  '@olane/o-approval@0.8.18':
+  '@olane/o-agent@0.9.0':
     resolution:
       {
-        integrity: sha512-aCfPcLRYmH0OcQnnA4iJvTWR/yVI5Z1qqeeZ2UfYiz56B6cwJncW1xLkQkqxgn26UR9BEhVDlAVy6ZMKryrxxA==,
+        integrity: sha512-EjnKHChzkZ40BwSb4xydxFEurX0M/SxUoyGPjHQOXbYbJcTggLjpEsMS+rWxLJ3EEblmKe/lUdIopsAnWC9+TA==,
       }
 
-  '@olane/o-client-limited@0.8.18':
+  '@olane/o-approval@0.9.0':
     resolution:
       {
-        integrity: sha512-kap/ifsO9T6DdXPatV+8VhhoU50ZZLv/SqfGF6F5mglwQNgx6G2qhfFNMl4xxuDV1YNWOF0JC9uTlMZYT0uHyQ==,
+        integrity: sha512-Eteb1XMjShWRFPPB9tvQF6lQnsujPI3rrK4JybOIGQRx21K9RTrpw8a6pu678sUSsGWCKo5NATB0nTwMTl9DQw==,
       }
 
-  '@olane/o-client@0.8.20':
+  '@olane/o-client-limited@0.8.21':
     resolution:
       {
-        integrity: sha512-nueR8Mg2V6WbUyFhksKs1MsXk9veMBltts77QANtOxxPd98PToUslYH8Z/tyUJ+oaMXQlhGpYlfCdEvzOK2qRg==,
+        integrity: sha512-G2AhWnp4B88wOmEAnLp+FXwn2uxO9z7OtCgv8pJ2QHS4WyDDAFcPOjCMB3ojzDJ9o1BIAeLLD7rT1zzeYQv2pw==,
       }
 
-  '@olane/o-config@0.8.18':
+  '@olane/o-client-limited@0.9.0':
     resolution:
       {
-        integrity: sha512-Ye9Dwu4zQ52HEHcsk8qSEPrCUD4oSqdq2efsL+UKRc1Ohn8n0AwYJZ83pw39QWnVKduxptteoZtPd1gzpbDjZQ==,
+        integrity: sha512-2NexEB1wrfDQUbd6OWjYjPVWVRMwEUC+btKOlNDpCqUD3oAkt45tB0ZGsw427PMcU6B+aZllPVF0vHWCs55ZAQ==,
       }
 
-  '@olane/o-context@0.8.18':
+  '@olane/o-client@0.8.21':
     resolution:
       {
-        integrity: sha512-8wrFb+Ch1aooTmn7+aWoLkFC+D/9CmIuVasQZQ7T4O+Y+foDljMD+1uaiyf5LFArPpxYccMs56K8ALz9KBb+ZQ==,
+        integrity: sha512-KAYOOtJs6IMFLule4q9aYyaMNPb/nIlvJpACjkq1FXEiozT22jViVHG6nh/xHe0XGZSXjhsKwzwZEUCHuGReDw==,
       }
 
-  '@olane/o-core@0.8.18':
+  '@olane/o-config@0.8.21':
     resolution:
       {
-        integrity: sha512-7OnarBKjIgHMN0wN+mR6OB/7gTylOhDMHupZ0odCXOzgqoEQ8jfoIoFo06LZPZJ098GykVfidJmHTuV3GLnKrA==,
+        integrity: sha512-Q2kvm0FLECZ+WuGLomXgVUk7eYZ1WWlcI9ZpKsV1L+5Np1J+GxPm06dVaBFbeU3kgMIAKPyZnLMXPiaoMTLWlA==,
       }
 
-  '@olane/o-gateway-olane@0.8.18':
+  '@olane/o-config@0.9.0':
     resolution:
       {
-        integrity: sha512-KZ0iWl02WLR92z3uXwp/GJsf1bs3YtaqBF+Qm9AyvpDwxfHVKQhV66WDPZal2Hyd0w9wihTu9H87M7GxfuonNQ==,
+        integrity: sha512-NFPyBYtSDp2Pzxs4fKMkmC4i9HUGVYXPPTavLky+f2af4nbI5p84QCDEnSoKd7NbBEN3gxFv7muzPhyN6M1v0Q==,
       }
 
-  '@olane/o-intelligence@0.8.18':
+  '@olane/o-context@0.8.21':
     resolution:
       {
-        integrity: sha512-kEKS0OqGAG0qq391ws/gSvmrz90HkqwzyZo+1Pv8DLWpo9Sq9A8pdmvoHrcALHS7SsSrzjXD61fD/8W0nrgHvA==,
+        integrity: sha512-VK+8mr3cRfdnPU4r2UMCNldpy0CAUYgr8JtvGZJMU58QYy0HGZCV6uyJz3r+g6uuEVkgEirX3GH1gwbXYJ2YCw==,
       }
 
-  '@olane/o-lane@0.8.18':
+  '@olane/o-context@0.9.0':
     resolution:
       {
-        integrity: sha512-BT/AYge6soriAXsvzaqwCUBlzp8ONYi5vVtwh7lf585STlnwhZbCGqVU647yuDwH0x0lXURQ1laiNTv02172Pw==,
+        integrity: sha512-Reta44CZ5CA3Y3SGuwTb+bLGsDjx4OZemyOj30sce8EvsNMvq9JVSlJNEOrnKc6rn+msgbZ/S/c9teJxacxRGA==,
       }
 
-  '@olane/o-leader@0.8.18':
+  '@olane/o-core@0.8.21':
     resolution:
       {
-        integrity: sha512-ciCl39K2+U4dy3nUOSCwmqEDLioErDXDBn+LLKiCifEvMtDsuykbnRhgE2ZF2AIOxh5H+cm9T5Oav3VcLWEfvA==,
+        integrity: sha512-cH1PibKe9/I9G4f3DYEDUtjsMEcob9iaq2Uvrpwr29/BA6akdGtrNCeNdjgnZQChDYEn+87qV6VzYLtwPvKgqA==,
       }
 
-  '@olane/o-login@0.8.18':
+  '@olane/o-core@0.9.0':
     resolution:
       {
-        integrity: sha512-Fn+py9ztRjB60OS8orfZCcJon/G4tr1v4G1IQty9OBsjftAMFeDomigBSdasaAgwUBMP5JvUWJvBGLc7f1qyiA==,
+        integrity: sha512-Y/ynE/O2nEYO3AAKMHbnGx6VNt2Tibu2luNgJVoheuV0Ow1uFuQewfmTtzpvASm0p8NhB+DlPPxHkXGMyTxbrA==,
       }
 
-  '@olane/o-mcp@0.8.18':
+  '@olane/o-gateway-olane@0.9.0':
     resolution:
       {
-        integrity: sha512-GdzbFY1QvnpPSUEHQ6y++iG1kWRmCvfEbufVmlgMfZY9n8JyTOvF5XsBPT1Ve/v3ec7m5mFooUzqKg0nwpgavg==,
+        integrity: sha512-qiODourur/LNl3/2gqzD6ZyM9vpFXKw2OYHLrx0Af4HFNs2POL1pSGwfYxG5oLo85iLjf55zpdMyrG/sx/+ZGQ==,
       }
 
-  '@olane/o-node@0.8.18':
+  '@olane/o-intelligence@0.9.0':
     resolution:
       {
-        integrity: sha512-jF387cUfHZoK070swFfQ9FkD7StE4xK4w6Wf1Rw2nP3aHMdV5t0h8DBhtTxdmkqvNGb0kXOQprFMCNur8jtlVA==,
+        integrity: sha512-1xBYgMyBSia9tD5rgI55qRcqoMkva6bxHBr5aHTIRg4cIytcB1W8CZtO5rksb77RzzMwBP6iiJxTfaz2J2qnRw==,
       }
 
-  '@olane/o-protocol@0.8.18':
+  '@olane/o-lane@0.9.0':
     resolution:
       {
-        integrity: sha512-699byuFuj0Fw8dpDogTZfzfAa9G22EZvQCokI/BA264JXZm7aAdhcovyni7j0L0LOAi44eOkdlZFHg6svHw8OQ==,
+        integrity: sha512-5yOqfOWqPnDQK+sVbnhv+OcDAcnAoJljKLRciHsOeTKgUKWWG6jKeXURNWUyLMyo4R8QwAnAaB+4vDUrvi7l4g==,
+      }
+
+  '@olane/o-leader@0.9.0':
+    resolution:
+      {
+        integrity: sha512-jjLP2fQ2jHODI3YVRp1IPMkRrkgogp7ZezlhuhDo3pWFp6pEWvUDdHViERhpqR8AqTXocXt0GVnPX55zure0mw==,
+      }
+
+  '@olane/o-login@0.9.0':
+    resolution:
+      {
+        integrity: sha512-mzrMX4bYoHmy+oLjUFgOsBdXZclXjFWBpXJ6Y8wh9b6UiUuZQ9ceHxNk2DjWtYiwnBvkdJbMtkcq6eI62oFeyg==,
+      }
+
+  '@olane/o-mcp@0.9.0':
+    resolution:
+      {
+        integrity: sha512-UvUQgtPDbu9Bh/Tk3emnclfbDOWddQqAInyc4Grp6jEfiEN6q+gBLS/sdjyVTMg9unREmDtXZgbcE6ATKbTc4Q==,
+      }
+
+  '@olane/o-node@0.8.21':
+    resolution:
+      {
+        integrity: sha512-zCz4Vam/W8P2EpLU25g1GOHVn3pCag9VIYL/1ui15aUQ+Wm3J6EMz92WhdcBTIhtnDWGBJkLiKc3eDgStqh2uA==,
+      }
+
+  '@olane/o-node@0.9.0':
+    resolution:
+      {
+        integrity: sha512-FYuPyhcknaIpj2YdksqFcu08Sw+wdYjNQPZnkVju/lG35kDeH74grpBBo6qdtZxUeAZ+2woEhH+Hf+Huq19HmA==,
+      }
+
+  '@olane/o-protocol@0.8.21':
+    resolution:
+      {
+        integrity: sha512-kMsMjXtDUR1r+cwPt/0E2n6K+ZJ5ekYZkYLwKfv1Co6CmUvdrjU0DQkY6hKbeXws4lL9iH3Fs7uGvfmjQP0EKg==,
       }
     engines: { node: '>=20.0.0' }
 
-  '@olane/o-storage@0.8.18':
+  '@olane/o-protocol@0.9.0':
     resolution:
       {
-        integrity: sha512-X16YWnF3fVuhBsMWq5Ot12pORx91pxMGJ1F+XpxGZTT3K5aEQcc47C54KbATcY3nWnIosL3ly4881M9ohx9yuQ==,
+        integrity: sha512-inJ73tMbi6keew9Bhja+gcl/ofwiicpdIyTUEGkr9BZAQwQDc16Z/ZU13rWP7jok8i2ZauBmtWqNinSD+4T1Bg==,
+      }
+    engines: { node: '>=20.0.0' }
+
+  '@olane/o-storage@0.9.0':
+    resolution:
+      {
+        integrity: sha512-3KmWIlX8R8mngTgLMqRytaEYAdCL4uL5LSMRmTdgMfQ+vK2sIp1UhTF3Dh8irq1WS2jTLfStMoJR5s9ZzHnZDQ==,
       }
 
-  '@olane/o-test@0.8.18':
+  '@olane/o-tool-registry@0.9.0':
     resolution:
       {
-        integrity: sha512-vF1XILob1kbVvnat2Yf7y5AUOedlluqptQ0d5ns32BPsNGp2sgSOzZpL0ZCZfHolCGtkRrBw5YXhIzVzH13DyA==,
+        integrity: sha512-OVuEdL1QpoIR1sx5/ClCoS9RTM5S2N4bJVqr3jU4+j83QrjdlxmT4FN0oGh/d2fuSg6u0Ex8rCAdWzmAQr13Aw==,
       }
 
-  '@olane/o-tool-registry@0.8.18':
+  '@olane/o-tool@0.8.21':
     resolution:
       {
-        integrity: sha512-AE6ozGOy5JvYYdfrw2UiFC/lZDbXDkHQ64XtHHv53IO3C5FgFkKaC5v6QU7W6QQF+XT0C1uVYWXGuSy/dkAjEA==,
+        integrity: sha512-/NrkguijtKYmDzgX8GyzmE1tXx+P/zK8wROTbd/QQmmU8h66LyNCXjE3uBEcyjPRp7yf4LpVhIh+APLrH5RAbg==,
       }
 
-  '@olane/o-tool@0.8.18':
+  '@olane/o-tool@0.9.0':
     resolution:
       {
-        integrity: sha512-Shj15j6jRcukUg4RTWKzMMupLt/GpAbNouvm2lTceUocSMOt2hboUQGplM97/LNaqaNzey/1pVM6HXFsWVgdSw==,
+        integrity: sha512-PExoGF9s19nVlfnJuLGe/FO5NG2LuUEzOTFEZZHv4CPRv0GxF8uzb+5gTXgsMzo5u4BVtz9eBeQTuCNM/7o5rw==,
       }
 
-  '@olane/o-tools-common@0.8.18':
+  '@olane/o-tools-common@0.9.0':
     resolution:
       {
-        integrity: sha512-dpTqfK/y3ZoRKdegAMb4AeGLatUw8eW0JOvaxuAJbvcPNnPOPHadTCw7KkgsGvvxEEGlI6GmtI4fINoMgjtK7w==,
+        integrity: sha512-RylpfeguVM21L1EzbDtXf6igqfgUF17+wOYHXheFzhFPPKAJrFA+IZ+XjkTNsifFUH9zTpLeysRKwfGuwDT5vw==,
       }
 
-  '@olane/os@0.8.18':
+  '@olane/os@0.9.0':
     resolution:
       {
-        integrity: sha512-9oNbRzYhPjS3sMzXhEZAdLd63B2wijGiU0Y2hjz+YZTRbgaxKVPJYjK4C89l5nWU1rzhy0C3at36g9nqeYArHQ==,
+        integrity: sha512-a4JBhwJurj9sf5pEHMyRcfs07nxfINZeLSCWvkEtBQgN9tzFrwh9DzfQjZ0PDfNeYedNzLI6BTPsVlodQlEz3w==,
       }
 
   '@opentelemetry/api@1.9.0':
@@ -3519,6 +3605,7 @@ packages:
       {
         integrity: sha512-WmoN8qaIAo7WTYWbAZuG8PYEhn5fkz7dZrqTBZ7dtt//lL2Gwms1IcnQ5yHqjDfX8Ft5j4YzDM23f87zBfDe9g==,
       }
+    deprecated: Potential CWE-502 - Update to 1.3.1 or higher
 
   '@vercel/oidc@3.2.0':
     resolution:
@@ -10371,10 +10458,10 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@ai-sdk/anthropic@3.0.74(zod@4.3.6)':
+  '@ai-sdk/anthropic@3.0.76(zod@4.3.6)':
     dependencies:
       '@ai-sdk/provider': 3.0.10
-      '@ai-sdk/provider-utils': 4.0.26(zod@4.3.6)
+      '@ai-sdk/provider-utils': 4.0.27(zod@4.3.6)
       zod: 4.3.6
 
   '@ai-sdk/gateway@3.0.104(zod@4.3.6)':
@@ -10405,7 +10492,7 @@ snapshots:
       eventsource-parser: 3.0.8
       zod: 4.3.6
 
-  '@ai-sdk/provider-utils@4.0.26(zod@4.3.6)':
+  '@ai-sdk/provider-utils@4.0.27(zod@4.3.6)':
     dependencies:
       '@ai-sdk/provider': 3.0.10
       '@standard-schema/spec': 1.1.0
@@ -10930,6 +11017,56 @@ snapshots:
       ibm-cloud-sdk-core: 5.4.11
       js-yaml: 4.1.1
       langchain: 0.3.29(@langchain/anthropic@1.3.26(@langchain/core@0.3.61(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))))(@langchain/core@0.3.61(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.20.0)(zod@4.3.6)))(@opentelemetry/api@1.9.0)(axios@1.15.0)(handlebars@4.7.9)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))(ws@8.20.0)
+      langsmith: 0.3.87(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))
+      openai: 5.23.2(ws@8.20.0)(zod@4.3.6)
+      uuid: 10.0.0
+      zod: 3.25.76
+    optionalDependencies:
+      '@browserbasehq/sdk': 2.10.0(encoding@0.1.13)
+      '@huggingface/transformers': 3.8.1
+      '@supabase/supabase-js': 2.104.0
+      ignore: 5.3.2
+      interface-datastore: 8.3.2
+      it-all: 3.0.11
+      jsonwebtoken: 9.0.3
+      lodash: 4.18.1
+      playwright: 1.59.1
+      weaviate-client: 3.12.1(encoding@0.1.13)
+      ws: 8.20.0
+    transitivePeerDependencies:
+      - '@langchain/anthropic'
+      - '@langchain/aws'
+      - '@langchain/cerebras'
+      - '@langchain/cohere'
+      - '@langchain/deepseek'
+      - '@langchain/google-genai'
+      - '@langchain/google-vertexai'
+      - '@langchain/google-vertexai-web'
+      - '@langchain/groq'
+      - '@langchain/mistralai'
+      - '@langchain/ollama'
+      - '@langchain/xai'
+      - '@opentelemetry/api'
+      - '@opentelemetry/exporter-trace-otlp-proto'
+      - '@opentelemetry/sdk-trace-base'
+      - axios
+      - encoding
+      - handlebars
+      - peggy
+
+  '@langchain/community@0.3.47(@browserbasehq/sdk@2.10.0(encoding@0.1.13))(@browserbasehq/stagehand@1.14.0(@playwright/test@1.59.1)(deepmerge@4.3.1)(dotenv@17.4.2)(encoding@0.1.13)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))(zod@4.3.6))(@huggingface/transformers@3.8.1)(@ibm-cloud/watsonx-ai@1.7.11(typescript@5.9.3))(@langchain/anthropic@1.3.26(@langchain/core@1.1.40(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))(ws@8.20.0)))(@langchain/core@0.3.61(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.20.0)(zod@4.3.6)))(@opentelemetry/api@1.9.0)(@supabase/supabase-js@2.104.0)(axios@1.15.2)(encoding@0.1.13)(handlebars@4.7.9)(ibm-cloud-sdk-core@5.4.11)(ignore@5.3.2)(interface-datastore@8.3.2)(it-all@3.0.11)(jsonwebtoken@9.0.3)(lodash@4.18.1)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))(playwright@1.59.1)(weaviate-client@3.12.1(encoding@0.1.13))(ws@8.20.0)':
+    dependencies:
+      '@browserbasehq/stagehand': 1.14.0(@playwright/test@1.59.1)(deepmerge@4.3.1)(dotenv@17.4.2)(encoding@0.1.13)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))(zod@4.3.6)
+      '@ibm-cloud/watsonx-ai': 1.7.11(typescript@5.9.3)
+      '@langchain/core': 0.3.61(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))
+      '@langchain/openai': 0.5.18(@langchain/core@0.3.61(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.20.0)(zod@4.3.6)))(ws@8.20.0)
+      '@langchain/weaviate': 0.2.3(@langchain/core@0.3.61(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.20.0)(zod@4.3.6)))(encoding@0.1.13)
+      binary-extensions: 2.3.0
+      expr-eval: 2.0.2
+      flat: 5.0.2
+      ibm-cloud-sdk-core: 5.4.11
+      js-yaml: 4.1.1
+      langchain: 0.3.29(@langchain/anthropic@1.3.26(@langchain/core@1.1.40(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))(ws@8.20.0)))(@langchain/core@0.3.61(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.20.0)(zod@4.3.6)))(@opentelemetry/api@1.9.0)(axios@1.15.2)(handlebars@4.7.9)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))(ws@8.20.0)
       langsmith: 0.3.87(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))
       openai: 5.23.2(ws@8.20.0)(zod@4.3.6)
       uuid: 10.0.0
@@ -11919,14 +12056,28 @@ snapshots:
     dependencies:
       '@octokit/openapi-types': 24.2.0
 
-  '@olane/o-approval@0.8.18':
+  '@olane/o-agent@0.9.0':
     dependencies:
-      '@olane/o-config': 0.8.18
-      '@olane/o-core': 0.8.18
-      '@olane/o-lane': 0.8.18
-      '@olane/o-node': 0.8.18
-      '@olane/o-protocol': 0.8.18
-      '@olane/o-tool': 0.8.18
+      '@olane/o-core': 0.9.0
+      '@olane/o-lane': 0.9.0
+      '@olane/o-node': 0.9.0
+      '@olane/o-protocol': 0.9.0
+      '@olane/o-tool': 0.9.0
+      debug: 4.4.3
+      uuid: 11.1.0
+    transitivePeerDependencies:
+      - bufferutil
+      - supports-color
+      - utf-8-validate
+
+  '@olane/o-approval@0.9.0':
+    dependencies:
+      '@olane/o-config': 0.9.0
+      '@olane/o-core': 0.9.0
+      '@olane/o-lane': 0.9.0
+      '@olane/o-node': 0.9.0
+      '@olane/o-protocol': 0.9.0
+      '@olane/o-tool': 0.9.0
       debug: 4.4.3
       dotenv: 17.4.2
     transitivePeerDependencies:
@@ -11934,13 +12085,13 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@olane/o-client-limited@0.8.18':
+  '@olane/o-client-limited@0.8.21':
     dependencies:
-      '@olane/o-config': 0.8.18
-      '@olane/o-core': 0.8.18
-      '@olane/o-node': 0.8.18
-      '@olane/o-protocol': 0.8.18
-      '@olane/o-tool': 0.8.18
+      '@olane/o-config': 0.8.21
+      '@olane/o-core': 0.8.21
+      '@olane/o-node': 0.8.21
+      '@olane/o-protocol': 0.8.21
+      '@olane/o-tool': 0.8.21
       debug: 4.4.3
       dotenv: 17.4.2
     transitivePeerDependencies:
@@ -11948,17 +12099,30 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@olane/o-client@0.8.20':
+  '@olane/o-client-limited@0.9.0':
+    dependencies:
+      '@olane/o-config': 0.9.0
+      '@olane/o-core': 0.9.0
+      '@olane/o-node': 0.9.0
+      '@olane/o-protocol': 0.9.0
+      '@olane/o-tool': 0.9.0
+      debug: 4.4.3
+      dotenv: 17.4.2
+    transitivePeerDependencies:
+      - bufferutil
+      - supports-color
+      - utf-8-validate
+
+  '@olane/o-client@0.8.21':
     dependencies:
       '@libp2p/circuit-relay-v2': 4.2.2
       '@multiformats/multiaddr': 13.0.1
-      '@olane/o-client-limited': 0.8.18
-      '@olane/o-config': 0.8.18
-      '@olane/o-core': 0.8.18
-      '@olane/o-node': 0.8.18
-      '@olane/o-protocol': 0.8.18
-      '@olane/o-test': 0.8.18
-      '@olane/o-tool': 0.8.18
+      '@olane/o-client-limited': 0.8.21
+      '@olane/o-config': 0.8.21
+      '@olane/o-core': 0.8.21
+      '@olane/o-node': 0.8.21
+      '@olane/o-protocol': 0.8.21
+      '@olane/o-tool': 0.8.21
       '@supabase/supabase-js': 2.104.0
       debug: 4.4.3
       dotenv: 16.6.1
@@ -11967,7 +12131,7 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@olane/o-config@0.8.18':
+  '@olane/o-config@0.8.21':
     dependencies:
       '@chainsafe/libp2p-noise': 17.0.0
       '@chainsafe/libp2p-yamux': 8.0.1
@@ -11996,30 +12160,78 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
-  '@olane/o-context@0.8.18': {}
-
-  '@olane/o-core@0.8.18':
+  '@olane/o-config@0.9.0':
     dependencies:
-      '@olane/o-config': 0.8.18
-      '@olane/o-context': 0.8.18
-      '@olane/o-protocol': 0.8.18
+      '@chainsafe/libp2p-noise': 17.0.0
+      '@chainsafe/libp2p-yamux': 8.0.1
+      '@libp2p/bootstrap': 12.0.18
+      '@libp2p/crypto': 5.1.17
+      '@libp2p/identify': 4.1.2
+      '@libp2p/interface': 3.2.2
+      '@libp2p/kad-dht': 16.2.3
+      '@libp2p/memory': 2.0.17
+      '@libp2p/peer-id-factory': 4.2.4
+      '@libp2p/peer-store': 12.0.17
+      '@libp2p/ping': 3.1.2
+      '@libp2p/pubsub': 10.1.18
+      '@libp2p/tcp': 11.0.17
+      '@libp2p/utils': 7.0.17
+      '@libp2p/websockets': 10.1.10
+      '@libp2p/webtransport': 6.0.20
+      '@multiformats/multiaddr': 13.0.1
+      it-all: 3.0.11
+      it-pair: 2.0.6
+      it-pipe: 3.0.1
+      it-pushable: 3.2.3
+      libp2p: 3.2.0
+      uint8arraylist: 2.4.9
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+
+  '@olane/o-context@0.8.21': {}
+
+  '@olane/o-context@0.9.0': {}
+
+  '@olane/o-core@0.8.21':
+    dependencies:
+      '@olane/o-config': 0.8.21
+      '@olane/o-context': 0.8.21
+      '@olane/o-protocol': 0.8.21
       chalk: 5.6.2
       debug: 4.4.3
       dotenv: 17.4.2
       multiformats: 13.4.2
       stream-json: 1.9.1
+      uuid: 11.1.0
     transitivePeerDependencies:
       - bufferutil
       - supports-color
       - utf-8-validate
 
-  '@olane/o-gateway-olane@0.8.18':
+  '@olane/o-core@0.9.0':
     dependencies:
-      '@olane/o-config': 0.8.18
-      '@olane/o-core': 0.8.18
-      '@olane/o-node': 0.8.18
-      '@olane/o-protocol': 0.8.18
-      '@olane/o-tool': 0.8.18
+      '@olane/o-config': 0.9.0
+      '@olane/o-context': 0.9.0
+      '@olane/o-protocol': 0.9.0
+      chalk: 5.6.2
+      debug: 4.4.3
+      dotenv: 17.4.2
+      multiformats: 13.4.2
+      stream-json: 1.9.1
+      uuid: 11.1.0
+    transitivePeerDependencies:
+      - bufferutil
+      - supports-color
+      - utf-8-validate
+
+  '@olane/o-gateway-olane@0.9.0':
+    dependencies:
+      '@olane/o-config': 0.9.0
+      '@olane/o-core': 0.9.0
+      '@olane/o-node': 0.9.0
+      '@olane/o-protocol': 0.9.0
+      '@olane/o-tool': 0.9.0
       debug: 4.4.3
       dotenv: 17.4.2
     transitivePeerDependencies:
@@ -12027,14 +12239,14 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@olane/o-intelligence@0.8.18':
+  '@olane/o-intelligence@0.9.0':
     dependencies:
-      '@olane/o-config': 0.8.18
-      '@olane/o-core': 0.8.18
-      '@olane/o-lane': 0.8.18
-      '@olane/o-node': 0.8.18
-      '@olane/o-protocol': 0.8.18
-      '@olane/o-tool': 0.8.18
+      '@olane/o-config': 0.9.0
+      '@olane/o-core': 0.9.0
+      '@olane/o-lane': 0.9.0
+      '@olane/o-node': 0.9.0
+      '@olane/o-protocol': 0.9.0
+      '@olane/o-tool': 0.9.0
       debug: 4.4.3
       dotenv: 17.4.2
     transitivePeerDependencies:
@@ -12042,31 +12254,32 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@olane/o-lane@0.8.18':
+  '@olane/o-lane@0.9.0':
     dependencies:
-      '@olane/o-config': 0.8.18
-      '@olane/o-core': 0.8.18
-      '@olane/o-node': 0.8.18
-      '@olane/o-protocol': 0.8.18
-      '@olane/o-storage': 0.8.18
-      '@olane/o-tool': 0.8.18
+      '@olane/o-config': 0.9.0
+      '@olane/o-core': 0.9.0
+      '@olane/o-node': 0.9.0
+      '@olane/o-protocol': 0.9.0
+      '@olane/o-storage': 0.9.0
+      '@olane/o-tool': 0.9.0
       debug: 4.4.3
       dotenv: 17.4.2
       handlebars: 4.7.9
+      uuid: 11.1.0
     transitivePeerDependencies:
       - bufferutil
       - supports-color
       - utf-8-validate
 
-  '@olane/o-leader@0.8.18':
+  '@olane/o-leader@0.9.0':
     dependencies:
-      '@olane/o-config': 0.8.18
-      '@olane/o-core': 0.8.18
-      '@olane/o-gateway-olane': 0.8.18
-      '@olane/o-lane': 0.8.18
-      '@olane/o-node': 0.8.18
-      '@olane/o-protocol': 0.8.18
-      '@olane/o-tool': 0.8.18
+      '@olane/o-config': 0.9.0
+      '@olane/o-core': 0.9.0
+      '@olane/o-gateway-olane': 0.9.0
+      '@olane/o-lane': 0.9.0
+      '@olane/o-node': 0.9.0
+      '@olane/o-protocol': 0.9.0
+      '@olane/o-tool': 0.9.0
       debug: 4.4.3
       dotenv: 17.4.2
     transitivePeerDependencies:
@@ -12074,14 +12287,14 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@olane/o-login@0.8.18':
+  '@olane/o-login@0.9.0':
     dependencies:
-      '@olane/o-config': 0.8.18
-      '@olane/o-core': 0.8.18
-      '@olane/o-lane': 0.8.18
-      '@olane/o-node': 0.8.18
-      '@olane/o-protocol': 0.8.18
-      '@olane/o-tool': 0.8.18
+      '@olane/o-config': 0.9.0
+      '@olane/o-core': 0.9.0
+      '@olane/o-lane': 0.9.0
+      '@olane/o-node': 0.9.0
+      '@olane/o-protocol': 0.9.0
+      '@olane/o-tool': 0.9.0
       debug: 4.4.3
       dotenv: 17.4.2
     transitivePeerDependencies:
@@ -12089,22 +12302,23 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@olane/o-mcp@0.8.18(@cfworker/json-schema@4.1.1)(zod@4.3.6)':
+  '@olane/o-mcp@0.9.0(@cfworker/json-schema@4.1.1)(zod@4.3.6)':
     dependencies:
       '@modelcontextprotocol/sdk': 1.29.0(@cfworker/json-schema@4.1.1)(zod@4.3.6)
-      '@olane/o-config': 0.8.18
-      '@olane/o-core': 0.8.18
-      '@olane/o-intelligence': 0.8.18
-      '@olane/o-lane': 0.8.18
-      '@olane/o-leader': 0.8.18
-      '@olane/o-node': 0.8.18
-      '@olane/o-protocol': 0.8.18
-      '@olane/o-storage': 0.8.18
-      '@olane/o-tool': 0.8.18
+      '@olane/o-config': 0.9.0
+      '@olane/o-core': 0.9.0
+      '@olane/o-intelligence': 0.9.0
+      '@olane/o-lane': 0.9.0
+      '@olane/o-leader': 0.9.0
+      '@olane/o-node': 0.9.0
+      '@olane/o-protocol': 0.9.0
+      '@olane/o-storage': 0.9.0
+      '@olane/o-tool': 0.9.0
       debug: 4.4.3
       dotenv: 17.4.2
       express: 5.2.1
       open: 11.0.0
+      uuid: 11.1.0
     transitivePeerDependencies:
       - '@cfworker/json-schema'
       - bufferutil
@@ -12112,70 +12326,79 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@olane/o-node@0.8.18':
+  '@olane/o-node@0.8.21':
     dependencies:
-      '@olane/o-config': 0.8.18
-      '@olane/o-core': 0.8.18
-      '@olane/o-protocol': 0.8.18
-      '@olane/o-tool': 0.8.18
+      '@olane/o-config': 0.8.21
+      '@olane/o-core': 0.8.21
+      '@olane/o-protocol': 0.8.21
+      '@olane/o-tool': 0.8.21
       debug: 4.4.3
       dotenv: 17.4.2
       json5: 2.2.3
+      uuid: 11.1.0
     transitivePeerDependencies:
       - bufferutil
       - supports-color
       - utf-8-validate
 
-  '@olane/o-protocol@0.8.18':
+  '@olane/o-node@0.9.0':
     dependencies:
-      '@olane/o-config': 0.8.18
-    transitivePeerDependencies:
-      - bufferutil
-      - utf-8-validate
-
-  '@olane/o-storage@0.8.18':
-    dependencies:
-      '@olane/o-config': 0.8.18
-      '@olane/o-core': 0.8.18
-      '@olane/o-node': 0.8.18
-      '@olane/o-protocol': 0.8.18
-      '@olane/o-tool': 0.8.18
+      '@olane/o-config': 0.9.0
+      '@olane/o-core': 0.9.0
+      '@olane/o-protocol': 0.9.0
+      '@olane/o-tool': 0.9.0
       debug: 4.4.3
       dotenv: 17.4.2
+      json5: 2.2.3
+      uuid: 11.1.0
     transitivePeerDependencies:
       - bufferutil
       - supports-color
       - utf-8-validate
 
-  '@olane/o-test@0.8.18':
+  '@olane/o-protocol@0.8.21':
     dependencies:
-      '@olane/o-core': 0.8.18
-      '@olane/o-lane': 0.8.18
-      '@olane/o-node': 0.8.18
-      '@olane/o-protocol': 0.8.18
-      '@olane/o-tool': 0.8.18
-      chalk: 5.6.2
+      '@olane/o-config': 0.8.21
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+
+  '@olane/o-protocol@0.9.0':
+    dependencies:
+      '@olane/o-config': 0.9.0
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+
+  '@olane/o-storage@0.9.0':
+    dependencies:
+      '@olane/o-config': 0.9.0
+      '@olane/o-core': 0.9.0
+      '@olane/o-node': 0.9.0
+      '@olane/o-protocol': 0.9.0
+      '@olane/o-tool': 0.9.0
       debug: 4.4.3
       dotenv: 17.4.2
+      uuid: 11.1.0
     transitivePeerDependencies:
       - bufferutil
       - supports-color
       - utf-8-validate
 
-  '@olane/o-tool-registry@0.8.18(@browserbasehq/sdk@2.10.0(encoding@0.1.13))(@browserbasehq/stagehand@1.14.0(@playwright/test@1.59.1)(deepmerge@4.3.1)(dotenv@17.4.2)(encoding@0.1.13)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))(zod@4.3.6))(@cfworker/json-schema@4.1.1)(@ibm-cloud/watsonx-ai@1.7.11(typescript@5.9.3))(@langchain/anthropic@1.3.26(@langchain/core@0.3.61(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))))(@opentelemetry/api@1.9.0)(@supabase/supabase-js@2.104.0)(axios@1.15.0)(encoding@0.1.13)(handlebars@4.7.9)(ibm-cloud-sdk-core@5.4.11)(ignore@5.3.2)(interface-datastore@8.3.2)(it-all@3.0.11)(jsonwebtoken@9.0.3)(lodash@4.18.1)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))(playwright@1.59.1)(weaviate-client@3.12.1(encoding@0.1.13))(ws@8.20.0)(zod@4.3.6)':
+  '@olane/o-tool-registry@0.9.0(@browserbasehq/sdk@2.10.0(encoding@0.1.13))(@browserbasehq/stagehand@1.14.0(@playwright/test@1.59.1)(deepmerge@4.3.1)(dotenv@17.4.2)(encoding@0.1.13)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))(zod@4.3.6))(@cfworker/json-schema@4.1.1)(@ibm-cloud/watsonx-ai@1.7.11(typescript@5.9.3))(@langchain/anthropic@1.3.26(@langchain/core@0.3.61(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))))(@opentelemetry/api@1.9.0)(@supabase/supabase-js@2.104.0)(axios@1.15.0)(encoding@0.1.13)(handlebars@4.7.9)(ibm-cloud-sdk-core@5.4.11)(ignore@5.3.2)(interface-datastore@8.3.2)(it-all@3.0.11)(jsonwebtoken@9.0.3)(lodash@4.18.1)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))(playwright@1.59.1)(weaviate-client@3.12.1(encoding@0.1.13))(ws@8.20.0)(zod@4.3.6)':
     dependencies:
       '@huggingface/transformers': 3.8.1
       '@langchain/community': 0.3.47(@browserbasehq/sdk@2.10.0(encoding@0.1.13))(@browserbasehq/stagehand@1.14.0(@playwright/test@1.59.1)(deepmerge@4.3.1)(dotenv@17.4.2)(encoding@0.1.13)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))(zod@4.3.6))(@huggingface/transformers@3.8.1)(@ibm-cloud/watsonx-ai@1.7.11(typescript@5.9.3))(@langchain/anthropic@1.3.26(@langchain/core@0.3.61(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))))(@langchain/core@0.3.61(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.20.0)(zod@4.3.6)))(@opentelemetry/api@1.9.0)(@supabase/supabase-js@2.104.0)(axios@1.15.0)(encoding@0.1.13)(handlebars@4.7.9)(ibm-cloud-sdk-core@5.4.11)(ignore@5.3.2)(interface-datastore@8.3.2)(it-all@3.0.11)(jsonwebtoken@9.0.3)(lodash@4.18.1)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))(playwright@1.59.1)(weaviate-client@3.12.1(encoding@0.1.13))(ws@8.20.0)
       '@langchain/core': 0.3.61(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))
-      '@olane/o-config': 0.8.18
-      '@olane/o-core': 0.8.18
-      '@olane/o-intelligence': 0.8.18
-      '@olane/o-lane': 0.8.18
-      '@olane/o-mcp': 0.8.18(@cfworker/json-schema@4.1.1)(zod@4.3.6)
-      '@olane/o-node': 0.8.18
-      '@olane/o-protocol': 0.8.18
-      '@olane/o-tool': 0.8.18
-      '@olane/o-tools-common': 0.8.18
+      '@olane/o-config': 0.9.0
+      '@olane/o-core': 0.9.0
+      '@olane/o-intelligence': 0.9.0
+      '@olane/o-lane': 0.9.0
+      '@olane/o-mcp': 0.9.0(@cfworker/json-schema@4.1.1)(zod@4.3.6)
+      '@olane/o-node': 0.9.0
+      '@olane/o-protocol': 0.9.0
+      '@olane/o-tool': 0.9.0
+      '@olane/o-tools-common': 0.9.0
       debug: 4.4.3
       dotenv: 16.6.1
       langchain: 0.3.29(@langchain/anthropic@1.3.26(@langchain/core@0.3.61(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))))(@langchain/core@0.3.61(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.20.0)(zod@4.3.6)))(@opentelemetry/api@1.9.0)(axios@1.15.0)(handlebars@4.7.9)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))(ws@8.20.0)
@@ -12332,11 +12555,213 @@ snapshots:
       - youtubei.js
       - zod
 
-  '@olane/o-tool@0.8.18':
+  '@olane/o-tool-registry@0.9.0(@browserbasehq/sdk@2.10.0(encoding@0.1.13))(@browserbasehq/stagehand@1.14.0(@playwright/test@1.59.1)(deepmerge@4.3.1)(dotenv@17.4.2)(encoding@0.1.13)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))(zod@4.3.6))(@cfworker/json-schema@4.1.1)(@ibm-cloud/watsonx-ai@1.7.11(typescript@5.9.3))(@langchain/anthropic@1.3.26(@langchain/core@1.1.40(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))(ws@8.20.0)))(@opentelemetry/api@1.9.0)(@supabase/supabase-js@2.104.0)(axios@1.15.2)(encoding@0.1.13)(handlebars@4.7.9)(ibm-cloud-sdk-core@5.4.11)(ignore@5.3.2)(interface-datastore@8.3.2)(it-all@3.0.11)(jsonwebtoken@9.0.3)(lodash@4.18.1)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))(playwright@1.59.1)(weaviate-client@3.12.1(encoding@0.1.13))(ws@8.20.0)(zod@4.3.6)':
     dependencies:
-      '@olane/o-config': 0.8.18
-      '@olane/o-core': 0.8.18
-      '@olane/o-protocol': 0.8.18
+      '@huggingface/transformers': 3.8.1
+      '@langchain/community': 0.3.47(@browserbasehq/sdk@2.10.0(encoding@0.1.13))(@browserbasehq/stagehand@1.14.0(@playwright/test@1.59.1)(deepmerge@4.3.1)(dotenv@17.4.2)(encoding@0.1.13)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))(zod@4.3.6))(@huggingface/transformers@3.8.1)(@ibm-cloud/watsonx-ai@1.7.11(typescript@5.9.3))(@langchain/anthropic@1.3.26(@langchain/core@1.1.40(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))(ws@8.20.0)))(@langchain/core@0.3.61(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.20.0)(zod@4.3.6)))(@opentelemetry/api@1.9.0)(@supabase/supabase-js@2.104.0)(axios@1.15.2)(encoding@0.1.13)(handlebars@4.7.9)(ibm-cloud-sdk-core@5.4.11)(ignore@5.3.2)(interface-datastore@8.3.2)(it-all@3.0.11)(jsonwebtoken@9.0.3)(lodash@4.18.1)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))(playwright@1.59.1)(weaviate-client@3.12.1(encoding@0.1.13))(ws@8.20.0)
+      '@langchain/core': 0.3.61(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))
+      '@olane/o-config': 0.9.0
+      '@olane/o-core': 0.9.0
+      '@olane/o-intelligence': 0.9.0
+      '@olane/o-lane': 0.9.0
+      '@olane/o-mcp': 0.9.0(@cfworker/json-schema@4.1.1)(zod@4.3.6)
+      '@olane/o-node': 0.9.0
+      '@olane/o-protocol': 0.9.0
+      '@olane/o-tool': 0.9.0
+      '@olane/o-tools-common': 0.9.0
+      debug: 4.4.3
+      dotenv: 16.6.1
+      langchain: 0.3.29(@langchain/anthropic@1.3.26(@langchain/core@1.1.40(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))(ws@8.20.0)))(@langchain/core@0.3.61(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.20.0)(zod@4.3.6)))(@opentelemetry/api@1.9.0)(axios@1.15.2)(handlebars@4.7.9)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))(ws@8.20.0)
+    transitivePeerDependencies:
+      - '@arcjet/redact'
+      - '@aws-crypto/sha256-js'
+      - '@aws-sdk/client-bedrock-agent-runtime'
+      - '@aws-sdk/client-bedrock-runtime'
+      - '@aws-sdk/client-dynamodb'
+      - '@aws-sdk/client-kendra'
+      - '@aws-sdk/client-lambda'
+      - '@aws-sdk/client-s3'
+      - '@aws-sdk/client-sagemaker-runtime'
+      - '@aws-sdk/client-sfn'
+      - '@aws-sdk/credential-provider-node'
+      - '@aws-sdk/dsql-signer'
+      - '@azure/search-documents'
+      - '@azure/storage-blob'
+      - '@browserbasehq/sdk'
+      - '@browserbasehq/stagehand'
+      - '@cfworker/json-schema'
+      - '@clickhouse/client'
+      - '@cloudflare/ai'
+      - '@datastax/astra-db-ts'
+      - '@elastic/elasticsearch'
+      - '@getmetal/metal-sdk'
+      - '@getzep/zep-cloud'
+      - '@getzep/zep-js'
+      - '@gomomento/sdk'
+      - '@gomomento/sdk-core'
+      - '@google-ai/generativelanguage'
+      - '@google-cloud/storage'
+      - '@gradientai/nodejs-sdk'
+      - '@huggingface/inference'
+      - '@ibm-cloud/watsonx-ai'
+      - '@lancedb/lancedb'
+      - '@langchain/anthropic'
+      - '@langchain/aws'
+      - '@langchain/cerebras'
+      - '@langchain/cohere'
+      - '@langchain/deepseek'
+      - '@langchain/google-genai'
+      - '@langchain/google-vertexai'
+      - '@langchain/google-vertexai-web'
+      - '@langchain/groq'
+      - '@langchain/mistralai'
+      - '@langchain/ollama'
+      - '@langchain/xai'
+      - '@layerup/layerup-security'
+      - '@libsql/client'
+      - '@mendable/firecrawl-js'
+      - '@mlc-ai/web-llm'
+      - '@mozilla/readability'
+      - '@neondatabase/serverless'
+      - '@notionhq/client'
+      - '@opensearch-project/opensearch'
+      - '@opentelemetry/api'
+      - '@opentelemetry/exporter-trace-otlp-proto'
+      - '@opentelemetry/sdk-trace-base'
+      - '@pinecone-database/pinecone'
+      - '@planetscale/database'
+      - '@premai/prem-sdk'
+      - '@qdrant/js-client-rest'
+      - '@raycast/api'
+      - '@rockset/client'
+      - '@smithy/eventstream-codec'
+      - '@smithy/protocol-http'
+      - '@smithy/signature-v4'
+      - '@smithy/util-utf8'
+      - '@spider-cloud/spider-client'
+      - '@supabase/supabase-js'
+      - '@tensorflow-models/universal-sentence-encoder'
+      - '@tensorflow/tfjs-converter'
+      - '@tensorflow/tfjs-core'
+      - '@upstash/ratelimit'
+      - '@upstash/redis'
+      - '@upstash/vector'
+      - '@vercel/kv'
+      - '@vercel/postgres'
+      - '@writerai/writer-sdk'
+      - '@xata.io/client'
+      - '@zilliz/milvus2-sdk-node'
+      - apify-client
+      - assemblyai
+      - axios
+      - azion
+      - better-sqlite3
+      - bufferutil
+      - cassandra-driver
+      - cborg
+      - cheerio
+      - chromadb
+      - closevector-common
+      - closevector-node
+      - closevector-web
+      - cohere-ai
+      - convex
+      - crypto-js
+      - d3-dsv
+      - discord.js
+      - dria
+      - duck-duck-scrape
+      - encoding
+      - epub2
+      - fast-xml-parser
+      - firebase-admin
+      - google-auth-library
+      - googleapis
+      - handlebars
+      - hnswlib-node
+      - html-to-text
+      - ibm-cloud-sdk-core
+      - ignore
+      - interface-datastore
+      - ioredis
+      - it-all
+      - jsdom
+      - jsonwebtoken
+      - llmonitor
+      - lodash
+      - lunary
+      - mammoth
+      - mariadb
+      - mem0ai
+      - mongodb
+      - mysql2
+      - neo4j-driver
+      - notion-to-md
+      - officeparser
+      - openai
+      - pdf-parse
+      - peggy
+      - pg
+      - pg-copy-streams
+      - pickleparser
+      - playwright
+      - portkey-ai
+      - puppeteer
+      - pyodide
+      - redis
+      - replicate
+      - sonix-speech-recognition
+      - srt-parser-2
+      - supports-color
+      - typeorm
+      - typesense
+      - usearch
+      - utf-8-validate
+      - voy-search
+      - weaviate-client
+      - web-auth-library
+      - word-extractor
+      - ws
+      - youtubei.js
+      - zod
+
+  '@olane/o-tool@0.8.21':
+    dependencies:
+      '@olane/o-config': 0.8.21
+      '@olane/o-core': 0.8.21
+      '@olane/o-protocol': 0.8.21
+      debug: 4.4.3
+      dotenv: 17.4.2
+      uuid: 11.1.0
+    transitivePeerDependencies:
+      - bufferutil
+      - supports-color
+      - utf-8-validate
+
+  '@olane/o-tool@0.9.0':
+    dependencies:
+      '@olane/o-config': 0.9.0
+      '@olane/o-core': 0.9.0
+      '@olane/o-protocol': 0.9.0
+      debug: 4.4.3
+      dotenv: 17.4.2
+      uuid: 11.1.0
+    transitivePeerDependencies:
+      - bufferutil
+      - supports-color
+      - utf-8-validate
+
+  '@olane/o-tools-common@0.9.0':
+    dependencies:
+      '@olane/o-approval': 0.9.0
+      '@olane/o-config': 0.9.0
+      '@olane/o-core': 0.9.0
+      '@olane/o-lane': 0.9.0
+      '@olane/o-leader': 0.9.0
+      '@olane/o-node': 0.9.0
+      '@olane/o-protocol': 0.9.0
+      '@olane/o-storage': 0.9.0
+      '@olane/o-tool': 0.9.0
       debug: 4.4.3
       dotenv: 17.4.2
     transitivePeerDependencies:
@@ -12344,40 +12769,198 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@olane/o-tools-common@0.8.18':
-    dependencies:
-      '@olane/o-approval': 0.8.18
-      '@olane/o-config': 0.8.18
-      '@olane/o-core': 0.8.18
-      '@olane/o-lane': 0.8.18
-      '@olane/o-leader': 0.8.18
-      '@olane/o-node': 0.8.18
-      '@olane/o-protocol': 0.8.18
-      '@olane/o-storage': 0.8.18
-      '@olane/o-tool': 0.8.18
-      debug: 4.4.3
-      dotenv: 17.4.2
-    transitivePeerDependencies:
-      - bufferutil
-      - supports-color
-      - utf-8-validate
-
-  '@olane/os@0.8.18(@browserbasehq/sdk@2.10.0(encoding@0.1.13))(@browserbasehq/stagehand@1.14.0(@playwright/test@1.59.1)(deepmerge@4.3.1)(dotenv@17.4.2)(encoding@0.1.13)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))(zod@4.3.6))(@cfworker/json-schema@4.1.1)(@ibm-cloud/watsonx-ai@1.7.11(typescript@5.9.3))(@langchain/anthropic@1.3.26(@langchain/core@0.3.61(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))))(@opentelemetry/api@1.9.0)(@supabase/supabase-js@2.104.0)(axios@1.15.0)(encoding@0.1.13)(handlebars@4.7.9)(ibm-cloud-sdk-core@5.4.11)(ignore@5.3.2)(interface-datastore@8.3.2)(it-all@3.0.11)(jsonwebtoken@9.0.3)(lodash@4.18.1)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))(playwright@1.59.1)(weaviate-client@3.12.1(encoding@0.1.13))(ws@8.20.0)(zod@4.3.6)':
+  '@olane/os@0.9.0(@browserbasehq/sdk@2.10.0(encoding@0.1.13))(@browserbasehq/stagehand@1.14.0(@playwright/test@1.59.1)(deepmerge@4.3.1)(dotenv@17.4.2)(encoding@0.1.13)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))(zod@4.3.6))(@cfworker/json-schema@4.1.1)(@ibm-cloud/watsonx-ai@1.7.11(typescript@5.9.3))(@langchain/anthropic@1.3.26(@langchain/core@0.3.61(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))))(@opentelemetry/api@1.9.0)(@supabase/supabase-js@2.104.0)(axios@1.15.0)(encoding@0.1.13)(handlebars@4.7.9)(ibm-cloud-sdk-core@5.4.11)(ignore@5.3.2)(interface-datastore@8.3.2)(it-all@3.0.11)(jsonwebtoken@9.0.3)(lodash@4.18.1)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))(playwright@1.59.1)(weaviate-client@3.12.1(encoding@0.1.13))(ws@8.20.0)(zod@4.3.6)':
     dependencies:
       '@libp2p/circuit-relay-v2': 4.2.2
-      '@olane/o-client-limited': 0.8.18
-      '@olane/o-config': 0.8.18
-      '@olane/o-core': 0.8.18
-      '@olane/o-intelligence': 0.8.18
-      '@olane/o-lane': 0.8.18
-      '@olane/o-leader': 0.8.18
-      '@olane/o-login': 0.8.18
-      '@olane/o-node': 0.8.18
-      '@olane/o-protocol': 0.8.18
-      '@olane/o-storage': 0.8.18
-      '@olane/o-tool': 0.8.18
-      '@olane/o-tool-registry': 0.8.18(@browserbasehq/sdk@2.10.0(encoding@0.1.13))(@browserbasehq/stagehand@1.14.0(@playwright/test@1.59.1)(deepmerge@4.3.1)(dotenv@17.4.2)(encoding@0.1.13)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))(zod@4.3.6))(@cfworker/json-schema@4.1.1)(@ibm-cloud/watsonx-ai@1.7.11(typescript@5.9.3))(@langchain/anthropic@1.3.26(@langchain/core@0.3.61(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))))(@opentelemetry/api@1.9.0)(@supabase/supabase-js@2.104.0)(axios@1.15.0)(encoding@0.1.13)(handlebars@4.7.9)(ibm-cloud-sdk-core@5.4.11)(ignore@5.3.2)(interface-datastore@8.3.2)(it-all@3.0.11)(jsonwebtoken@9.0.3)(lodash@4.18.1)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))(playwright@1.59.1)(weaviate-client@3.12.1(encoding@0.1.13))(ws@8.20.0)(zod@4.3.6)
-      '@olane/o-tools-common': 0.8.18
+      '@olane/o-agent': 0.9.0
+      '@olane/o-client-limited': 0.9.0
+      '@olane/o-config': 0.9.0
+      '@olane/o-core': 0.9.0
+      '@olane/o-intelligence': 0.9.0
+      '@olane/o-lane': 0.9.0
+      '@olane/o-leader': 0.9.0
+      '@olane/o-login': 0.9.0
+      '@olane/o-node': 0.9.0
+      '@olane/o-protocol': 0.9.0
+      '@olane/o-storage': 0.9.0
+      '@olane/o-tool': 0.9.0
+      '@olane/o-tool-registry': 0.9.0(@browserbasehq/sdk@2.10.0(encoding@0.1.13))(@browserbasehq/stagehand@1.14.0(@playwright/test@1.59.1)(deepmerge@4.3.1)(dotenv@17.4.2)(encoding@0.1.13)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))(zod@4.3.6))(@cfworker/json-schema@4.1.1)(@ibm-cloud/watsonx-ai@1.7.11(typescript@5.9.3))(@langchain/anthropic@1.3.26(@langchain/core@0.3.61(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))))(@opentelemetry/api@1.9.0)(@supabase/supabase-js@2.104.0)(axios@1.15.0)(encoding@0.1.13)(handlebars@4.7.9)(ibm-cloud-sdk-core@5.4.11)(ignore@5.3.2)(interface-datastore@8.3.2)(it-all@3.0.11)(jsonwebtoken@9.0.3)(lodash@4.18.1)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))(playwright@1.59.1)(weaviate-client@3.12.1(encoding@0.1.13))(ws@8.20.0)(zod@4.3.6)
+      '@olane/o-tools-common': 0.9.0
+      chalk: 5.6.2
+      debug: 4.4.3
+      dotenv: 17.4.2
+      fs-extra: 11.3.4
+      touch: 3.1.1
+    transitivePeerDependencies:
+      - '@arcjet/redact'
+      - '@aws-crypto/sha256-js'
+      - '@aws-sdk/client-bedrock-agent-runtime'
+      - '@aws-sdk/client-bedrock-runtime'
+      - '@aws-sdk/client-dynamodb'
+      - '@aws-sdk/client-kendra'
+      - '@aws-sdk/client-lambda'
+      - '@aws-sdk/client-s3'
+      - '@aws-sdk/client-sagemaker-runtime'
+      - '@aws-sdk/client-sfn'
+      - '@aws-sdk/credential-provider-node'
+      - '@aws-sdk/dsql-signer'
+      - '@azure/search-documents'
+      - '@azure/storage-blob'
+      - '@browserbasehq/sdk'
+      - '@browserbasehq/stagehand'
+      - '@cfworker/json-schema'
+      - '@clickhouse/client'
+      - '@cloudflare/ai'
+      - '@datastax/astra-db-ts'
+      - '@elastic/elasticsearch'
+      - '@getmetal/metal-sdk'
+      - '@getzep/zep-cloud'
+      - '@getzep/zep-js'
+      - '@gomomento/sdk'
+      - '@gomomento/sdk-core'
+      - '@google-ai/generativelanguage'
+      - '@google-cloud/storage'
+      - '@gradientai/nodejs-sdk'
+      - '@huggingface/inference'
+      - '@ibm-cloud/watsonx-ai'
+      - '@lancedb/lancedb'
+      - '@langchain/anthropic'
+      - '@langchain/aws'
+      - '@langchain/cerebras'
+      - '@langchain/cohere'
+      - '@langchain/deepseek'
+      - '@langchain/google-genai'
+      - '@langchain/google-vertexai'
+      - '@langchain/google-vertexai-web'
+      - '@langchain/groq'
+      - '@langchain/mistralai'
+      - '@langchain/ollama'
+      - '@langchain/xai'
+      - '@layerup/layerup-security'
+      - '@libsql/client'
+      - '@mendable/firecrawl-js'
+      - '@mlc-ai/web-llm'
+      - '@mozilla/readability'
+      - '@neondatabase/serverless'
+      - '@notionhq/client'
+      - '@opensearch-project/opensearch'
+      - '@opentelemetry/api'
+      - '@opentelemetry/exporter-trace-otlp-proto'
+      - '@opentelemetry/sdk-trace-base'
+      - '@pinecone-database/pinecone'
+      - '@planetscale/database'
+      - '@premai/prem-sdk'
+      - '@qdrant/js-client-rest'
+      - '@raycast/api'
+      - '@rockset/client'
+      - '@smithy/eventstream-codec'
+      - '@smithy/protocol-http'
+      - '@smithy/signature-v4'
+      - '@smithy/util-utf8'
+      - '@spider-cloud/spider-client'
+      - '@supabase/supabase-js'
+      - '@tensorflow-models/universal-sentence-encoder'
+      - '@tensorflow/tfjs-converter'
+      - '@tensorflow/tfjs-core'
+      - '@upstash/ratelimit'
+      - '@upstash/redis'
+      - '@upstash/vector'
+      - '@vercel/kv'
+      - '@vercel/postgres'
+      - '@writerai/writer-sdk'
+      - '@xata.io/client'
+      - '@zilliz/milvus2-sdk-node'
+      - apify-client
+      - assemblyai
+      - axios
+      - azion
+      - better-sqlite3
+      - bufferutil
+      - cassandra-driver
+      - cborg
+      - cheerio
+      - chromadb
+      - closevector-common
+      - closevector-node
+      - closevector-web
+      - cohere-ai
+      - convex
+      - crypto-js
+      - d3-dsv
+      - discord.js
+      - dria
+      - duck-duck-scrape
+      - encoding
+      - epub2
+      - fast-xml-parser
+      - firebase-admin
+      - google-auth-library
+      - googleapis
+      - handlebars
+      - hnswlib-node
+      - html-to-text
+      - ibm-cloud-sdk-core
+      - ignore
+      - interface-datastore
+      - ioredis
+      - it-all
+      - jsdom
+      - jsonwebtoken
+      - llmonitor
+      - lodash
+      - lunary
+      - mammoth
+      - mariadb
+      - mem0ai
+      - mongodb
+      - mysql2
+      - neo4j-driver
+      - notion-to-md
+      - officeparser
+      - openai
+      - pdf-parse
+      - peggy
+      - pg
+      - pg-copy-streams
+      - pickleparser
+      - playwright
+      - portkey-ai
+      - puppeteer
+      - pyodide
+      - redis
+      - replicate
+      - sonix-speech-recognition
+      - srt-parser-2
+      - supports-color
+      - typeorm
+      - typesense
+      - usearch
+      - utf-8-validate
+      - voy-search
+      - weaviate-client
+      - web-auth-library
+      - word-extractor
+      - ws
+      - youtubei.js
+      - zod
+
+  '@olane/os@0.9.0(@browserbasehq/sdk@2.10.0(encoding@0.1.13))(@browserbasehq/stagehand@1.14.0(@playwright/test@1.59.1)(deepmerge@4.3.1)(dotenv@17.4.2)(encoding@0.1.13)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))(zod@4.3.6))(@cfworker/json-schema@4.1.1)(@ibm-cloud/watsonx-ai@1.7.11(typescript@5.9.3))(@langchain/anthropic@1.3.26(@langchain/core@1.1.40(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))(ws@8.20.0)))(@opentelemetry/api@1.9.0)(@supabase/supabase-js@2.104.0)(axios@1.15.2)(encoding@0.1.13)(handlebars@4.7.9)(ibm-cloud-sdk-core@5.4.11)(ignore@5.3.2)(interface-datastore@8.3.2)(it-all@3.0.11)(jsonwebtoken@9.0.3)(lodash@4.18.1)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))(playwright@1.59.1)(weaviate-client@3.12.1(encoding@0.1.13))(ws@8.20.0)(zod@4.3.6)':
+    dependencies:
+      '@libp2p/circuit-relay-v2': 4.2.2
+      '@olane/o-agent': 0.9.0
+      '@olane/o-client-limited': 0.9.0
+      '@olane/o-config': 0.9.0
+      '@olane/o-core': 0.9.0
+      '@olane/o-intelligence': 0.9.0
+      '@olane/o-lane': 0.9.0
+      '@olane/o-leader': 0.9.0
+      '@olane/o-login': 0.9.0
+      '@olane/o-node': 0.9.0
+      '@olane/o-protocol': 0.9.0
+      '@olane/o-storage': 0.9.0
+      '@olane/o-tool': 0.9.0
+      '@olane/o-tool-registry': 0.9.0(@browserbasehq/sdk@2.10.0(encoding@0.1.13))(@browserbasehq/stagehand@1.14.0(@playwright/test@1.59.1)(deepmerge@4.3.1)(dotenv@17.4.2)(encoding@0.1.13)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))(zod@4.3.6))(@cfworker/json-schema@4.1.1)(@ibm-cloud/watsonx-ai@1.7.11(typescript@5.9.3))(@langchain/anthropic@1.3.26(@langchain/core@1.1.40(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))(ws@8.20.0)))(@opentelemetry/api@1.9.0)(@supabase/supabase-js@2.104.0)(axios@1.15.2)(encoding@0.1.13)(handlebars@4.7.9)(ibm-cloud-sdk-core@5.4.11)(ignore@5.3.2)(interface-datastore@8.3.2)(it-all@3.0.11)(jsonwebtoken@9.0.3)(lodash@4.18.1)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))(playwright@1.59.1)(weaviate-client@3.12.1(encoding@0.1.13))(ws@8.20.0)(zod@4.3.6)
+      '@olane/o-tools-common': 0.9.0
       chalk: 5.6.2
       debug: 4.4.3
       dotenv: 17.4.2
@@ -14856,6 +15439,31 @@ snapshots:
       - openai
       - ws
 
+  langchain@0.3.29(@langchain/anthropic@1.3.26(@langchain/core@1.1.40(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))(ws@8.20.0)))(@langchain/core@0.3.61(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.20.0)(zod@4.3.6)))(@opentelemetry/api@1.9.0)(axios@1.15.2)(handlebars@4.7.9)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))(ws@8.20.0):
+    dependencies:
+      '@langchain/core': 0.3.61(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))
+      '@langchain/openai': 0.5.18(@langchain/core@0.3.61(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.20.0)(zod@4.3.6)))(ws@8.20.0)
+      '@langchain/textsplitters': 0.1.0(@langchain/core@0.3.61(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.20.0)(zod@4.3.6)))
+      js-tiktoken: 1.0.21
+      js-yaml: 4.1.1
+      jsonpointer: 5.0.1
+      langsmith: 0.3.87(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))
+      openapi-types: 12.1.3
+      p-retry: 4.6.2
+      uuid: 10.0.0
+      yaml: 2.8.3
+      zod: 3.25.76
+    optionalDependencies:
+      '@langchain/anthropic': 1.3.26(@langchain/core@1.1.40(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.20.0)(zod@4.3.6))(ws@8.20.0))
+      axios: 1.15.2
+      handlebars: 4.7.9
+    transitivePeerDependencies:
+      - '@opentelemetry/api'
+      - '@opentelemetry/exporter-trace-otlp-proto'
+      - '@opentelemetry/sdk-trace-base'
+      - openai
+      - ws
+
   langsmith@0.3.87(@opentelemetry/api@1.9.0)(openai@5.23.2(ws@8.20.0)(zod@4.3.6)):
     dependencies:
       '@types/uuid': 10.0.0
@@ -15919,7 +16527,7 @@ snapshots:
   ora@5.3.0:
     dependencies:
       bl: 4.1.0
-      chalk: 4.1.0
+      chalk: 4.1.2
       cli-cursor: 3.1.0
       cli-spinners: 2.6.1
       is-interactive: 1.0.0

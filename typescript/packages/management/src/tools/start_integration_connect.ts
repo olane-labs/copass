@@ -15,12 +15,12 @@ export const startIntegrationConnect: ToolHandler = async (
     typeof input.error_redirect_uri === 'string'
       ? input.error_redirect_uri
       : '';
-  const request: ConnectRequest & { webhookUri?: string } = {
+  const request: ConnectRequest = {
     success_redirect_uri: successRedirect,
     error_redirect_uri: errorRedirect,
   };
   if (typeof input.webhook_uri === 'string') {
-    request.webhookUri = input.webhook_uri;
+    request.webhook_uri = input.webhook_uri;
   }
   return ctx.client.integrations.connect(ctx.sandboxId, appSlug, request);
 };

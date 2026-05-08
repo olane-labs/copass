@@ -256,3 +256,48 @@ def test_pydantic_like_args_are_coerced_via_model_dump() -> None:
     [result] = adk_event_to_agent_events(event)
     assert isinstance(result, AgentToolCall)
     assert result.arguments == {"k": "v"}
+
+
+# ─── error envelope detection ─────────────────────────────────────────────
+
+
+def test_top_level_error_envelope_raises_adk_upstream_error() -> None:
+    """ADK occasionally yields ``{code, message}`` instead of a normal
+    content event (invalid model id, quota, publisher-not-found). The
+    translator must raise rather than produce zero events — silent
+    successes on upstream errors are the wrong default."""
+    import pytest
+
+    from copass_google_agents.events import (
+        AdkUpstreamError,
+        adk_event_to_agent_events,
+    )
+
+    error_event = {
+        "code": 404,
+        "message": (
+            "404 NOT_FOUND. Publisher Model `.../models/gemini-3.1-pro-preview` "
+            "was not found or your project does not have access to it."
+        ),
+    }
+    with pytest.raises(AdkUpstreamError) as excinfo:
+        adk_event_to_agent_events(error_event)
+    assert excinfo.value.code == 404
+    assert "NOT_FOUND" in excinfo.value.message
+
+
+def test_normal_content_event_with_code_field_does_not_raise() -> None:
+    """A normal content event that happens to carry a ``code`` field
+    should still walk parts — only the bare ``{code, message}`` shape
+    (no ``content``) is the error sentinel."""
+    from copass_google_agents.events import adk_event_to_agent_events
+    from copass_core_agents.events import AgentTextDelta
+
+    event = {
+        "code": "irrelevant",
+        "message": "irrelevant",
+        "content": {"parts": [{"text": "hello"}]},
+    }
+    [result] = adk_event_to_agent_events(event)
+    assert isinstance(result, AgentTextDelta)
+    assert result.text == "hello"

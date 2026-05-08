@@ -26,14 +26,6 @@ async def main():
     )
     print(menu["items"])
 
-    # Context for agent
-    context = await client.context.for_agent(
-        sandbox_id="sb_...",
-        tier="adaptive",
-        query="auth flow",
-    )
-    print(context)
-
 asyncio.run(main())
 ```
 
@@ -68,7 +60,6 @@ client = CopassClient(auth=ApiKeyAuth(key="olk_..."))
 await client.retrieval.discover(sandbox_id, query="...")
 await client.retrieval.interpret(sandbox_id, query="...", items=[...])
 await client.retrieval.search(sandbox_id, query="...")
-await client.context.for_agent(sandbox_id="...", tier="adaptive")
 
 # Storage layer
 await client.sandboxes.create(name="...", owner_id="...")
@@ -79,7 +70,6 @@ await client.vault.store(sandbox_id, "key/path", b"bytes")
 
 # Knowledge graph
 await client.entities.search(sandbox_id, q="auth")
-await client.matrix.query(query="...")
 
 # Account
 await client.users.get_profile()

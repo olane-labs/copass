@@ -1,0 +1,22 @@
+{
+  "input": {
+    "data_source_id": "ds_01HXYZAB1234567890123ABCDE",
+    "delete_source": false
+  },
+  "output": {
+    "success": true,
+    "delete_source_applied": false,
+    "events_deleted": 42,
+    "extractions_deleted": 10,
+    "canonical_index_rows_deleted": 3,
+    "entity_vectors_deleted": 120,
+    "triggers_deleted": 0,
+    "webhooks_deleted": 0,
+    "event_seen_deleted": 0,
+    "project_links_deleted": 1,
+    "strategy_artifacts_deleted": 0,
+    "pull_artifacts_deleted": 0,
+    "user_strategies_deleted": 0,
+    "vault_objects_deleted": 5
+  }
+}

@@ -26,6 +26,12 @@ if TYPE_CHECKING:
     from copass_core.client import CopassClient
 
 
+def _capitalize_role(role: str) -> str:
+    if not role:
+        return role
+    return role[0].upper() + role[1:]
+
+
 class ContextWindow(BaseDataSource):
     """An agent's conversation wrapped as an ephemeral data source.
 
@@ -57,11 +63,22 @@ class ContextWindow(BaseDataSource):
         Awaits the push so ingestion failures surface at the call
         site. Callers wanting fire-and-forget can wrap in
         ``asyncio.create_task``.
+
+        The turn's ``name`` (if set) is forwarded as the envelope's
+        ``speaker`` field; absent ``name`` falls back to the
+        capitalized ``role`` (``"user"`` → ``"User"``,
+        ``"assistant"`` → ``"Assistant"``). The
+        ``f"{turn.role}: {turn.content}"`` content-prefix munging the
+        prior version used has been retired — the wire body is now
+        the message ``content`` verbatim, with ``speaker`` riding on
+        the envelope.
         """
         self._turns.append(turn)
+        speaker = turn.name if turn.name else _capitalize_role(turn.role)
         await self.push(
-            f"{turn.role}: {turn.content}",
+            turn.content,
             source_type="conversation",
+            speaker=speaker,
         )
 
     def get_turns(self) -> List[ChatMessage]:

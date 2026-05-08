@@ -28,6 +28,11 @@ beforeAll(() => {
   process.env.COPASS_MANAGEMENT_SPEC_DIR = SOURCE_SPEC_DIR;
 });
 
+// Snapshot of every tool name registered by buildServer, derived
+// dynamically from the management corpus. Update this Set when the
+// shape changes (a new management spec lands, a context-window /
+// retrieval / ingest tool is added/removed). The test below also
+// asserts on the cardinality so accidental additions are caught.
 const EXPECTED_TOOL_NAMES = new Set<string>([
   // retrieval (3)
   'discover',
@@ -40,27 +45,41 @@ const EXPECTED_TOOL_NAMES = new Set<string>([
   'context_window_close',
   // ingest (1)
   'ingest',
-  // management reads (14)
-  'list_sandboxes',
-  'list_sources',
-  'get_source',
-  'list_agents',
+  // management — full management corpus (34). Surface count grows as
+  // new specs land in spec/management/v1/.
+  'add_user_mcp_source',
+  'connect_linear',
+  'create_agent',
+  'create_trigger',
   'get_agent',
-  'list_triggers',
-  'list_runs',
   'get_run_trace',
-  'list_trigger_components',
+  'get_source',
+  'grant_sandbox_connection',
+  'list_agent_tools',
+  'list_agents',
+  'list_api_keys',
   'list_apps',
   'list_connected_accounts',
-  'list_api_keys',
-  'list_agent_tools',
+  'list_runs',
   'list_sandbox_connections',
-  // management reversible writes (6)
-  'create_agent',
+  'list_sandboxes',
+  'list_sources',
+  'list_trigger_components',
+  'list_triggers',
+  'pause_trigger',
+  'provision_source',
+  'purge_source_context',
+  'resume_trigger',
+  'revoke_sandbox_connection',
+  'revoke_user_mcp_source',
+  'start_integration_connect',
+  'test_user_mcp_source',
+  'update_agent_model_settings',
   'update_agent_prompt',
-  'update_agent_tools',
   'update_agent_tool_sources',
-  'add_user_mcp_source',
+  'update_agent_tools',
+  'update_source',
+  'update_trigger',
   'wire_integration_to_agent',
 ]);
 
@@ -98,7 +117,7 @@ async function connectPair(server: Awaited<ReturnType<typeof buildServer>>) {
 }
 
 describe('buildServer (combined retrieval + management surface)', () => {
-  it('exposes the union of retrieval + management tools (28)', async () => {
+  it('exposes the union of retrieval + context_window + ingest + management tools', async () => {
     const client = makeStubClient();
     const server = buildServer({ client, config: makeConfig() });
 
@@ -108,7 +127,7 @@ describe('buildServer (combined retrieval + management surface)', () => {
       const names = new Set(tools.map((t) => t.name));
 
       expect(names).toEqual(EXPECTED_TOOL_NAMES);
-      expect(tools).toHaveLength(28);
+      expect(tools).toHaveLength(EXPECTED_TOOL_NAMES.size);
     } finally {
       await mcpClient.close();
     }

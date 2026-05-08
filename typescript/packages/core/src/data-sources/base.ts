@@ -28,6 +28,21 @@ export interface PushOptions {
   storageOnly?: boolean;
   /** Override the default project id for this one push. */
   projectId?: string;
+  /** ISO 8601 timestamp anchoring this payload to a real-world moment. */
+  occurredAt?: string;
+  /**
+   * Optional named participant who uttered this payload. Useful on
+   * conversation-shaped sources (chat history, support tickets);
+   * forwarded as the envelope's `speaker` field.
+   */
+  speaker?: string;
+  /**
+   * Optional roster of participants present in this payload's
+   * artifact. Per-message — pass the snapshot at the time of
+   * utterance. Useful for second-person pronoun resolution on
+   * conversation-shaped sources.
+   */
+  participants?: string[];
 }
 
 /**
@@ -83,6 +98,9 @@ export abstract class BaseDataSource {
       source_type: options.sourceType,
       storage_only: options.storageOnly,
       project_id: options.projectId ?? this.projectId,
+      occurred_at: options.occurredAt,
+      speaker: options.speaker,
+      participants: options.participants,
     });
   }
 

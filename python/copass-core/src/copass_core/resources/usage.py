@@ -15,7 +15,7 @@ class UsageResource(BaseResource):
         return await self._get("/api/v1/usage")
 
     async def get_balance(self) -> Dict[str, Any]:
-        return await self._get("/api/v1/usage/credits")
+        return await self._get("/api/v1/usage/balance")
 
 
 __all__ = ["UsageResource"]
