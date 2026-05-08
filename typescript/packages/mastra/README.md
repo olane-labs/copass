@@ -89,6 +89,25 @@ Tool results (`role: 'tool'`) are skipped by default; opt in with `createWindowT
 | `interpret` | "Tell me about these specific items." — brief pinned to canonical_ids |
 | `search` | "Answer this directly." — full synthesized answer |
 
+## Conversation metadata
+
+`createWindowTracker` delegates to `ContextWindow.addTurn`, so any
+`participants` configured on the underlying window flow through
+automatically — no Mastra-specific wiring needed:
+
+```typescript
+const window = await client.contextWindow.create({
+  sandbox_id,
+  participants: ['User', 'agent:support-bot'],
+});
+const tracker = createWindowTracker({ window });
+```
+
+Pass a per-turn `name` on the `ChatMessage` returned from your Mastra
+step to set a richer speaker than the role-derived default. See
+[`@copass/core`](../core) for the full envelope surface (`speaker`,
+`participants`, `occurred_at`, free-form `source_type`).
+
 ## Related
 
 - [`@copass/core`](../core) — client SDK

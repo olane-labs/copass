@@ -65,6 +65,25 @@ result = await agent.ainvoke({
 - `create_copass_agent` — shipped (lazy-imports `langgraph`).
 - First-class `ContextWindow` integration — lands when `copass-core` v0.2 ships the primitive.
 
+## Conversation metadata
+
+`CopassWindowCallback` delegates to `ContextWindow.add_turn`, so any
+`speaker` / `participants` configured on the underlying window flow
+through automatically — no LangChain-specific wiring needed:
+
+```python
+window = await client.context_window.create(
+    sandbox_id=sandbox_id,
+    participants=["User", "agent:support-bot"],   # roster set once
+)
+callback = CopassWindowCallback(window=window)
+```
+
+When the LangChain callback emits a turn, the window's constructor-time
+roster + role-derived speaker ride on the envelope. Set
+`ChatMessage.name` on a turn for richer per-turn speaker provenance —
+see [`copass-core`](../copass-core) for the full envelope surface.
+
 ## License
 
 MIT.

@@ -75,6 +75,43 @@ Then try: *"Use `context_window_create` and then discover anything about checkou
 - `context_window_attach` — resume an archived window by id
 - `context_window_close` — close the active window
 
+### Conversation metadata: speaker, participants, name
+
+`context_window_create` and `context_window_attach` accept an optional `participants` array — the default conversation roster forwarded on every turn. `context_window_add_turn` accepts an optional `name` (per-turn speaker) and `participants` (per-turn override).
+
+```jsonc
+// Establish a multi-party roster once at create-time.
+{
+  "tool": "context_window_create",
+  "arguments": {
+    "participants": ["Alice", "Bob", "Carol"]
+  }
+}
+
+// Per-turn name → richer speaker than the role-derived default.
+{
+  "tool": "context_window_add_turn",
+  "arguments": {
+    "role": "user",
+    "content": "Hey Bob, did you finish the report?",
+    "name": "Alice"
+  }
+}
+
+// Per-turn participants override (roster shifted mid-thread).
+{
+  "tool": "context_window_add_turn",
+  "arguments": {
+    "role": "user",
+    "content": "Carol just joined.",
+    "name": "Alice",
+    "participants": ["Alice", "Bob", "Carol", "Dave"]
+  }
+}
+```
+
+Omit any of these fields and the existing role-derived defaults apply (`speaker = capitalize(role)`, no participants). Useful when you want richer attribution than role alone, e.g. real user names, multi-party chats, or thread-scoped rosters.
+
 **Writeback:**
 - `ingest` — push durable content into the graph
 
