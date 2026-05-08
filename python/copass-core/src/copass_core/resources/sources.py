@@ -343,6 +343,8 @@ class SourcesResource(BaseResource):
         storage_only: Optional[bool] = None,
         project_id: Optional[str] = None,
         occurred_at: Optional[str] = None,
+        speaker: Optional[str] = None,
+        participants: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         """Primary ingestion path — pushes ``text`` through this
         data source. Equivalent to calling
@@ -353,6 +355,10 @@ class SourcesResource(BaseResource):
         for any composed event whose own LLM-extracted occurred_at is
         None — so temporal queries can find the content even when the
         upstream extractor doesn't pull dates out of the body.
+
+        ``speaker`` and ``participants`` are conversation-shape
+        metadata — useful when the source pushes chat-style content.
+        See :meth:`IngestResource.text` for the full semantics.
         """
         body: Dict[str, Any] = {"text": text, "data_source_id": source_id}
         if source_type is not None:
@@ -363,6 +369,10 @@ class SourcesResource(BaseResource):
             body["project_id"] = project_id
         if occurred_at is not None:
             body["occurred_at"] = occurred_at
+        if speaker is not None:
+            body["speaker"] = speaker
+        if participants is not None:
+            body["participants"] = participants
         return await self._post(_ingest_base(sandbox_id), body)
 
 
