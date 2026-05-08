@@ -42,14 +42,22 @@ export interface RegisterOptions {
   kind: AgentKind | string;
   /** Stable session id from the host (e.g. CLAUDE_SESSION_ID). */
   sessionId: string;
+  /**
+   * Host CLI entrypoint that exposes `olane _host` and runs
+   * `runAgentDaemon` when invoked. Required to avoid silent footguns
+   * — defaulting to `process.argv[1]` would couple the daemon to
+   * whichever binary called `register()`, which silently breaks for
+   * non-cli front-ends (MCP servers, web apps, etc.).
+   */
+  cliEntry: string;
   /** User segment — defaults to `os.userInfo().username`. */
   user?: string;
   /** Skill ids to advertise. Defaults to the kind's default skills. */
   skills?: string[];
   /** Free-form description for the agent card. */
   description?: string;
-  /** Override the host CLI entrypoint that runs `runAgentDaemon`. */
-  cliEntry?: string;
+  /** Bound on the daemon's in-memory inbox. Defaults to 256. */
+  inboxBound?: number;
   /** Override sessions dir. Defaults to `<DEFAULT_CONFIG_PATH>/sessions`. */
   sessionsDir?: string;
   /** Override logs dir. Defaults to `<DEFAULT_CONFIG_PATH>/logs`. */
@@ -79,12 +87,18 @@ export interface ListFilter {
 export interface SendOptions {
   /** Recipient olane address. */
   to: string;
+  /**
+   * Send AS this registered session — its session file is read for the
+   * daemon's canonical address, and the AgentNode's `_tool_send` is
+   * called so the server-side envelope construction stays the single
+   * source of truth. Anonymous sends are not supported in v1; register
+   * a session daemon first if you need to send.
+   */
+  fromSessionId: string;
   /** Text body — provide `text` or `data`. */
   text?: string;
   /** Structured payload — provide `text` or `data`. */
   data?: unknown;
-  /** Send AS this registered session. If omitted, sends as `o://cli`. */
-  fromSessionId?: string;
   /** A2A task correlation id. */
   taskId?: string;
   /** A2A task state — `submitted`, `working`, `completed`, … */
@@ -106,6 +120,8 @@ export interface AgentDaemonOptions {
   user: string;
   skills?: string[];
   description?: string;
+  /** Bound on the in-memory inbox. Defaults to 256. */
+  inboxBound?: number;
   /** Override sessions dir. Defaults to `<DEFAULT_CONFIG_PATH>/sessions`. */
   sessionsDir?: string;
 }

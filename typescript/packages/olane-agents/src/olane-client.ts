@@ -16,7 +16,7 @@
 
 import { oAddress } from '@olane/o-core';
 import { oClientNode, oNodeAddress, oNodeTransport } from '@olane/o-node';
-import { ConfigManager, listOS, statusOS } from '@olane/os';
+import { listOS, statusOS } from '@olane/os';
 
 export type UseFn = (
   target: oAddress | string,
@@ -114,13 +114,13 @@ export async function withOlaneClient<T>(
     address: new oNodeAddress(`o://cli-${clientId}`),
     leader: leaderAddress,
     parent: null,
-  } as any);
+  });
 
   await client.start();
   try {
     const use: UseFn = async (t, params) => {
       const addr = typeof t === 'string' ? new oAddress(t) : t;
-      return await (client as any).use(addr, params);
+      return await client.use(addr, params);
     };
     return await fn(use);
   } finally {
@@ -131,6 +131,3 @@ export async function withOlaneClient<T>(
     }
   }
 }
-
-// Re-export ConfigManager helpers callers may want.
-export { ConfigManager };

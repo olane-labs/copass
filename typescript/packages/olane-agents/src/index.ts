@@ -27,11 +27,7 @@ export { AgentBroker } from './agent-broker.js';
 export { runAgentDaemon } from './agent-daemon.js';
 
 // libp2p client helper
-export {
-  withOlaneClient,
-  OlaneOSNotRunningError,
-  ConfigManager,
-} from './olane-client.js';
+export { withOlaneClient, OlaneOSNotRunningError } from './olane-client.js';
 export type { UseFn, WithOlaneClientOptions } from './olane-client.js';
 
 // Filesystem layout helpers

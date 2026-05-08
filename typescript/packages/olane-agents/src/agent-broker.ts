@@ -17,7 +17,6 @@ import * as fsp from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { spawn } from 'node:child_process';
-import { v4 as uuidv4 } from 'uuid';
 import type {
   InboxMessage,
   MessagePart,
@@ -108,12 +107,12 @@ export class AgentBroker {
       throw err;
     });
 
-    const cliEntry = options.cliEntry || process.argv[1];
-    if (!cliEntry) {
+    if (!options.cliEntry) {
       throw new Error(
-        'AgentBroker.register needs `cliEntry` — the front-end binary that exposes `olane _host`.',
+        'AgentBroker.register: `cliEntry` is required. Pass the absolute path to the front-end binary that exposes `olane _host` and runs `runAgentDaemon`.',
       );
     }
+    const cliEntry = options.cliEntry;
 
     const args: string[] = [
       cliEntry,
@@ -127,6 +126,9 @@ export class AgentBroker {
       user,
     ];
     if (options.description) args.push('--description', options.description);
+    if (options.inboxBound !== undefined) {
+      args.push('--inbox-bound', String(options.inboxBound));
+    }
     if (options.skills?.length) {
       for (const s of options.skills) args.push('--skill', s);
     }
@@ -261,12 +263,18 @@ export class AgentBroker {
   }
 
   /**
-   * Send a message to another agent address. If `fromSessionId` is
-   * provided AND that session has a registered daemon, the message
-   * envelope's `from` is set to the daemon's address. Otherwise sends
-   * as `o://cli`.
+   * Send a message FROM a registered session daemon to another agent
+   * address. The sender's `AgentNode._tool_send` is the single source
+   * of truth for envelope construction — anonymous sends are not
+   * supported (register a session daemon first).
    */
   async send(options: SendOptions): Promise<SendResult> {
+    if (!options.fromSessionId) {
+      throw new Error(
+        'AgentBroker.send: `fromSessionId` is required. Anonymous sends are not supported in v1 — register a session daemon first via `AgentBroker.register()`.',
+      );
+    }
+
     const parts: MessagePart[] = [];
     if (options.text !== undefined) {
       parts.push({ kind: 'text', text: options.text });
@@ -278,43 +286,23 @@ export class AgentBroker {
       throw new Error('AgentBroker.send: provide `text` or `data`.');
     }
 
-    let sender: string | null = null;
-    if (options.fromSessionId) {
-      const session = await readSessionFile(options.fromSessionId);
-      if (session) sender = session.address;
+    const senderSession = await readSessionFile(options.fromSessionId);
+    if (!senderSession) {
+      throw new Error(
+        `AgentBroker.send: no session daemon found for fromSessionId="${options.fromSessionId}". Register first via AgentBroker.register().`,
+      );
     }
 
     const result = await withOlaneClient(async (use) => {
-      if (sender) {
-        return await use(sender, {
-          method: 'send',
-          params: {
-            to: options.to,
-            parts,
-            task_id: options.taskId,
-            task_state: options.taskState,
-            correlation_id: options.correlationId,
-          },
-        });
-      }
-      // Anonymous send — fabricate envelope, hit the recipient's
-      // canonical address with method=receive. Sub-path resolution
-      // doesn't fire across processes; we encode the method as a
-      // JSON-RPC param.
-      const envelope = {
-        id: `msg_${uuidv4()}`,
-        from: 'o://cli',
-        to: options.to,
-        sentAt: new Date().toISOString(),
-        parts,
-        task: options.taskId
-          ? { id: options.taskId, state: options.taskState || 'submitted' }
-          : undefined,
-        correlationId: options.correlationId,
-      };
-      return await use(options.to, {
-        method: 'receive',
-        params: { message: envelope },
+      return await use(senderSession.address, {
+        method: 'send',
+        params: {
+          to: options.to,
+          parts,
+          task_id: options.taskId,
+          task_state: options.taskState,
+          correlation_id: options.correlationId,
+        },
       });
     });
 

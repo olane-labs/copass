@@ -60,8 +60,8 @@ export async function runOlaneOSHost(
     address: new oAddress('o://relay'),
     leader: os.rootLeader?.address || null,
     parent: os.rootLeader?.address || null,
-  } as any);
-  await os.addNode(relay as any);
+  });
+  await os.addNode(relay);
 
   setupGracefulShutdown(
     async () => {

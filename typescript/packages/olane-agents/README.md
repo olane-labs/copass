@@ -53,14 +53,23 @@ const session = await broker.register({
   kind: 'claude-code',
   sessionId: '1234',
   user: 'brendon',
+  // REQUIRED — absolute path to the front-end binary that exposes
+  // `olane _host` and runs `runAgentDaemon`. No implicit fallback to
+  // `process.argv[1]` — that's a footgun for non-cli front-ends.
+  cliEntry: '/usr/local/bin/copass',
 });
 // → spawns a detached `runAgentDaemon` child that owns an AgentNode at
 //   `o://agent-brendon-claude-code-1234` and stays resident.
 
 await broker.list({ live: true });
+
+// `fromSessionId` is REQUIRED — anonymous sends are not supported.
+// The sender's AgentNode._tool_send is the single source of truth for
+// envelope construction; clients never fabricate envelopes themselves.
+// Register a session daemon first if you need to send.
 await broker.send({
   to: session.address,
-  fromSessionId: 'codex-9999',
+  fromSessionId: '1234',
   text: 'hello',
 });
 

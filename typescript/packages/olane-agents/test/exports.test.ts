@@ -30,8 +30,8 @@ describe('@copass/olane-agents public surface', () => {
     expect(typeof pkg.logsDir).toBe('function');
     expect(typeof pkg.sessionLogFile).toBe('function');
   });
-  it('re-exports ConfigManager from @olane/os', () => {
-    expect(typeof pkg.ConfigManager).toBe('function');
+  it('does NOT re-export ConfigManager (F4 — consumers go to @olane/os directly)', () => {
+    expect((pkg as any).ConfigManager).toBeUndefined();
   });
 });
 

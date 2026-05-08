@@ -114,9 +114,9 @@ export async function runAgentDaemon(
   );
 
   const agent = new AgentNode({
-    address: new oNodeAddress(address) as any,
-    leader: leaderOAddress as any,
-    parent: leaderOAddress as any,
+    address: new oNodeAddress(address),
+    leader: leaderOAddress,
+    parent: leaderOAddress,
     // Cross-process daemons MUST listen — the leader dials back through
     // this port during routing. See @olane/o-agent README for the
     // full pattern.
@@ -124,7 +124,8 @@ export async function runAgentDaemon(
       listeners: ['/ip4/0.0.0.0/tcp/0'],
     },
     card,
-  } as any);
+    inboxBound: options.inboxBound,
+  });
 
   const sessionPath = sessionFilePath(options.sessionId);
   let stopping = false;
@@ -152,7 +153,7 @@ export async function runAgentDaemon(
     // After start(), the leader rewrites the address into its own
     // hierarchy (e.g. `o://leader/agent-...`). Persist the post-start
     // canonical address so the broker can dial it back.
-    const effectiveAddress = (agent as any).address.toString();
+    const effectiveAddress = agent.address.toString();
     const sessionFile: SessionFile = {
       address: effectiveAddress,
       card: { ...card, url: effectiveAddress },
