@@ -308,10 +308,15 @@ class CopassGoogleAgent(BaseAgent):
 
         self._turn_recorder: Optional[CopassTurnRecorder] = None
         if self._auto_record and window is not None:
+            # ADR 0022 — author flows as the envelope's `speaker`
+            # field via ChatMessage.name. The recorder defaults
+            # `participants` to ["User", author or "Assistant"] so
+            # downstream extraction can resolve second-person
+            # pronouns. include_author_prefix stays False (default)
+            # to avoid body-prefix double-attribution.
             self._turn_recorder = CopassTurnRecorder(
                 window=window,
                 author=author,
-                include_author_prefix=author is not None,
             )
 
     # ── Public entry points ──────────────────────────────────────

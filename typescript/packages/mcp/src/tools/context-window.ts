@@ -35,18 +35,29 @@ export function registerContextWindowTools(server: McpServer, deps: ContextWindo
         'Subsequent retrieval calls become automatically window-aware, and every turn you ' +
         'record via `context_window_add_turn` is ingested into the graph so past turns ' +
         'become retrievable. Returns a `data_source_id`; persist it on your side if you ' +
-        'may want to resume this conversation later via `context_window_attach`.',
+        'may want to resume this conversation later via `context_window_attach`. Pass ' +
+        '`participants` to set a default conversation roster — forwarded as the envelope ' +
+        '`participants` field on every turn so downstream extraction can resolve ' +
+        'second-person pronouns ("your X" → the OTHER listed participant).',
       inputSchema: {
         project_id: z.string().optional().describe('Override the server default project_id.'),
         name: z.string().optional().describe('Optional stable name for the underlying data source.'),
+        participants: z
+          .array(z.string())
+          .optional()
+          .describe(
+            'Default conversation participant roster (e.g. ["User", "Assistant"]). ' +
+            'Forwarded on every turn unless add_turn passes its own override.',
+          ),
       },
     },
-    async ({ project_id, name }) => {
+    async ({ project_id, name, participants }) => {
       try {
         const window = await client.contextWindow.create({
           sandbox_id: config.sandbox_id,
           project_id: project_id ?? config.project_id,
           name,
+          participants,
         });
         windows.set(window);
         return mcpResult({
@@ -65,19 +76,37 @@ export function registerContextWindowTools(server: McpServer, deps: ContextWindo
       description:
         'Append a turn to the active Context Window and push it into the graph. Call on ' +
         'every user message AND every assistant message so the thread itself becomes ' +
-        'retrievable. If you omit `data_source_id`, the active window is used.',
+        'retrievable. If you omit `data_source_id`, the active window is used. Pass `name` ' +
+        'when the speaker has a richer identity than `role` alone (e.g. an actual user name ' +
+        'like "Alice"); falls back to capitalized `role` when absent. Pass `participants` ' +
+        'to override the window\'s default roster for this turn only.',
       inputSchema: {
         role: z
           .enum(['user', 'assistant', 'system'])
           .describe('Role of the speaker for this turn.'),
         content: z.string().describe('The turn content.'),
+        name: z
+          .string()
+          .optional()
+          .describe(
+            'Optional named participant for this turn — forwarded as the envelope ' +
+            '`speaker`. Caller-decided literal (e.g. "Alice", "support-bot"). When ' +
+            'omitted, falls back to the capitalized role.',
+          ),
+        participants: z
+          .array(z.string())
+          .optional()
+          .describe(
+            'Per-turn participants override. Falls back to the window\'s ' +
+            'constructor-time roster when omitted.',
+          ),
         data_source_id: z
           .string()
           .optional()
           .describe('Override the active window id (for multi-window use cases).'),
       },
     },
-    async ({ role, content, data_source_id }) => {
+    async ({ role, content, name, participants, data_source_id }) => {
       try {
         const window = windows.resolve(data_source_id);
         if (!window) {
@@ -85,7 +114,7 @@ export function registerContextWindowTools(server: McpServer, deps: ContextWindo
             'No active Context Window — call context_window_create or context_window_attach first.',
           );
         }
-        await window.addTurn({ role, content });
+        await window.addTurn({ role, content, name }, { participants });
         return mcpResult({
           data_source_id: window.dataSourceId,
           turn_count: window.getTurns().length,
@@ -111,18 +140,27 @@ export function registerContextWindowTools(server: McpServer, deps: ContextWindo
             z.object({
               role: z.enum(['user', 'assistant', 'system']),
               content: z.string(),
+              name: z.string().optional(),
             }),
           )
           .optional()
           .describe('Optional pre-existing turns to seed the local buffer.'),
+        participants: z
+          .array(z.string())
+          .optional()
+          .describe(
+            'Default conversation participant roster — forwarded on every turn ' +
+            'pushed via add_turn unless that call overrides.',
+          ),
       },
     },
-    async ({ data_source_id, initial_turns }) => {
+    async ({ data_source_id, initial_turns, participants }) => {
       try {
         const window = await client.contextWindow.attach({
           sandbox_id: config.sandbox_id,
           data_source_id,
           initialTurns: initial_turns,
+          participants,
         });
         windows.set(window);
         return mcpResult({

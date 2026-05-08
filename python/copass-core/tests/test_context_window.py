@@ -120,6 +120,94 @@ async def test_context_window_add_turn_pushes_through_source(
 
 
 @respx.mock
+async def test_add_turn_forwards_constructor_participants(
+    client: CopassClient,
+) -> None:
+    """ContextWindow constructed with ``participants=...`` forwards
+    that roster on every turn (audit-fixes follow-up to ADR 0022)."""
+    respx.post("http://test/api/v1/storage/sandboxes/sb-1/sources").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "data_source_id": "ds-1",
+                "user_id": "u",
+                "sandbox_id": "sb-1",
+                "provider": "custom",
+                "name": "w",
+                "ingestion_mode": "manual",
+                "status": "active",
+                "adapter_config": {},
+            },
+        )
+    )
+    ingest_route = respx.post(
+        "http://test/api/v1/storage/sandboxes/sb-1/ingest"
+    ).mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "job_id": "j", "status": "queued", "encrypted": False,
+                "sandbox_id": "sb-1", "status_url": "/",
+            },
+        )
+    )
+
+    window = await client.context_window.create(
+        sandbox_id="sb-1",
+        participants=["User", "Alice"],
+    )
+    await window.add_turn(ChatMessage(role="user", content="hi"))
+
+    body = json.loads(ingest_route.calls.last.request.content)
+    assert body["participants"] == ["User", "Alice"]
+
+
+@respx.mock
+async def test_add_turn_per_call_participants_override(
+    client: CopassClient,
+) -> None:
+    """Per-call ``participants`` override the constructor-time roster."""
+    respx.post("http://test/api/v1/storage/sandboxes/sb-1/sources").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "data_source_id": "ds-1",
+                "user_id": "u",
+                "sandbox_id": "sb-1",
+                "provider": "custom",
+                "name": "w",
+                "ingestion_mode": "manual",
+                "status": "active",
+                "adapter_config": {},
+            },
+        )
+    )
+    ingest_route = respx.post(
+        "http://test/api/v1/storage/sandboxes/sb-1/ingest"
+    ).mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "job_id": "j", "status": "queued", "encrypted": False,
+                "sandbox_id": "sb-1", "status_url": "/",
+            },
+        )
+    )
+
+    window = await client.context_window.create(
+        sandbox_id="sb-1",
+        participants=["User", "Alice"],
+    )
+    await window.add_turn(
+        ChatMessage(role="user", content="hi"),
+        participants=["User", "Bob", "Carol"],
+    )
+
+    body = json.loads(ingest_route.calls.last.request.content)
+    assert body["participants"] == ["User", "Bob", "Carol"]
+
+
+@respx.mock
 async def test_add_turn_forwards_chat_message_name_as_speaker(
     client: CopassClient,
 ) -> None:

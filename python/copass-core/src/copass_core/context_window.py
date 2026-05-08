@@ -47,6 +47,7 @@ class ContextWindow(BaseDataSource):
         data_source_id: str,
         project_id: Optional[str] = None,
         initial_turns: Optional[List[ChatMessage]] = None,
+        participants: Optional[List[str]] = None,
     ) -> None:
         super().__init__(
             client=client,
@@ -55,8 +56,16 @@ class ContextWindow(BaseDataSource):
             project_id=project_id,
         )
         self._turns: List[ChatMessage] = list(initial_turns or [])
+        self._participants: Optional[List[str]] = (
+            list(participants) if participants is not None else None
+        )
 
-    async def add_turn(self, turn: ChatMessage) -> None:
+    async def add_turn(
+        self,
+        turn: ChatMessage,
+        *,
+        participants: Optional[List[str]] = None,
+    ) -> None:
         """Append a turn and push it through the underlying data
         source.
 
@@ -72,13 +81,21 @@ class ContextWindow(BaseDataSource):
         prior version used has been retired — the wire body is now
         the message ``content`` verbatim, with ``speaker`` riding on
         the envelope.
+
+        ``participants`` overrides the window's constructor-time
+        roster for this single call; falls back to that roster (or
+        ``None``) when not specified.
         """
         self._turns.append(turn)
         speaker = turn.name if turn.name else _capitalize_role(turn.role)
+        roster: Optional[List[str]] = participants
+        if roster is None and self._participants is not None:
+            roster = list(self._participants)
         await self.push(
             turn.content,
             source_type="conversation",
             speaker=speaker,
+            participants=roster,
         )
 
     def get_turns(self) -> List[ChatMessage]:
@@ -110,9 +127,15 @@ class ContextWindowResource:
         sandbox_id: str,
         project_id: Optional[str] = None,
         name: Optional[str] = None,
+        participants: Optional[List[str]] = None,
     ) -> ContextWindow:
         """Register a fresh ephemeral data source and return a window
-        bound to it."""
+        bound to it.
+
+        ``participants`` becomes the window's default conversation
+        roster — forwarded as the envelope's ``participants`` field
+        on every turn pushed via :meth:`ContextWindow.add_turn`.
+        """
         source_name = name if name is not None else f"window-{int(time.time() * 1000)}"
         source = await self._client.sources.register(
             sandbox_id,
@@ -126,6 +149,7 @@ class ContextWindowResource:
             sandbox_id=sandbox_id,
             data_source_id=source["data_source_id"],
             project_id=project_id,
+            participants=participants,
         )
 
     async def attach(
@@ -135,9 +159,13 @@ class ContextWindowResource:
         data_source_id: str,
         project_id: Optional[str] = None,
         initial_turns: Optional[List[ChatMessage]] = None,
+        participants: Optional[List[str]] = None,
     ) -> ContextWindow:
         """Reattach to an existing source — typically one the caller
         persisted after an earlier :meth:`create`.
+
+        ``participants`` becomes the window's default conversation
+        roster.
         """
         source = await self._client.sources.retrieve(sandbox_id, data_source_id)
         return ContextWindow(
@@ -146,6 +174,7 @@ class ContextWindowResource:
             data_source_id=source["data_source_id"],
             project_id=project_id,
             initial_turns=initial_turns,
+            participants=participants,
         )
 
 

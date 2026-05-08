@@ -42,7 +42,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import logging
-from typing import AsyncIterator, Optional
+from typing import AsyncIterator, List, Optional
 
 from copass_core.context_window import ContextWindow
 from copass_core.types import ChatMessage
@@ -90,11 +90,29 @@ class CopassTurnRecorder:
         include_tool_events: bool = False,
         author: Optional[str] = None,
         include_author_prefix: bool = False,
+        participants: Optional[List[str]] = None,
+        user_speaker: str = "User",
     ) -> None:
         self._window = window
         self._include_tool_events = include_tool_events
         self._author = author
+        self._user_speaker = user_speaker
         self._include_author_prefix = include_author_prefix
+        # Conversation roster: forwarded as the envelope's
+        # `participants` field on every recorded turn so downstream
+        # extraction can resolve second-person pronouns. When the
+        # caller doesn't supply one, default to [user_speaker, author]
+        # if author is set, else [user_speaker, "Assistant"]. The
+        # caller can pass `participants=[]` to opt out explicitly.
+        if participants is None:
+            agent_name = author if author else "Assistant"
+            self._participants: Optional[List[str]] = [
+                user_speaker, agent_name,
+            ]
+        elif not participants:
+            self._participants = None  # explicit opt-out
+        else:
+            self._participants = list(participants)
         self._seen: set[str] = set()
         self._pending_assistant_text: list[str] = []
         self._pending_pushes: set[asyncio.Task] = set()
@@ -111,7 +129,14 @@ class CopassTurnRecorder:
         in-flight assistant text first — a new user turn finalizes
         the prior assistant response."""
         await self._flush_assistant()
-        await self._record(ChatMessage(role="user", content=content))
+        # User turn carries the recorder's `user_speaker` (default
+        # "User") as the typed `name` so the envelope's `speaker`
+        # field is populated symmetrically with assistant turns.
+        await self._record(
+            ChatMessage(
+                role="user", content=content, name=self._user_speaker,
+            )
+        )
 
     async def record_assistant_delta(self, text: str) -> None:
         """Buffer an assistant text delta. Flushed by
@@ -223,7 +248,9 @@ class CopassTurnRecorder:
 
     async def _push(self, turn: ChatMessage) -> None:
         try:
-            await self._window.add_turn(turn)
+            await self._window.add_turn(
+                turn, participants=self._participants,
+            )
         except Exception as err:
             logger.warning(
                 "CopassTurnRecorder: add_turn failed (dropping turn)",

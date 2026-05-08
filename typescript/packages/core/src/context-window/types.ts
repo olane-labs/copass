@@ -9,6 +9,13 @@ export interface CreateContextWindowOptions {
    * Stable names let you find a window again via `sources.list()`.
    */
   name?: string;
+  /**
+   * Default participant roster for this conversation. Forwarded as the
+   * envelope's `participants` field on every turn pushed via
+   * `addTurn`, so the LLM can resolve second-person pronouns against
+   * the other listed participants.
+   */
+  participants?: string[];
 }
 
 export interface AttachContextWindowOptions {
@@ -21,6 +28,8 @@ export interface AttachContextWindowOptions {
    * very next retrieval call is window-aware without waiting on a fresh turn.
    */
   initialTurns?: ChatMessage[];
+  /** Default participant roster — see {@link CreateContextWindowOptions.participants}. */
+  participants?: string[];
 }
 
 /**
