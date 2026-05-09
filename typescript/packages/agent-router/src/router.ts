@@ -38,12 +38,23 @@
  *   const run = await router.agents.testFire(sandboxId, 'my-hermes-agent', {
  *     event_payload: { input: 'Say hello.' },
  *   });
+ *
+ *   // Direct compute (no agent) — provision a sandbox + run a command.
+ *   const { templates } = await router.compute.listTemplates(sandboxId);
+ *   const session = await router.compute.createSession(sandboxId, {
+ *     template: templates[0].name,
+ *   });
+ *   const result = await router.compute.exec(sandboxId, session.session_id, {
+ *     cmd: ['python', '-c', 'print("hello")'],
+ *   });
+ *   await router.compute.stopSession(sandboxId, session.session_id);
  */
 
 import {
   CopassClient,
   type AgentsResource,
   type AuthConfig,
+  type ComputeResource,
   type ConnectionItem,
   type ConnectionsListResponse,
   type IntegrationScope,
@@ -158,6 +169,29 @@ export class AgentRouter {
    * `router.integrations`.
    */
   readonly agents: AgentsResource;
+  /**
+   * Public Compute Router (ADR 0020) — `client.compute` re-exported for
+   * ergonomic parity with `router.agents` / `router.integrations`.
+   *
+   * Decoupled from the agent runtime: the seven `/compute/*` routes
+   * are a generic provider-agnostic wrapper around Daytona / E2B.
+   * Use this when you want to provision a sandbox + run shell commands
+   * directly, without wrapping the call in an agent.
+   *
+   * @example
+   * ```typescript
+   * const { templates } = await router.compute.listTemplates(sandboxId);
+   * const session = await router.compute.createSession(sandboxId, {
+   *   template: templates[0].name,
+   *   timeout_seconds: 600,
+   * });
+   * const result = await router.compute.exec(sandboxId, session.session_id, {
+   *   cmd: ['python', '-c', 'print("hello")'],
+   * });
+   * await router.compute.stopSession(sandboxId, session.session_id);
+   * ```
+   */
+  readonly compute: ComputeResource;
   private readonly defaultSandboxId: string;
   private readonly apiUrl: string;
 
@@ -168,6 +202,7 @@ export class AgentRouter {
     this.defaultSandboxId = options.sandboxId;
     this.integrations = new IntegrationsFacade(this.client, options.sandboxId);
     this.agents = this.client.agents;
+    this.compute = this.client.compute;
   }
 
   /** Run an agent turn and stream neutral `AgentEvent` values.
