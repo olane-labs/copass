@@ -20,6 +20,15 @@ export type ChatRole = 'user' | 'assistant' | 'system';
 export interface ChatMessage {
   role: ChatRole;
   content: string;
+  /**
+   * Optional named participant for this turn. When set, adapters that
+   * push a chat message through to ingestion forward this as the
+   * envelope's `speaker` field, retiring the legacy `[author=…]`
+   * content-prefix convention. Caller-decides the literal value
+   * (`'Alice'`, `'support-bot'`, an email address, …); when absent,
+   * adapters typically fall back to capitalizing `role`.
+   */
+  name?: string;
 }
 
 export interface DiscoveryItem {

@@ -41,6 +41,15 @@ This is a multi-language SDK repository. Each language lives in its own top-leve
 4. Add a CI workflow in `.github/workflows/`
 5. Add an entry to the root `README.md` language table
 
+## Cross-language wire-shape sync
+
+The ingest envelope (`POST /ingest/text`) is duplicated by hand in TypeScript and Python — there is no codegen today. When you change the envelope on one side, change the other in the same PR:
+
+- **TypeScript:** `typescript/packages/core/src/types/ingest.ts` (`IngestTextRequest` interface, `IngestSourceType` type) and `typescript/packages/core/src/resources/ingest.ts` (`IngestResource.text` / `IngestResource.textInSandbox` — these forward typed requests through, so usually the type change is enough).
+- **Python:** `python/copass-core/src/copass_core/resources/ingest.py` (`IngestResource.text` / `text_in_sandbox` parameters, `_build_ingest_body` body assembler).
+
+Tests on both sides should populate the new field and assert it lands on the wire payload.
+
 ## Pull Requests
 
 - One logical change per PR

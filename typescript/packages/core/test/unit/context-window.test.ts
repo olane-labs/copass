@@ -47,6 +47,9 @@ describe('ContextWindow', () => {
   });
 
   it('addTurn appends locally and pushes through the source', async () => {
+    // ADR 0022 Phase 2 — body is the verbatim content; speaker rides
+    // on the envelope. Capitalized role is the fallback when
+    // ChatMessage.name is absent.
     const window = new ContextWindow({
       client,
       sandboxId: 'sb1',
@@ -58,10 +61,81 @@ describe('ContextWindow', () => {
       'sb1',
       'ds1',
       expect.objectContaining({
-        text: 'user: hello',
+        text: 'hello',
         source_type: 'conversation',
+        speaker: 'User',
       }),
     );
+  });
+
+  it('addTurn forwards ChatMessage.name as speaker when set', async () => {
+    const window = new ContextWindow({
+      client,
+      sandboxId: 'sb1',
+      dataSourceId: 'ds1',
+    });
+    await window.addTurn({
+      role: 'user',
+      content: 'Hey Bob, did you finish?',
+      name: 'Alice',
+    });
+    expect(client.sources.ingest).toHaveBeenCalledWith(
+      'sb1',
+      'ds1',
+      expect.objectContaining({
+        text: 'Hey Bob, did you finish?',
+        speaker: 'Alice',  // name wins over role-derived fallback
+      }),
+    );
+  });
+
+  it('addTurn forwards constructor-time participants on every push', async () => {
+    const window = new ContextWindow({
+      client,
+      sandboxId: 'sb1',
+      dataSourceId: 'ds1',
+      participants: ['User', 'Alice'],
+    });
+    await window.addTurn({ role: 'user', content: 'hello' });
+    expect(client.sources.ingest).toHaveBeenCalledWith(
+      'sb1',
+      'ds1',
+      expect.objectContaining({
+        participants: ['User', 'Alice'],
+      }),
+    );
+  });
+
+  it('addTurn per-call participants override the constructor default', async () => {
+    const window = new ContextWindow({
+      client,
+      sandboxId: 'sb1',
+      dataSourceId: 'ds1',
+      participants: ['User', 'Alice'],
+    });
+    await window.addTurn(
+      { role: 'user', content: 'hi' },
+      { participants: ['User', 'Bob', 'Carol'] },
+    );
+    expect(client.sources.ingest).toHaveBeenCalledWith(
+      'sb1',
+      'ds1',
+      expect.objectContaining({
+        participants: ['User', 'Bob', 'Carol'],
+      }),
+    );
+  });
+
+  it('addTurn omits participants when neither constructor nor call-site set it', async () => {
+    const window = new ContextWindow({
+      client,
+      sandboxId: 'sb1',
+      dataSourceId: 'ds1',
+    });
+    await window.addTurn({ role: 'user', content: 'hi' });
+    const call = (client.sources.ingest as ReturnType<typeof vi.fn>).mock
+      .calls[0]![2] as Record<string, unknown>;
+    expect(call.participants).toBeUndefined();
   });
 
   it('addTurn forwards projectId when the window was created with one', async () => {

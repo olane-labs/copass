@@ -26,12 +26,15 @@ guarantee no turn is dropped. :meth:`record_stream` handles the flush
 in its ``finally`` block, so the default path through a provider's
 ``stream()`` override is leak-free without user work.
 
-Envelope caveat: ``copass_core.types.ChatMessage`` currently carries
-only ``{role, content}``. Richer provenance (agent_id, model,
-tool_calls) can't be a first-class field yet — if you need that
-today, pass ``author=...`` + ``include_author_prefix=True`` to embed
-it as a ``[author=...]`` prefix in ``content``. Promote to a real
-field in ``ChatMessage`` when the envelope is widened.
+Provenance: ``copass_core.types.ChatMessage`` carries an optional
+``name`` field (ADR 0022). Pass ``author=...`` to record assistant
+turns with that name; the recorder forwards it as
+``ChatMessage.name`` so the underlying ``ContextWindow`` lifts it
+onto the ingest envelope's ``speaker`` field. The legacy
+``include_author_prefix`` flag (which used to embed
+``"[author=...]\\n"`` into ``content``) still works for
+backward compat but is deprecated — prefer the typed ``author``
+path which keeps the body clean and the speaker structured.
 """
 
 from __future__ import annotations
@@ -39,7 +42,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import logging
-from typing import AsyncIterator, Optional
+from typing import AsyncIterator, List, Optional
 
 from copass_core.context_window import ContextWindow
 from copass_core.types import ChatMessage
@@ -66,15 +69,18 @@ class CopassTurnRecorder:
             double-count.
         author: Optional identifier for whoever is running the agent
             (``"agent"``, ``"user"``, or something richer like
-            ``"agent:support-bot"``). Recorded as a prefix on
-            assistant turns when ``include_author_prefix`` is True.
-            Until :class:`ChatMessage` grows an ``author`` field this
-            is the only way to carry provenance into the window.
-        include_author_prefix: When True, assistant turns are stored
-            as ``"[author=...]\\n<content>"`` so downstream retrieval
-            can distinguish agent-authored vs. user-authored turns.
-            Default False — most callers don't need provenance, and
-            the prefix marginally pollutes the embedding.
+            ``"agent:support-bot"``). Recorded on assistant turns as
+            ``ChatMessage.name`` (ADR 0022); the underlying
+            :class:`ContextWindow` forwards it as the envelope's
+            ``speaker`` field. When ``include_author_prefix`` is True,
+            also embedded as a legacy ``"[author=...]\\n"`` prefix in
+            ``content`` for backward compat with consumers that read
+            the body string directly.
+        include_author_prefix: Deprecated. When True, assistant turns
+            are stored as ``"[author=...]\\n<content>"`` in the body
+            in addition to the typed ``ChatMessage.name`` carry. Off
+            by default — the typed envelope path is preferred and the
+            prefix marginally pollutes the embedding.
     """
 
     def __init__(
@@ -84,11 +90,29 @@ class CopassTurnRecorder:
         include_tool_events: bool = False,
         author: Optional[str] = None,
         include_author_prefix: bool = False,
+        participants: Optional[List[str]] = None,
+        user_speaker: str = "User",
     ) -> None:
         self._window = window
         self._include_tool_events = include_tool_events
         self._author = author
+        self._user_speaker = user_speaker
         self._include_author_prefix = include_author_prefix
+        # Conversation roster: forwarded as the envelope's
+        # `participants` field on every recorded turn so downstream
+        # extraction can resolve second-person pronouns. When the
+        # caller doesn't supply one, default to [user_speaker, author]
+        # if author is set, else [user_speaker, "Assistant"]. The
+        # caller can pass `participants=[]` to opt out explicitly.
+        if participants is None:
+            agent_name = author if author else "Assistant"
+            self._participants: Optional[List[str]] = [
+                user_speaker, agent_name,
+            ]
+        elif not participants:
+            self._participants = None  # explicit opt-out
+        else:
+            self._participants = list(participants)
         self._seen: set[str] = set()
         self._pending_assistant_text: list[str] = []
         self._pending_pushes: set[asyncio.Task] = set()
@@ -105,7 +129,14 @@ class CopassTurnRecorder:
         in-flight assistant text first — a new user turn finalizes
         the prior assistant response."""
         await self._flush_assistant()
-        await self._record(ChatMessage(role="user", content=content))
+        # User turn carries the recorder's `user_speaker` (default
+        # "User") as the typed `name` so the envelope's `speaker`
+        # field is populated symmetrically with assistant turns.
+        await self._record(
+            ChatMessage(
+                role="user", content=content, name=self._user_speaker,
+            )
+        )
 
     async def record_assistant_delta(self, text: str) -> None:
         """Buffer an assistant text delta. Flushed by
@@ -186,9 +217,19 @@ class CopassTurnRecorder:
         self._pending_assistant_text.clear()
         if not text:
             return
+        # Legacy [author=...] prefix kept opt-in for body-reading
+        # consumers; the typed `name` field below is the preferred
+        # carrier and is always set when `author` is provided
+        # (ADR 0022).
         if self._include_author_prefix and self._author:
             text = f"[author={self._author}]\n{text}"
-        await self._record(ChatMessage(role="assistant", content=text))
+        await self._record(
+            ChatMessage(
+                role="assistant",
+                content=text,
+                name=self._author,
+            )
+        )
 
     async def _record(self, turn: ChatMessage) -> None:
         if not turn.content.strip():
@@ -207,7 +248,9 @@ class CopassTurnRecorder:
 
     async def _push(self, turn: ChatMessage) -> None:
         try:
-            await self._window.add_turn(turn)
+            await self._window.add_turn(
+                turn, participants=self._participants,
+            )
         except Exception as err:
             logger.warning(
                 "CopassTurnRecorder: add_turn failed (dropping turn)",

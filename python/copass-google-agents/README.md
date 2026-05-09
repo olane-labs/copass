@@ -114,6 +114,41 @@ server populates `state["copass_api_key"]` on each session via
 `async_create_session(state={...})`; the proxy tool reads it from
 `tool_context.state` on every invocation.
 
+## Conversation metadata: speaker + participants
+
+When `auto_record=True` (the default when `window` is supplied), the
+agent constructs a `CopassTurnRecorder` that auto-populates the
+envelope's typed metadata on every turn:
+
+- **`speaker`** — set from the `author` constructor arg on assistant
+  turns; falls back to `"User"` / `"Assistant"` from the role on user
+  turns.
+- **`participants`** — defaults to `["User", author or "Assistant"]`.
+  The roster rides on every turn so downstream retrieval can resolve
+  second-person pronouns.
+- **`occurred_at`** — flows through `BaseDataSource.push` /
+  `client.sources.ingest` for sources that have a real-world timestamp
+  to attach.
+
+```python
+agent = CopassGoogleAgent(
+    identity="support",
+    system_prompt="You are a support agent.",
+    project=os.environ["GOOGLE_CLOUD_PROJECT"],
+    reasoning_engine_id=os.environ["COPASS_REASONING_ENGINE_ID"],
+    window=window,
+    author="agent:support-bot",   # → speaker on every assistant turn
+    # participants auto-defaults to ["User", "agent:support-bot"]
+)
+```
+
+If you need a richer roster or a logged-in user identity, build a
+`CopassTurnRecorder` directly with `participants=...` and
+`user_speaker="Alice"`, then pass `auto_record=False` to the agent and
+drive recording yourself. See
+[`copass-context-agents`](../copass-context-agents) for the recorder
+surface and full envelope semantics.
+
 ## License
 
 MIT.

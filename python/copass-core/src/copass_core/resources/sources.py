@@ -197,6 +197,27 @@ class SourcesResource(BaseResource):
             body["poll_interval_seconds"] = poll_interval_seconds
         return await self._post(f"{_base(sandbox_id)}/linear", body)
 
+    async def pull(
+        self,
+        sandbox_id: str,
+        source_id: str,
+        *,
+        since: Optional[str] = None,
+        vault_only: bool = False,
+    ) -> Dict[str, Any]:
+        """Queue a ``data_source_pull`` job for this source (Tier-3 pull).
+
+        POST ``/sources/{source_id}/pull`` — the worker runs the
+        registered adapter for ``DataSource.provider`` and ingests
+        pulled records into the ontology pipeline.
+        """
+        body: Dict[str, Any] = {}
+        if since is not None:
+            body["since"] = since
+        if vault_only:
+            body["vault_only"] = True
+        return await self._post(f"{_base(sandbox_id)}/{source_id}/pull", body)
+
     async def pause(self, sandbox_id: str, source_id: str) -> Dict[str, Any]:
         return await self._post(f"{_base(sandbox_id)}/{source_id}/pause")
 
@@ -208,6 +229,23 @@ class SourcesResource(BaseResource):
 
     async def delete(self, sandbox_id: str, source_id: str) -> Dict[str, Any]:
         return await self._delete(f"{_base(sandbox_id)}/{source_id}")
+
+    async def purge(
+        self,
+        sandbox_id: str,
+        source_id: str,
+        *,
+        delete_source: Optional[bool] = None,
+    ) -> Dict[str, Any]:
+        """Remove ingested knowledge for this data source (POST ``…/purge``).
+
+        Does not remove the registration row unless ``delete_source`` is
+        true.
+        """
+        body: Dict[str, Any] = {}
+        if delete_source is not None:
+            body["delete_source"] = delete_source
+        return await self._post(f"{_base(sandbox_id)}/{source_id}/purge", body)
 
     # ─── user_mcp lifecycle ──────────────────────────────────────────
     #
@@ -305,6 +343,8 @@ class SourcesResource(BaseResource):
         storage_only: Optional[bool] = None,
         project_id: Optional[str] = None,
         occurred_at: Optional[str] = None,
+        speaker: Optional[str] = None,
+        participants: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         """Primary ingestion path — pushes ``text`` through this
         data source. Equivalent to calling
@@ -315,6 +355,10 @@ class SourcesResource(BaseResource):
         for any composed event whose own LLM-extracted occurred_at is
         None — so temporal queries can find the content even when the
         upstream extractor doesn't pull dates out of the body.
+
+        ``speaker`` and ``participants`` are conversation-shape
+        metadata — useful when the source pushes chat-style content.
+        See :meth:`IngestResource.text` for the full semantics.
         """
         body: Dict[str, Any] = {"text": text, "data_source_id": source_id}
         if source_type is not None:
@@ -325,6 +369,10 @@ class SourcesResource(BaseResource):
             body["project_id"] = project_id
         if occurred_at is not None:
             body["occurred_at"] = occurred_at
+        if speaker is not None:
+            body["speaker"] = speaker
+        if participants is not None:
+            body["participants"] = participants
         return await self._post(_ingest_base(sandbox_id), body)
 
 

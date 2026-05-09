@@ -115,6 +115,24 @@ await agent.invoke(
 
 `ToolMessage`s are skipped by default since they're usually retrieval noise; set `includeToolMessages: true` to include them.
 
+## Conversation metadata
+
+The LangChain callback delegates to `ContextWindow.addTurn`, so any
+`participants` configured on the underlying window flow through
+automatically — no LangChain-specific wiring needed:
+
+```typescript
+const window = await client.contextWindow.create({
+  sandbox_id,
+  participants: ['User', 'agent:support-bot'],   // roster set once
+});
+```
+
+Set a per-turn `name` on the `ChatMessage` for richer per-turn speaker
+provenance. See [`@copass/core`](../core) for the full envelope
+surface (`speaker`, `participants`, `occurred_at`, free-form
+`source_type`).
+
 ## Related
 
 - [`@copass/core`](../core) — client SDK

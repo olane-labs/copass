@@ -30,6 +30,7 @@ export class ContextWindowResource {
       sandboxId: options.sandbox_id,
       dataSourceId: source.data_source_id,
       projectId: options.project_id,
+      participants: options.participants,
     });
   }
 
@@ -49,6 +50,7 @@ export class ContextWindowResource {
       dataSourceId: source.data_source_id,
       projectId: options.project_id,
       initialTurns: options.initialTurns,
+      participants: options.participants,
     });
   }
 }

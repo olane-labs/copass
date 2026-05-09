@@ -14,6 +14,8 @@ import type {
   ListAgentsOptions,
   ListTriggerComponentsOptions,
   ListTriggersOptions,
+  StartAgentChatRunRequest,
+  StartAgentChatRunResponse,
   TestFireRequest,
   TriggerComponentListResponse,
   TriggerListResponse,
@@ -282,6 +284,22 @@ export class AgentsResource extends BaseResource {
     return this.post<AgentRun>(
       `${agentsBase(sandboxId)}/${slug}/test`,
       request,
+    );
+  }
+
+  /**
+   * Start a persisted agent chat turn that continues after disconnect.
+   * Returns immediately with `run_id` (HTTP 202). Poll {@link getRun}
+   * until `status` is terminal; read `output_text` and `provider_session_id`.
+   */
+  async startChatRun(
+    sandboxId: string,
+    slug: string,
+    body: StartAgentChatRunRequest,
+  ): Promise<StartAgentChatRunResponse> {
+    return this.post<StartAgentChatRunResponse>(
+      `${agentsBase(sandboxId)}/${slug}/invoke-async`,
+      body,
     );
   }
 

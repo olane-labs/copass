@@ -3,6 +3,42 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.5.10](https://github.com/olane-labs/copass/compare/@copass/mcp@0.5.9...@copass/mcp@0.5.10) (2026-05-09)
+
+### Bug Fixes
+
+- **audit:** plumb participants through ContextWindow + drop legacy author prefix in agent SDKs ([#14](https://github.com/olane-labs/copass/issues/14)) ([dd6c13e](https://github.com/olane-labs/copass/commit/dd6c13e62cad12f3981443c47e9e9c69a2666b88)), closes [#11](https://github.com/olane-labs/copass/issues/11) [#12](https://github.com/olane-labs/copass/issues/12)
+
+## [0.5.9](https://github.com/olane-labs/copass/compare/@copass/mcp@0.5.7...@copass/mcp@0.5.9) (2026-05-08)
+
+**Note:** Version bump only for package @copass/mcp
+
+## [0.5.7](https://github.com/olane-labs/copass/compare/@copass/mcp@0.5.6...@copass/mcp@0.5.7) (2026-05-08)
+
+### Bug Fixes
+
+- **peer-deps:** bump @copass/core peer dependency to ^0.6.0 ([#9](https://github.com/olane-labs/copass/issues/9)) ([3afa9a7](https://github.com/olane-labs/copass/commit/3afa9a7a80671ceb72ff9433bede752df9d81079))
+
+## [0.5.6](https://github.com/olane-labs/copass/compare/@copass/mcp@0.5.5...@copass/mcp@0.5.6) (2026-05-08)
+
+**Note:** Version bump only for package @copass/mcp
+
+## [0.5.5](https://github.com/olane-labs/copass/compare/@copass/mcp@0.5.4...@copass/mcp@0.5.5) (2026-05-05)
+
+**Note:** Version bump only for package @copass/mcp
+
+## [0.5.4](https://github.com/olane-labs/copass/compare/@copass/mcp@0.5.3...@copass/mcp@0.5.4) (2026-05-05)
+
+**Note:** Version bump only for package @copass/mcp
+
+## [0.5.3](https://github.com/olane-labs/copass/compare/@copass/mcp@0.5.2...@copass/mcp@0.5.3) (2026-05-05)
+
+**Note:** Version bump only for package @copass/mcp
+
+## [0.5.2](https://github.com/olane-labs/copass/compare/@copass/mcp@0.5.1...@copass/mcp@0.5.2) (2026-05-05)
+
+**Note:** Version bump only for package @copass/mcp
+
 ## [0.5.1](https://github.com/olane-labs/copass/compare/@copass/mcp@0.5.0...@copass/mcp@0.5.1) (2026-05-05)
 
 **Note:** Version bump only for package @copass/mcp

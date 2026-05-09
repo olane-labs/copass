@@ -48,10 +48,9 @@ export { SandboxesResource } from './resources/sandboxes.js';
 export { SandboxConnectionsResource } from './resources/sandbox-connections.js';
 export { SourcesResource } from './resources/sources.js';
 export { ProjectsResource } from './resources/projects.js';
-export { VaultResource } from './resources/vault.js';
 export { IngestResource } from './resources/ingest.js';
 export { EntitiesResource } from './resources/entities.js';
-export { MatrixResource } from './resources/matrix.js';
+export type { EntitySearchOptions } from './resources/entities.js';
 export { RetrievalResource } from './resources/retrieval.js';
 export type {
   ChatRole,
@@ -89,10 +88,12 @@ export type {
 } from './types/integrations.js';
 
 // Reactive Agents (OLANE-1532)
+export { AgentsResource } from './resources/agents.js';
 export { DEFAULT_MODEL_BY_BACKEND } from './types/agents.js';
 export type {
   Agent,
   AgentBackend,
+  AgentComputeProvider,
   AgentListResponse,
   AgentModelSettings,
   AgentRun,
@@ -109,6 +110,8 @@ export type {
   ListTriggerComponentsOptions,
   ListTriggersOptions,
   RunStatus,
+  StartAgentChatRunRequest,
+  StartAgentChatRunResponse,
   TestFireRequest,
   TriggerComponent,
   TriggerComponentListResponse,
@@ -121,6 +124,25 @@ export type {
   WireIntegrationRequest,
   WireIntegrationResult,
 } from './types/agents.js';
+
+// Public Compute Router v1 (ADR 0020) — provision sandboxes + exec
+export { ComputeResource } from './resources/compute.js';
+export type {
+  ComputeExecRequest,
+  ComputeExecResponse,
+  ComputeProvider,
+  ComputeSessionHealthResponse,
+  ComputeSessionHealthStatus,
+  ComputeSessionResponse,
+  ComputeSessionStatus,
+  ComputeTemplate,
+  CreateComputeSessionRequest,
+  ListComputeSessionsOptions,
+  ListComputeSessionsResponse,
+  ListComputeTemplatesOptions,
+  ListComputeTemplatesResponse,
+  StopComputeSessionResponse,
+} from './types/compute.js';
 
 // Copass Concierge (per-user platform agent)
 export { ConciergeResource } from './resources/concierge.js';

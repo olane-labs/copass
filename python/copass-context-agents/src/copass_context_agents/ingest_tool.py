@@ -118,17 +118,15 @@ class _CopassIngestTool(AgentTool):
         if not content:
             return {"error": "content is required and must be non-empty"}
 
-        # Provenance prefix — until the ingest API / ChatMessage grow
-        # a first-class author envelope, embed it as a structured
-        # header so downstream retrieval can see who committed this
-        # knowledge.
-        if self._author:
-            content = f"[author={self._author}]\n{content}"
-
         source_type = arguments.get("source_type") or self._default_source_type
         storage_only = arguments.get("storage_only")
         occurred_at = arguments.get("occurred_at")
 
+        # Provenance via the typed envelope (ADR 0022). The legacy
+        # `[author=...]\n` content prefix is retired — author flows
+        # through as `speaker` on the ingest envelope, keeping the
+        # body string clean and the speaker structured for downstream
+        # extraction.
         response = await self._client.sources.ingest(
             self._sandbox_id,
             self._data_source_id,
@@ -137,6 +135,7 @@ class _CopassIngestTool(AgentTool):
             storage_only=storage_only,
             project_id=self._project_id,
             occurred_at=occurred_at,
+            speaker=self._author,
         )
         return {
             "job_id": response.get("job_id"),
@@ -171,10 +170,9 @@ def copass_ingest_tool(
             is architecture capture.
         author: Optional identifier of whoever is running the agent
             (``"agent:support-bot"``, ``"user"``, etc.). When set,
-            ingested content is prefixed with ``"[author=...]\\n"``
-            so retrieval can distinguish provenance. Remove once the
-            ingest API / :class:`ChatMessage` grows a first-class
-            author field.
+            forwarded as the ``speaker`` field on the ingest envelope
+            (ADR 0022) so retrieval can distinguish provenance
+            without polluting the body.
 
     Returns:
         One :class:`AgentTool` — register it via

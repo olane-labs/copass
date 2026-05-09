@@ -112,6 +112,27 @@ Tool messages (role: `'tool'`) are skipped by default since they're usually retr
 | `interpret` | "Tell me about these specific items." — brief pinned to canonical_ids |
 | `search` | "Answer this directly." — full synthesized answer |
 
+## Conversation metadata
+
+When you mirror turns into a `ContextWindow`, set the conversation
+roster once at construction so it rides on every turn:
+
+```typescript
+const window = await client.contextWindow.create({
+  sandbox_id,
+  participants: ['User', 'agent:support-bot'],
+});
+
+await window.addTurn({
+  role: 'user',
+  content: 'Hey, did you finish the report?',
+  name: 'Alice',  // → envelope `speaker`
+});
+```
+
+See [`@copass/core`](../core) for the full envelope surface
+(`speaker`, `participants`, `occurred_at`, free-form `source_type`).
+
 ## Related
 
 - [`@copass/core`](../core) — client SDK

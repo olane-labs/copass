@@ -55,7 +55,22 @@ jobs:
       - name: Build
         run: pnpm run build
 
-      - name: Test
+      # ── SDK CONTRACT GUARD (pre-publish) ───────────────────────────
+      # Runs the full mock-based test suite for every TS package
+      # (vitest, recursive). This is the deploy guard the
+      # ``integration/README.md`` references: if a refactor breaks any
+      # wire-format / response-shape contract, the matching test in
+      # ``packages/<pkg>/test/unit/resources/full/`` (core) or
+      # ``packages/<pkg>/test/unit/v2-propagation.test.ts`` (adapters)
+      # fails here BEFORE the package is published to npm.
+      #
+      # Specifically catches:
+      #   - SDK request-shape regressions (URL/body/headers)
+      #   - SDK response-unpacking regressions
+      #   - copass/2.0 preset-propagation regressions in adapter wrappers
+      #   - MCP adapter ZodObject vs ZodRawShape regressions
+      #     (registerToMcpServer in @copass/management)
+      - name: SDK contract guard (mock-based tests)
         run: pnpm test
 
       - name: Bump versions (stable)

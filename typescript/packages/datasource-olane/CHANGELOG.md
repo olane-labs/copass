@@ -3,6 +3,42 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.6.1](https://github.com/olane-labs/copass/compare/@copass/datasource-olane@0.6.0...@copass/datasource-olane@0.6.1) (2026-05-08)
+
+**Note:** Version bump only for package @copass/datasource-olane
+
+# [0.6.0](https://github.com/olane-labs/copass/compare/@copass/datasource-olane@0.5.7...@copass/datasource-olane@0.6.0) (2026-05-08)
+
+### Features
+
+- **olane-agents:** new @copass/olane-agents package ([#10](https://github.com/olane-labs/copass/issues/10)) ([e1c08f1](https://github.com/olane-labs/copass/commit/e1c08f14208454d55bb0981daf2cc0e5b4fe1b4e)), closes [olane-labs/olane#202](https://github.com/olane-labs/olane/issues/202)
+
+## [0.5.7](https://github.com/olane-labs/copass/compare/@copass/datasource-olane@0.5.6...@copass/datasource-olane@0.5.7) (2026-05-08)
+
+### Bug Fixes
+
+- **peer-deps:** bump @copass/core peer dependency to ^0.6.0 ([#9](https://github.com/olane-labs/copass/issues/9)) ([3afa9a7](https://github.com/olane-labs/copass/commit/3afa9a7a80671ceb72ff9433bede752df9d81079))
+
+## [0.5.6](https://github.com/olane-labs/copass/compare/@copass/datasource-olane@0.5.5...@copass/datasource-olane@0.5.6) (2026-05-08)
+
+**Note:** Version bump only for package @copass/datasource-olane
+
+## [0.5.5](https://github.com/olane-labs/copass/compare/@copass/datasource-olane@0.5.4...@copass/datasource-olane@0.5.5) (2026-05-08)
+
+**Note:** Version bump only for package @copass/datasource-olane
+
+## [0.5.4](https://github.com/olane-labs/copass/compare/@copass/datasource-olane@0.5.3...@copass/datasource-olane@0.5.4) (2026-05-05)
+
+**Note:** Version bump only for package @copass/datasource-olane
+
+## [0.5.3](https://github.com/olane-labs/copass/compare/@copass/datasource-olane@0.5.2...@copass/datasource-olane@0.5.3) (2026-05-05)
+
+**Note:** Version bump only for package @copass/datasource-olane
+
+## [0.5.2](https://github.com/olane-labs/copass/compare/@copass/datasource-olane@0.5.1...@copass/datasource-olane@0.5.2) (2026-05-05)
+
+**Note:** Version bump only for package @copass/datasource-olane
+
 ## [0.5.1](https://github.com/olane-labs/copass/compare/@copass/datasource-olane@0.4.2...@copass/datasource-olane@0.5.1) (2026-05-05)
 
 **Note:** Version bump only for package @copass/datasource-olane

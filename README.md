@@ -1,5 +1,18 @@
 # copass
 
+[![CI – TypeScript](https://github.com/olane-labs/copass/actions/workflows/ci-typescript.yml/badge.svg?branch=main)](https://github.com/olane-labs/copass/actions/workflows/ci-typescript.yml)
+[![CI – Python](https://github.com/olane-labs/copass/actions/workflows/ci-python.yml/badge.svg?branch=main)](https://github.com/olane-labs/copass/actions/workflows/ci-python.yml)
+[![Conformance](https://github.com/olane-labs/copass/actions/workflows/conformance.yml/badge.svg?branch=main)](https://github.com/olane-labs/copass/actions/workflows/conformance.yml)
+[![SDK Contract Probe](https://github.com/olane-labs/copass/actions/workflows/sdk-contract-probe.yml/badge.svg?branch=main)](https://github.com/olane-labs/copass/actions/workflows/sdk-contract-probe.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
+[![npm @copass/core](https://img.shields.io/npm/v/@copass/core?label=%40copass%2Fcore&color=cb3837&logo=npm)](https://www.npmjs.com/package/@copass/core)
+[![npm @copass/management](https://img.shields.io/npm/v/@copass/management?label=%40copass%2Fmanagement&color=cb3837&logo=npm)](https://www.npmjs.com/package/@copass/management)
+[![npm @copass/mcp](https://img.shields.io/npm/v/@copass/mcp?label=%40copass%2Fmcp&color=cb3837&logo=npm)](https://www.npmjs.com/package/@copass/mcp)
+[![npm @copass/cli](https://img.shields.io/npm/v/@copass/cli?label=%40copass%2Fcli&color=cb3837&logo=npm)](https://www.npmjs.com/package/@copass/cli)
+[![PyPI copass-core](https://img.shields.io/pypi/v/copass-core?label=copass-core&color=3776ab&logo=pypi&logoColor=white)](https://pypi.org/project/copass-core/)
+[![PyPI copass-management](https://img.shields.io/pypi/v/copass-management?label=copass-management&color=3776ab&logo=pypi&logoColor=white)](https://pypi.org/project/copass-management/)
+
 **Build AI agents grounded in your data — on any provider.** A typed, multi-language monorepo of SDKs and integrations for [Copass](https://copass.id).
 
 Copass is the abstraction layer over fragmented AI markets. **Three Routers, one architecture:**
@@ -214,6 +227,43 @@ const client = new CopassClient({
 ```
 
 Full protocol — including key derivation salts and on-the-wire layout — in [`docs/encryption.md`](./docs/encryption.md).
+
+## Packages
+
+Every published artifact in the monorepo, with the live version pulled from the registry. CI status for each language is in the badge bar at the top.
+
+### TypeScript — npm
+
+| Package | Version | Downloads |
+|---|---|---|
+| [`@copass/core`](https://www.npmjs.com/package/@copass/core) — typed client SDK; auth, retrieval, ContextWindow | [![v](https://img.shields.io/npm/v/@copass/core?label=&color=cb3837)](https://www.npmjs.com/package/@copass/core) | [![dl](https://img.shields.io/npm/dm/@copass/core?label=)](https://www.npmjs.com/package/@copass/core) |
+| [`@copass/management`](https://www.npmjs.com/package/@copass/management) — admin-tool catalog (sandboxes, sources, agents) | [![v](https://img.shields.io/npm/v/@copass/management?label=&color=cb3837)](https://www.npmjs.com/package/@copass/management) | [![dl](https://img.shields.io/npm/dm/@copass/management?label=)](https://www.npmjs.com/package/@copass/management) |
+| [`@copass/mcp`](https://www.npmjs.com/package/@copass/mcp) — Model Context Protocol server | [![v](https://img.shields.io/npm/v/@copass/mcp?label=&color=cb3837)](https://www.npmjs.com/package/@copass/mcp) | [![dl](https://img.shields.io/npm/dm/@copass/mcp?label=)](https://www.npmjs.com/package/@copass/mcp) |
+| [`@copass/cli`](https://www.npmjs.com/package/@copass/cli) — `copass` and `copass-admin` binaries | [![v](https://img.shields.io/npm/v/@copass/cli?label=&color=cb3837)](https://www.npmjs.com/package/@copass/cli) | [![dl](https://img.shields.io/npm/dm/@copass/cli?label=)](https://www.npmjs.com/package/@copass/cli) |
+| [`@copass/agent-router`](https://www.npmjs.com/package/@copass/agent-router) — one API across providers + OAuth integrations | [![v](https://img.shields.io/npm/v/@copass/agent-router?label=&color=cb3837)](https://www.npmjs.com/package/@copass/agent-router) | [![dl](https://img.shields.io/npm/dm/@copass/agent-router?label=)](https://www.npmjs.com/package/@copass/agent-router) |
+| [`@copass/ai-sdk`](https://www.npmjs.com/package/@copass/ai-sdk) — Vercel AI SDK adapter (`copassTools`) | [![v](https://img.shields.io/npm/v/@copass/ai-sdk?label=&color=cb3837)](https://www.npmjs.com/package/@copass/ai-sdk) | [![dl](https://img.shields.io/npm/dm/@copass/ai-sdk?label=)](https://www.npmjs.com/package/@copass/ai-sdk) |
+| [`@copass/langchain`](https://www.npmjs.com/package/@copass/langchain) — LangChain adapter | [![v](https://img.shields.io/npm/v/@copass/langchain?label=&color=cb3837)](https://www.npmjs.com/package/@copass/langchain) | [![dl](https://img.shields.io/npm/dm/@copass/langchain?label=)](https://www.npmjs.com/package/@copass/langchain) |
+| [`@copass/mastra`](https://www.npmjs.com/package/@copass/mastra) — Mastra adapter | [![v](https://img.shields.io/npm/v/@copass/mastra?label=&color=cb3837)](https://www.npmjs.com/package/@copass/mastra) | [![dl](https://img.shields.io/npm/dm/@copass/mastra?label=)](https://www.npmjs.com/package/@copass/mastra) |
+| [`@copass/datasource-fs`](https://www.npmjs.com/package/@copass/datasource-fs) — file-system data source driver | [![v](https://img.shields.io/npm/v/@copass/datasource-fs?label=&color=cb3837)](https://www.npmjs.com/package/@copass/datasource-fs) | [![dl](https://img.shields.io/npm/dm/@copass/datasource-fs?label=)](https://www.npmjs.com/package/@copass/datasource-fs) |
+| [`@copass/datasource-olane`](https://www.npmjs.com/package/@copass/datasource-olane) — Olane OS data source driver | [![v](https://img.shields.io/npm/v/@copass/datasource-olane?label=&color=cb3837)](https://www.npmjs.com/package/@copass/datasource-olane) | [![dl](https://img.shields.io/npm/dm/@copass/datasource-olane?label=)](https://www.npmjs.com/package/@copass/datasource-olane) |
+| [`@copass/config`](https://www.npmjs.com/package/@copass/config) — shared chalk palette + tool descriptions | [![v](https://img.shields.io/npm/v/@copass/config?label=&color=cb3837)](https://www.npmjs.com/package/@copass/config) | [![dl](https://img.shields.io/npm/dm/@copass/config?label=)](https://www.npmjs.com/package/@copass/config) |
+| [`create-copass-agent`](https://www.npmjs.com/package/create-copass-agent) — `npm create copass-agent` scaffolder | [![v](https://img.shields.io/npm/v/create-copass-agent?label=&color=cb3837)](https://www.npmjs.com/package/create-copass-agent) | [![dl](https://img.shields.io/npm/dm/create-copass-agent?label=)](https://www.npmjs.com/package/create-copass-agent) |
+
+### Python — PyPI
+
+| Package | Version | Downloads |
+|---|---|---|
+| [`copass-core`](https://pypi.org/project/copass-core/) — typed client SDK; auth, retrieval, ContextWindow | [![v](https://img.shields.io/pypi/v/copass-core?label=&color=3776ab)](https://pypi.org/project/copass-core/) | [![dl](https://img.shields.io/pypi/dm/copass-core?label=)](https://pypi.org/project/copass-core/) |
+| [`copass-management`](https://pypi.org/project/copass-management/) — admin-tool catalog | [![v](https://img.shields.io/pypi/v/copass-management?label=&color=3776ab)](https://pypi.org/project/copass-management/) | [![dl](https://img.shields.io/pypi/dm/copass-management?label=)](https://pypi.org/project/copass-management/) |
+| [`copass-agent-router`](https://pypi.org/project/copass-agent-router/) — one API across providers + OAuth integrations | [![v](https://img.shields.io/pypi/v/copass-agent-router?label=&color=3776ab)](https://pypi.org/project/copass-agent-router/) | [![dl](https://img.shields.io/pypi/dm/copass-agent-router?label=)](https://pypi.org/project/copass-agent-router/) |
+| [`copass-anthropic-agents`](https://pypi.org/project/copass-anthropic-agents/) — Anthropic agent backend | [![v](https://img.shields.io/pypi/v/copass-anthropic-agents?label=&color=3776ab)](https://pypi.org/project/copass-anthropic-agents/) | [![dl](https://img.shields.io/pypi/dm/copass-anthropic-agents?label=)](https://pypi.org/project/copass-anthropic-agents/) |
+| [`copass-google-agents`](https://pypi.org/project/copass-google-agents/) — Google / Vertex agent backend | [![v](https://img.shields.io/pypi/v/copass-google-agents?label=&color=3776ab)](https://pypi.org/project/copass-google-agents/) | [![dl](https://img.shields.io/pypi/dm/copass-google-agents?label=)](https://pypi.org/project/copass-google-agents/) |
+| [`copass-hermes-agents`](https://pypi.org/project/copass-hermes-agents/) — self-hosted Hermes (compute-router) backend | [![v](https://img.shields.io/pypi/v/copass-hermes-agents?label=&color=3776ab)](https://pypi.org/project/copass-hermes-agents/) | [![dl](https://img.shields.io/pypi/dm/copass-hermes-agents?label=)](https://pypi.org/project/copass-hermes-agents/) |
+| [`copass-core-agents`](https://pypi.org/project/copass-core-agents/) — base abstractions shared by every backend | [![v](https://img.shields.io/pypi/v/copass-core-agents?label=&color=3776ab)](https://pypi.org/project/copass-core-agents/) | [![dl](https://img.shields.io/pypi/dm/copass-core-agents?label=)](https://pypi.org/project/copass-core-agents/) |
+| [`copass-context-agents`](https://pypi.org/project/copass-context-agents/) — context-engineering tools for agent runtimes | [![v](https://img.shields.io/pypi/v/copass-context-agents?label=&color=3776ab)](https://pypi.org/project/copass-context-agents/) | [![dl](https://img.shields.io/pypi/dm/copass-context-agents?label=)](https://pypi.org/project/copass-context-agents/) |
+| [`copass-langchain`](https://pypi.org/project/copass-langchain/) — LangChain adapter | [![v](https://img.shields.io/pypi/v/copass-langchain?label=&color=3776ab)](https://pypi.org/project/copass-langchain/) | [![dl](https://img.shields.io/pypi/dm/copass-langchain?label=)](https://pypi.org/project/copass-langchain/) |
+| [`copass-pydantic-ai`](https://pypi.org/project/copass-pydantic-ai/) — pydantic-ai adapter | [![v](https://img.shields.io/pypi/v/copass-pydantic-ai?label=&color=3776ab)](https://pypi.org/project/copass-pydantic-ai/) | [![dl](https://img.shields.io/pypi/dm/copass-pydantic-ai?label=)](https://pypi.org/project/copass-pydantic-ai/) |
+| [`copass-config`](https://pypi.org/project/copass-config/) — shared chalk palette + tool descriptions | [![v](https://img.shields.io/pypi/v/copass-config?label=&color=3776ab)](https://pypi.org/project/copass-config/) | [![dl](https://img.shields.io/pypi/dm/copass-config?label=)](https://pypi.org/project/copass-config/) |
 
 ## Repository layout
 

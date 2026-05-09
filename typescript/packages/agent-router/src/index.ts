@@ -1,5 +1,26 @@
 export { AgentRouter, IntegrationsFacade } from './router.js';
 export type { AgentRouterOptions, RunAgentOptions } from './router.js';
+
+// Public Compute Router v1 (ADR 0020) — re-export the underlying type
+// surface from `@copass/core` so consumers using `router.compute.*`
+// don't have to add a second import for the types.
+export type {
+  ComputeExecRequest,
+  ComputeExecResponse,
+  ComputeProvider,
+  ComputeResource,
+  ComputeSessionHealthResponse,
+  ComputeSessionHealthStatus,
+  ComputeSessionResponse,
+  ComputeSessionStatus,
+  ComputeTemplate,
+  CreateComputeSessionRequest,
+  ListComputeSessionsOptions,
+  ListComputeSessionsResponse,
+  ListComputeTemplatesOptions,
+  ListComputeTemplatesResponse,
+  StopComputeSessionResponse,
+} from '@copass/core';
 export {
   runConnectFlow,
 } from './connect-flow.js';
