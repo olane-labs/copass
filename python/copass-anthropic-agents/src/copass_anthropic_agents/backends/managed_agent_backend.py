@@ -234,6 +234,7 @@ class ManagedAgentBackend(AgentBackend):
 
         pending_tool_events: dict[str, Any] = {}
         usage_accumulator: dict = {}
+        seen_unknown_event_types: set[str] = set()
 
         stream = await self._client.beta.sessions.events.stream(session_id)
         try:
@@ -325,7 +326,7 @@ class ManagedAgentBackend(AgentBackend):
                         missing = [eid for eid in event_ids if eid not in pending_tool_events]
                         if missing:
                             logger.error(
-                                "ManagedAgentBackend: requires_action ids not buffered — interrupting session",
+                                "ManagedAgentBackend: requires_action ids not buffered — attempting recovery",
                                 extra={
                                     "session_id": session_id,
                                     "requested_ids": event_ids,
@@ -337,22 +338,52 @@ class ManagedAgentBackend(AgentBackend):
                                     },
                                 },
                             )
-                            try:
-                                await self._client.beta.sessions.events.send(
-                                    session_id,
-                                    events=[{"type": "user.interrupt"}],
-                                )
-                            except Exception:
-                                logger.exception(
-                                    "ManagedAgentBackend: user.interrupt send failed",
-                                    extra={"session_id": session_id},
-                                )
-                            yield AgentFinish(
-                                stop_reason="error",
-                                usage=dict(usage_accumulator),
+                            # Recovery: the SSE stream may not have surfaced
+                            # these tool-use events under
+                            # ``agent.custom_tool_use`` — either an
+                            # ordering race vs ``requires_action`` or the
+                            # API surfaced them under a different envelope
+                            # (``agent.tool_use`` / ``agent.mcp_tool_use``,
+                            # which expect ``user.tool_confirmation`` and
+                            # cannot be answered with
+                            # ``user.custom_tool_result``). Fetch the
+                            # session log and re-bucket only events that
+                            # are safe to execute as custom tools; anything
+                            # else falls through to the interrupt path.
+                            await self._rehydrate_pending_tool_events(
                                 session_id=session_id,
+                                pending=pending_tool_events,
+                                missing_ids=missing,
                             )
-                            break
+                            still_missing = [
+                                eid for eid in event_ids
+                                if eid not in pending_tool_events
+                            ]
+                            if still_missing:
+                                logger.error(
+                                    "ManagedAgentBackend: requires_action ids still missing after rehydrate — interrupting session",
+                                    extra={
+                                        "session_id": session_id,
+                                        "still_missing_ids": still_missing,
+                                        "buffered_ids": list(pending_tool_events.keys()),
+                                    },
+                                )
+                                try:
+                                    await self._client.beta.sessions.events.send(
+                                        session_id,
+                                        events=[{"type": "user.interrupt"}],
+                                    )
+                                except Exception:
+                                    logger.exception(
+                                        "ManagedAgentBackend: user.interrupt send failed",
+                                        extra={"session_id": session_id},
+                                    )
+                                yield AgentFinish(
+                                    stop_reason="error",
+                                    usage=dict(usage_accumulator),
+                                    session_id=session_id,
+                                )
+                                break
                         results = await self._execute_pending_tools(
                             effective_tools=effective_tools,
                             context=context,
@@ -434,6 +465,24 @@ class ManagedAgentBackend(AgentBackend):
                             v = getattr(model_usage, key, None)
                             if isinstance(v, int):
                                 usage_accumulator[key] = usage_accumulator.get(key, 0) + v
+
+                else:
+                    # Unknown event type — log once per type per session so
+                    # we catch beta-API event-type drift (e.g. a renamed
+                    # ``agent.custom_tool_use`` envelope, or a
+                    # newly-introduced server-tool event class) before it
+                    # silently breaks the requires_action path.
+                    if evt_type and evt_type not in seen_unknown_event_types:
+                        seen_unknown_event_types.add(evt_type)
+                        logger.warning(
+                            "ManagedAgentBackend: unknown event type",
+                            extra={
+                                "session_id": session_id,
+                                "event_type": evt_type,
+                                "event_id": evt_id,
+                                "event_repr": repr(sdk_event)[:500],
+                            },
+                        )
         finally:
             try:
                 await stream.close()
@@ -450,6 +499,89 @@ class ManagedAgentBackend(AgentBackend):
                             "error": str(cleanup_err),
                         },
                     )
+
+    async def _rehydrate_pending_tool_events(
+        self,
+        *,
+        session_id: str,
+        pending: dict[str, Any],
+        missing_ids: list[str],
+    ) -> None:
+        """Fetch the session's event log and re-bucket any custom-tool-use
+        events the streaming reader missed.
+
+        Called when ``requires_action`` lists ids that never arrived as
+        ``agent.custom_tool_use`` on the SSE stream — either an ordering
+        race vs the ``requires_action`` signal, or the API surfaced the
+        tool-use under a different envelope. Best-effort: only events we
+        can answer with ``user.custom_tool_result`` (i.e.
+        ``agent.custom_tool_use``, identified by carrying both ``name``
+        and ``input``) are added to ``pending``. Anything else is left
+        alone so the caller's ``still_missing`` check can fall back to
+        the existing ``user.interrupt`` path. Failures are swallowed —
+        recovery never makes things worse than the prior behavior.
+        """
+        needed = set(missing_ids)
+        if not needed:
+            return
+        try:
+            paginator = self._client.beta.sessions.events.list(
+                session_id, order="desc", limit=200
+            )
+            async for sdk_event in paginator:
+                if not needed:
+                    break
+                evt_id = getattr(sdk_event, "id", None)
+                if not evt_id or evt_id not in needed:
+                    continue
+                evt_type = getattr(sdk_event, "type", None)
+                name = getattr(sdk_event, "name", None)
+                raw_input = getattr(sdk_event, "input", None)
+                # Only bucket events that look like custom-tool calls.
+                # ``agent.tool_use`` / ``agent.mcp_tool_use`` carry the
+                # same shape but expect ``user.tool_confirmation`` as a
+                # response — answering them with
+                # ``user.custom_tool_result`` deadlocks the session, so
+                # leave them out and let the interrupt path fire.
+                if evt_type != "agent.custom_tool_use":
+                    logger.warning(
+                        "ManagedAgentBackend: rehydrate skipped non-custom-tool event",
+                        extra={
+                            "session_id": session_id,
+                            "event_id": evt_id,
+                            "event_type": evt_type,
+                        },
+                    )
+                    continue
+                if not name or raw_input is None:
+                    logger.warning(
+                        "ManagedAgentBackend: rehydrate skipped malformed event",
+                        extra={
+                            "session_id": session_id,
+                            "event_id": evt_id,
+                            "event_type": evt_type,
+                        },
+                    )
+                    continue
+                pending[evt_id] = sdk_event
+                needed.discard(evt_id)
+                logger.info(
+                    "ManagedAgentBackend: rehydrated tool event from session log",
+                    extra={
+                        "session_id": session_id,
+                        "event_id": evt_id,
+                        "name": name,
+                    },
+                )
+        except Exception as exc:
+            logger.exception(
+                "ManagedAgentBackend: rehydrate failed",
+                extra={
+                    "session_id": session_id,
+                    "missing_ids": missing_ids,
+                    "error": str(exc),
+                },
+            )
 
     async def _execute_pending_tools(
         self,
