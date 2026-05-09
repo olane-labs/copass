@@ -90,7 +90,7 @@ importers:
   packages/agent-router:
     devDependencies:
       '@copass/core':
-        specifier: ^0.6.3
+        specifier: workspace:*
         version: link:../core
       '@types/node':
         specifier: ^25.0.0
