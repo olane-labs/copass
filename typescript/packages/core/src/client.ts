@@ -16,6 +16,7 @@ import { SourcesResource } from './resources/sources.js';
 import { IngestResource } from './resources/ingest.js';
 import { IntegrationsResource } from './resources/integrations.js';
 import { AgentsResource } from './resources/agents.js';
+import { ComputeResource } from './resources/compute.js';
 import { ConciergeResource } from './resources/concierge.js';
 import { ContextWindowResource } from './context-window/index.js';
 import type { RequestMiddleware, ResponseMiddleware } from './http/http-client.js';
@@ -83,6 +84,12 @@ export class CopassClient {
   /** Reactive Agents — persisted agent CRUD + triggers + runs + test-fire. */
   readonly agents: AgentsResource;
   /**
+   * Public Compute Router (ADR 0020) — provision sandboxes from
+   * curated templates, run shell commands, stream health, stop on
+   * demand. Decoupled from the agent runtime.
+   */
+  readonly compute: ComputeResource;
+  /**
    * Copass Concierge — per-user platform agent for managing your
    * Copass setup conversationally. `test()` for one-shot runs;
    * `chat()` for multi-turn streaming.
@@ -112,6 +119,7 @@ export class CopassClient {
     this.usage = new UsageResource(http);
     this.integrations = new IntegrationsResource(http);
     this.agents = new AgentsResource(http);
+    this.compute = new ComputeResource(http);
     this.concierge = new ConciergeResource(http);
     // Depends on `this.sources` for register/retrieve — initialize last.
     this.contextWindow = new ContextWindowResource(this);

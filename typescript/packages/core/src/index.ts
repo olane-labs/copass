@@ -125,6 +125,25 @@ export type {
   WireIntegrationResult,
 } from './types/agents.js';
 
+// Public Compute Router v1 (ADR 0020) — provision sandboxes + exec
+export { ComputeResource } from './resources/compute.js';
+export type {
+  ComputeExecRequest,
+  ComputeExecResponse,
+  ComputeProvider,
+  ComputeSessionHealthResponse,
+  ComputeSessionHealthStatus,
+  ComputeSessionResponse,
+  ComputeSessionStatus,
+  ComputeTemplate,
+  CreateComputeSessionRequest,
+  ListComputeSessionsOptions,
+  ListComputeSessionsResponse,
+  ListComputeTemplatesOptions,
+  ListComputeTemplatesResponse,
+  StopComputeSessionResponse,
+} from './types/compute.js';
+
 // Copass Concierge (per-user platform agent)
 export { ConciergeResource } from './resources/concierge.js';
 export type {
