@@ -98,6 +98,31 @@ export interface CreateComputeSessionRequest {
 }
 
 /**
+ * Per-session reverse-proxy gateway envelope (ADR 0026).
+ *
+ * Server emits this on every session response when the deployment has
+ * the compute gateway feature enabled. The SDK formats per-port URLs
+ * locally by substituting `{base_url}`, `{session_id}`, `{port}`, and
+ * `{path}` into `url_template` — never by string concatenation.
+ *
+ * Absent on deployments without the gateway feature; callers that try
+ * to construct a proxy URL on such a deployment get a thrown error.
+ */
+export interface ComputeGateway {
+  /** Scheme + host, no trailing slash (e.g. `https://compute.staging.copass.io`). */
+  base_url: string;
+  /**
+   * Template containing exactly `{base_url}`, `{session_id}`, `{port}`,
+   * `{path}`. `{path}` is always either an empty string or a string
+   * starting with `/`. JS template-literal and Python `str.format`
+   * compatible.
+   */
+  url_template: string;
+  /** Opaque versioning tag for the URL shape; bumped if the template ever changes. */
+  kind: 'edge-proxy-v1';
+}
+
+/**
  * One compute session as projected onto the wire. The provider's
  * `external_session_id` is server-internal and does NOT appear here
  * (per ADR 0020 §"Public surface — server-side").
@@ -112,6 +137,11 @@ export interface ComputeSessionResponse {
   deadline_at: string;
   last_activity_at: string;
   metadata: Record<string, string>;
+  /**
+   * Per-session reverse-proxy gateway envelope (ADR 0026). Optional
+   * because deployments without the gateway feature won't return it.
+   */
+  gateway?: ComputeGateway;
 }
 
 export interface ListComputeSessionsResponse {
