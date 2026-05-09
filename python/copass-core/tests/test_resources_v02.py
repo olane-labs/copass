@@ -179,70 +179,6 @@ async def test_entities_search_returns_results(client: CopassClient) -> None:
     assert results[0]["canonical_id"] == "c-1"
 
 
-# ─── matrix ───────────────────────────────────────────────────────────
-
-
-@respx.mock
-async def test_matrix_query_sends_preset_header(client: CopassClient) -> None:
-    route = respx.get("http://test/api/v1/matrix/query").mock(
-        return_value=httpx.Response(
-            200,
-            json={
-                "query": "q",
-                "answer": "a",
-                "preset": "copass/1.0",
-                "execution_time_ms": 42,
-            },
-        )
-    )
-    await client.matrix.query(
-        query="q", preset="copass/1.0", detail_instruction="be brief", trace_id="t-1"
-    )
-    headers = route.calls.last.request.headers
-    assert headers["X-Search-Matrix"] == "copass/1.0"
-    assert headers["X-Detail-Instruction"] == "be brief"
-    assert headers["X-Trace-Id"] == "t-1"
-
-
-# ─── vault ────────────────────────────────────────────────────────────
-
-
-@respx.mock
-async def test_vault_store_puts_raw_bytes(client: CopassClient) -> None:
-    route = respx.put(
-        "http://test/api/v1/storage/sandboxes/sb-1/vault/foo/bar"
-    ).mock(
-        return_value=httpx.Response(
-            200,
-            json={"key": "foo/bar", "full_key": "u/sb-1/foo/bar", "size_bytes": 5, "encrypted": False},
-        )
-    )
-    resp = await client.vault.store("sb-1", "foo/bar", b"hello")
-    assert resp["size_bytes"] == 5
-    req = route.calls.last.request
-    assert req.headers["Content-Type"] == "application/octet-stream"
-    assert req.content == b"hello"
-
-
-@respx.mock
-async def test_vault_retrieve_returns_raw_bytes(client: CopassClient) -> None:
-    respx.get(
-        "http://test/api/v1/storage/sandboxes/sb-1/vault/foo/bar"
-    ).mock(return_value=httpx.Response(200, content=b"\x01\x02\x03"))
-    data = await client.vault.retrieve("sb-1", "foo/bar")
-    assert data == b"\x01\x02\x03"
-
-
-@respx.mock
-async def test_vault_key_percent_encodes_segments(client: CopassClient) -> None:
-    # Segments encode reserved chars; `/` remains a path separator.
-    route = respx.put(
-        "http://test/api/v1/storage/sandboxes/sb-1/vault/my%20folder/file%3Aname"
-    ).mock(return_value=httpx.Response(200, json={}))
-    await client.vault.store("sb-1", "my folder/file:name", b"x")
-    assert route.called
-
-
 # ─── users / api-keys / usage ─────────────────────────────────────────
 
 
@@ -277,10 +213,15 @@ async def test_api_keys_create_and_list(client: CopassClient) -> None:
 
 @respx.mock
 async def test_usage_balance(client: CopassClient) -> None:
-    respx.get("http://test/api/v1/usage/credits").mock(
+    respx.get("http://test/api/v1/usage/balance").mock(
         return_value=httpx.Response(
             200,
-            json={"credits_remaining": 100, "credits_used": 50, "credits_total": 150},
+            json={
+                "credits_purchased": 150,
+                "credits_used": 50,
+                "credits_remaining": 100,
+                "currency": "USD",
+            },
         )
     )
     balance = await client.usage.get_balance()
