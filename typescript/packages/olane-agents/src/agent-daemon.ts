@@ -12,10 +12,6 @@
  * SIGTERM.
  */
 
-<<<<<<< HEAD
-=======
-import * as fs from 'node:fs';
->>>>>>> 1d8137ce5ea4a299db96d55a116303f124248bb6
 import * as fsp from 'node:fs/promises';
 import { AGENT_KIND_METADATA, AgentNode } from '@olane/o-agent';
 import type { AgentCard, AgentKind } from '@olane/o-agent';

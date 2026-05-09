@@ -59,17 +59,13 @@ export class ContextWindow extends BaseDataSource {
    * `${role}: ${content}` content-prefix munging the prior version
    * used has been retired — the wire body is now the message
    * `content` verbatim, with `speaker` riding on the envelope.
-<<<<<<< HEAD
    *
    * Participants come from the call-site override if set, otherwise
    * from the window's constructor-time roster, otherwise omitted.
-=======
->>>>>>> 1d8137ce5ea4a299db96d55a116303f124248bb6
    */
   async addTurn(turn: ChatMessage, options: AddTurnOptions = {}): Promise<void> {
     this.turns.push(turn);
     const speaker = turn.name ?? capitalizeRole(turn.role);
-<<<<<<< HEAD
     const participants =
       options.participants ??
       (this.participants ? [...this.participants] : undefined);
@@ -77,11 +73,6 @@ export class ContextWindow extends BaseDataSource {
       sourceType: 'conversation',
       speaker,
       participants,
-=======
-    await this.push(turn.content, {
-      sourceType: 'conversation',
-      speaker,
->>>>>>> 1d8137ce5ea4a299db96d55a116303f124248bb6
     });
   }
 
