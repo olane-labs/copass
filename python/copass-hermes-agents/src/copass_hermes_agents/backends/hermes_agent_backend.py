@@ -83,6 +83,16 @@ class HermesAgentBackend(AgentBackend):
         api_server_key: Caller-side bearer that Hermes' bind-guard
             requires (``Authorization: Bearer ...``). Per-sandbox; not
             an LLM key.
+        preview_token: Optional Daytona preview-URL token. When the
+            sandbox is private (``public=False``), Daytona's edge
+            proxy gates traffic with an ``x-daytona-preview-token``
+            header before requests reach the sandbox. The compute
+            provider returns this token alongside the URL from
+            ``sandbox.get_preview_link(port)``; pass it through and
+            the backend will attach the header on every request.
+            Token rotates on sandbox restart; callers must re-fetch
+            on resume and rebuild the backend or update via
+            :meth:`set_preview_token`.
         default_model: Default ``"hermes/<openrouter-id>"`` model when
             :attr:`BaseAgent.model` doesn't carry one; the agent's
             ``model`` field always wins when present.
@@ -99,6 +109,7 @@ class HermesAgentBackend(AgentBackend):
         *,
         endpoint_url: str,
         api_server_key: str,
+        preview_token: Optional[str] = None,
         default_model: str = "hermes/anthropic/claude-3.5-sonnet",
         request_timeout_s: float = 120.0,
         connect_timeout_s: float = 10.0,
@@ -112,6 +123,7 @@ class HermesAgentBackend(AgentBackend):
             raise ValueError("HermesAgentBackend: api_server_key is required")
         self._endpoint_url = endpoint_url.rstrip("/")
         self._api_server_key = api_server_key
+        self._preview_token = preview_token or None
         self._default_model = default_model
         self._request_timeout_s = request_timeout_s
         self._connect_timeout_s = connect_timeout_s
@@ -125,6 +137,19 @@ class HermesAgentBackend(AgentBackend):
     @property
     def endpoint_url(self) -> str:
         return self._endpoint_url
+
+    @property
+    def preview_token(self) -> Optional[str]:
+        return self._preview_token
+
+    def set_preview_token(self, token: Optional[str]) -> None:
+        """Replace the cached Daytona preview-URL token.
+
+        The token rotates when a Daytona sandbox restarts, so callers
+        that resume an existing backend instance after a sandbox stop
+        must update the token before the next request.
+        """
+        self._preview_token = token or None
 
     async def aclose(self) -> None:
         if self._owns_client:
@@ -183,6 +208,12 @@ class HermesAgentBackend(AgentBackend):
             "Content-Type": "application/json",
             "Accept": "text/event-stream",
         }
+        # Daytona's edge proxy gates private-sandbox traffic with this
+        # header; without it, requests are 307'd to Auth0. The token
+        # comes from sandbox.get_preview_link(port).token at provision
+        # time and rotates when the sandbox restarts.
+        if self._preview_token:
+            headers["x-daytona-preview-token"] = self._preview_token
 
         last_error: Optional[BaseException] = None
         for attempt in range(_HERMES_MAX_RETRIES + 1):

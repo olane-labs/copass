@@ -64,6 +64,30 @@ describe('ContextWindow', () => {
         text: 'hello',
         source_type: 'conversation',
         speaker: 'User',
+<<<<<<< HEAD
+=======
+      }),
+    );
+  });
+
+  it('addTurn forwards ChatMessage.name as speaker when set', async () => {
+    const window = new ContextWindow({
+      client,
+      sandboxId: 'sb1',
+      dataSourceId: 'ds1',
+    });
+    await window.addTurn({
+      role: 'user',
+      content: 'Hey Bob, did you finish?',
+      name: 'Alice',
+    });
+    expect(client.sources.ingest).toHaveBeenCalledWith(
+      'sb1',
+      'ds1',
+      expect.objectContaining({
+        text: 'Hey Bob, did you finish?',
+        speaker: 'Alice',  // name wins over role-derived fallback
+>>>>>>> 1d8137ce5ea4a299db96d55a116303f124248bb6
       }),
     );
   });

@@ -38,6 +38,7 @@
  *   const run = await router.agents.testFire(sandboxId, 'my-hermes-agent', {
  *     event_payload: { input: 'Say hello.' },
  *   });
+<<<<<<< HEAD
  *
  *   // Direct compute (no agent) — provision a sandbox + run a command.
  *   const { templates } = await router.compute.listTemplates(sandboxId);
@@ -48,6 +49,8 @@
  *     cmd: ['python', '-c', 'print("hello")'],
  *   });
  *   await router.compute.stopSession(sandboxId, session.session_id);
+=======
+>>>>>>> 1d8137ce5ea4a299db96d55a116303f124248bb6
  */
 
 import {
@@ -169,6 +172,7 @@ export class AgentRouter {
    * `router.integrations`.
    */
   readonly agents: AgentsResource;
+<<<<<<< HEAD
   /**
    * Public Compute Router (ADR 0020) — `client.compute` re-exported for
    * ergonomic parity with `router.agents` / `router.integrations`.
@@ -192,6 +196,8 @@ export class AgentRouter {
    * ```
    */
   readonly compute: ComputeResource;
+=======
+>>>>>>> 1d8137ce5ea4a299db96d55a116303f124248bb6
   private readonly defaultSandboxId: string;
   private readonly apiUrl: string;
 
@@ -202,7 +208,10 @@ export class AgentRouter {
     this.defaultSandboxId = options.sandboxId;
     this.integrations = new IntegrationsFacade(this.client, options.sandboxId);
     this.agents = this.client.agents;
+<<<<<<< HEAD
     this.compute = this.client.compute;
+=======
+>>>>>>> 1d8137ce5ea4a299db96d55a116303f124248bb6
   }
 
   /** Run an agent turn and stream neutral `AgentEvent` values.

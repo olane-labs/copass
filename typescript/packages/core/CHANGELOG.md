@@ -3,6 +3,7 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+<<<<<<< HEAD
 # [0.8.0](https://github.com/olane-labs/copass/compare/@copass/core@0.6.3...@copass/core@0.8.0) (2026-05-09)
 
 ### Bug Fixes
@@ -15,6 +16,8 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 - **core:** client.compute resource for ADR 0020 Compute Router v1 ([#17](https://github.com/olane-labs/copass/issues/17)) ([1ab70a4](https://github.com/olane-labs/copass/commit/1ab70a4d921f8b4199ecdd9f2147cfcc0a518674))
 - **ingest:** add optional speaker / participants metadata + free-form source_type ([#11](https://github.com/olane-labs/copass/issues/11)) ([8803274](https://github.com/olane-labs/copass/commit/88032746daa98709792e1d61ee5e7f2c0274b05a))
 
+=======
+>>>>>>> 1d8137ce5ea4a299db96d55a116303f124248bb6
 ## [0.6.3](https://github.com/olane-labs/copass/compare/@copass/core@0.6.0...@copass/core@0.6.3) (2026-05-08)
 
 **Note:** Version bump only for package @copass/core

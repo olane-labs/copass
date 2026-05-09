@@ -3,12 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+<<<<<<< HEAD
 ## [0.5.10](https://github.com/olane-labs/copass/compare/@copass/mcp@0.5.9...@copass/mcp@0.5.10) (2026-05-09)
 
 ### Bug Fixes
 
 - **audit:** plumb participants through ContextWindow + drop legacy author prefix in agent SDKs ([#14](https://github.com/olane-labs/copass/issues/14)) ([dd6c13e](https://github.com/olane-labs/copass/commit/dd6c13e62cad12f3981443c47e9e9c69a2666b88)), closes [#11](https://github.com/olane-labs/copass/issues/11) [#12](https://github.com/olane-labs/copass/issues/12)
 
+=======
+>>>>>>> 1d8137ce5ea4a299db96d55a116303f124248bb6
 ## [0.5.9](https://github.com/olane-labs/copass/compare/@copass/mcp@0.5.7...@copass/mcp@0.5.9) (2026-05-08)
 
 **Note:** Version bump only for package @copass/mcp

@@ -3,12 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+<<<<<<< HEAD
 # [0.7.0](https://github.com/olane-labs/copass/compare/@copass/agent-router@0.5.6...@copass/agent-router@0.7.0) (2026-05-09)
 
 ### Features
 
 - **agent-router:** re-export client.compute as router.compute (ADR 0020) ([#19](https://github.com/olane-labs/copass/issues/19)) ([80b2fa0](https://github.com/olane-labs/copass/commit/80b2fa0d2f708335cb8522e1f825e5f7c8a52d20))
 
+=======
+>>>>>>> 1d8137ce5ea4a299db96d55a116303f124248bb6
 ## [0.5.6](https://github.com/olane-labs/copass/compare/@copass/agent-router@0.5.5...@copass/agent-router@0.5.6) (2026-05-08)
 
 **Note:** Version bump only for package @copass/agent-router

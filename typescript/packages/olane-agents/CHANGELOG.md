@@ -3,12 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+<<<<<<< HEAD
 ## [0.6.2](https://github.com/olane-labs/copass/compare/@copass/olane-agents@0.6.1...@copass/olane-agents@0.6.2) (2026-05-09)
 
 ### Bug Fixes
 
 - **olane-agents:** remove unused 'fs' import in agent-daemon ([#16](https://github.com/olane-labs/copass/issues/16)) ([5142db6](https://github.com/olane-labs/copass/commit/5142db6447aa095f45120ecc7371ac56fd11b071)), closes [#10](https://github.com/olane-labs/copass/issues/10)
 
+=======
+>>>>>>> 1d8137ce5ea4a299db96d55a116303f124248bb6
 ## [0.6.1](https://github.com/olane-labs/copass/compare/@copass/olane-agents@0.6.0...@copass/olane-agents@0.6.1) (2026-05-08)
 
 **Note:** Version bump only for package @copass/olane-agents

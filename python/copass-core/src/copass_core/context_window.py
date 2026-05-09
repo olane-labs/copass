@@ -81,6 +81,7 @@ class ContextWindow(BaseDataSource):
         prior version used has been retired — the wire body is now
         the message ``content`` verbatim, with ``speaker`` riding on
         the envelope.
+<<<<<<< HEAD
 
         ``participants`` overrides the window's constructor-time
         roster for this single call; falls back to that roster (or
@@ -91,11 +92,19 @@ class ContextWindow(BaseDataSource):
         roster: Optional[List[str]] = participants
         if roster is None and self._participants is not None:
             roster = list(self._participants)
+=======
+        """
+        self._turns.append(turn)
+        speaker = turn.name if turn.name else _capitalize_role(turn.role)
+>>>>>>> 1d8137ce5ea4a299db96d55a116303f124248bb6
         await self.push(
             turn.content,
             source_type="conversation",
             speaker=speaker,
+<<<<<<< HEAD
             participants=roster,
+=======
+>>>>>>> 1d8137ce5ea4a299db96d55a116303f124248bb6
         )
 
     def get_turns(self) -> List[ChatMessage]:
