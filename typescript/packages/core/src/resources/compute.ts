@@ -24,6 +24,7 @@
  * ```
  */
 import { BaseResource } from './base.js';
+import { ComputeSession } from './compute-session.js';
 import type {
   ComputeExecRequest,
   ComputeExecResponse,
@@ -70,11 +71,12 @@ export class ComputeResource extends BaseResource {
   async createSession(
     sandboxId: string,
     request: CreateComputeSessionRequest,
-  ): Promise<ComputeSessionResponse> {
-    return this.post<ComputeSessionResponse>(
+  ): Promise<ComputeSession> {
+    const raw = await this.post<ComputeSessionResponse>(
       `${computeBase(sandboxId)}/sessions`,
       request,
     );
+    return new ComputeSession(this.http, raw);
   }
 
   /**
@@ -85,8 +87,8 @@ export class ComputeResource extends BaseResource {
   async listSessions(
     sandboxId: string,
     options: ListComputeSessionsOptions = {},
-  ): Promise<ListComputeSessionsResponse> {
-    return this.get<ListComputeSessionsResponse>(
+  ): Promise<{ sessions: ComputeSession[] }> {
+    const raw = await this.get<ListComputeSessionsResponse>(
       `${computeBase(sandboxId)}/sessions`,
       {
         query: {
@@ -95,16 +97,21 @@ export class ComputeResource extends BaseResource {
         },
       },
     );
+    return {
+      ...raw,
+      sessions: raw.sessions.map((r) => new ComputeSession(this.http, r)),
+    };
   }
 
   /** Fetch one compute session by its platform `session_id`. */
   async getSession(
     sandboxId: string,
     sessionId: string,
-  ): Promise<ComputeSessionResponse> {
-    return this.get<ComputeSessionResponse>(
+  ): Promise<ComputeSession> {
+    const raw = await this.get<ComputeSessionResponse>(
       `${computeBase(sandboxId)}/sessions/${sessionId}`,
     );
+    return new ComputeSession(this.http, raw);
   }
 
   /**

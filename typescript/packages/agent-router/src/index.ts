@@ -4,9 +4,13 @@ export type { AgentRouterOptions, RunAgentOptions } from './router.js';
 // Public Compute Router v1 (ADR 0020) — re-export the underlying type
 // surface from `@copass/core` so consumers using `router.compute.*`
 // don't have to add a second import for the types.
+// ADR 0026 Phase 2 — also re-export the `ComputeSession` runtime
+// wrapper (value) and the `ComputeGateway` envelope type.
+export { ComputeSession } from '@copass/core';
 export type {
   ComputeExecRequest,
   ComputeExecResponse,
+  ComputeGateway,
   ComputeProvider,
   ComputeResource,
   ComputeSessionHealthResponse,

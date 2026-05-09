@@ -126,10 +126,13 @@ export type {
 } from './types/agents.js';
 
 // Public Compute Router v1 (ADR 0020) — provision sandboxes + exec
+// Compute Gateway SDK surface (ADR 0026 Phase 2) — `ComputeSession` runtime wrapper.
 export { ComputeResource } from './resources/compute.js';
+export { ComputeSession } from './resources/compute-session.js';
 export type {
   ComputeExecRequest,
   ComputeExecResponse,
+  ComputeGateway,
   ComputeProvider,
   ComputeSessionHealthResponse,
   ComputeSessionHealthStatus,

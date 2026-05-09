@@ -83,6 +83,17 @@ export class HttpClient {
     this.onResponse = options.onResponse ?? [];
   }
 
+  /**
+   * Resolve a fresh session (access token + optional encryption token)
+   * from the underlying auth provider. Exposed so callers that bypass
+   * `request()` on purpose — e.g. `ComputeSession.fetch` per ADR 0026,
+   * which talks directly to the gateway without JSON / retry / error
+   * normalization — can still pull a current bearer token.
+   */
+  getAuthSession(): Promise<import('../auth/types.js').SessionContext> {
+    return this.authProvider.getSession();
+  }
+
   async request<T = unknown>(path: string, options: RequestOptions = {}): Promise<T> {
     const { method = 'GET', body, rawBody, rawResponse, encryptedPayload, query, headers: extraHeaders, signal } = options;
 
