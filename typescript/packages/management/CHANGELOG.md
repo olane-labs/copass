@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.5.13](https://github.com/olane-labs/copass/compare/@copass/management@0.5.11...@copass/management@0.5.13) (2026-05-09)
+
+### Bug Fixes
+
+- widen @copass/core peer range so dependents accept core 0.8.x ([#21](https://github.com/olane-labs/copass/issues/21)) ([c08999c](https://github.com/olane-labs/copass/commit/c08999c9b4c9a5bde7d2be08b6de0bc495358379))
+
 ## [0.5.11](https://github.com/olane-labs/copass/compare/@copass/management@0.5.9...@copass/management@0.5.11) (2026-05-08)
 
 **Note:** Version bump only for package @copass/management
