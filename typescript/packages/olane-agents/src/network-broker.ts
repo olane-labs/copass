@@ -13,6 +13,8 @@
 import { withOlaneClient } from './olane-client.js';
 import { NetworkInstanceStatus } from './network-types.js';
 import type {
+  NetworkBackend,
+  NetworkDiscoverAgentsResult,
   NetworkInstance,
   NetworkListResult,
 } from './network-types.js';
@@ -23,7 +25,13 @@ export interface BrokerStartOptions {
   name: string;
   /** Calling user id (from CLI auth context). */
   ownerUserId: string;
-  /** Override the default broker template (E2B). */
+  /** Backend choice. Default: `e2b`. Use `local` for an in-daemon shell
+   *  tool with cwd=<your folder>. */
+  backend?: NetworkBackend;
+  /** Working directory for the `local` backend's shell. Required when
+   *  backend === 'local'. */
+  cwd?: string;
+  /** Override the default broker template (E2B only). */
   e2bTemplate?: string;
   /** Free-form metadata stamped on the instance for cost attribution. */
   metadata?: Record<string, string>;
@@ -64,12 +72,59 @@ export class NetworkBroker {
         params: {
           name: options.name,
           ownerUserId: options.ownerUserId,
+          backend: options.backend,
+          cwd: options.cwd,
           e2bTemplate: options.e2bTemplate,
           metadata: options.metadata,
         },
       });
     });
     return unwrapResult<NetworkInstance>(raw);
+  }
+
+  /**
+   * Record an existing AgentNode session (e.g. a Claude Code daemon) as
+   * a participant in the network. Routing-wise the agent is unchanged
+   * (it's already on `o://agent-…`); attach is logical grouping that
+   * lets `list()` show network membership and lets the front-end
+   * fan-out messages via `AgentBroker.send` to all attached agents.
+   */
+  async attach(
+    networkId: string,
+    agentSessionId: string,
+  ): Promise<{ ok: boolean; networkId: string; agentSessionId: string; attachedAgents: string[] }> {
+    const raw = await withOlaneClient(async (use) => {
+      return await use('o://networks', {
+        method: 'attach',
+        params: { networkId, agentSessionId },
+      });
+    });
+    return unwrapResult(raw);
+  }
+
+  /** Remove an agent from a network's attached list. Does not stop the agent. */
+  async detach(
+    networkId: string,
+    agentSessionId: string,
+  ): Promise<{ ok: boolean; networkId: string; agentSessionId: string; attachedAgents: string[] }> {
+    const raw = await withOlaneClient(async (use) => {
+      return await use('o://networks', {
+        method: 'detach',
+        params: { networkId, agentSessionId },
+      });
+    });
+    return unwrapResult(raw);
+  }
+
+  /** List existing AgentNode sessions on the daemon — what's available to attach. */
+  async discoverAgents(): Promise<NetworkDiscoverAgentsResult> {
+    const raw = await withOlaneClient(async (use) => {
+      return await use('o://networks', {
+        method: 'discoverAgents',
+        params: {},
+      });
+    });
+    return unwrapResult<NetworkDiscoverAgentsResult>(raw);
   }
 
   /** Tear down a network instance by id. */

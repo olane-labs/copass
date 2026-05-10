@@ -33,7 +33,10 @@ export type {
   BrokerListFilter,
 } from './network-broker.js';
 export { NetworkBrokerNode } from './network-broker-node.js';
-export type { NetworkBrokerNodeConfig } from './network-broker-node.js';
+export type {
+  NetworkBrokerNodeConfig,
+  NetworkBrokerDaemonHooks,
+} from './network-broker-node.js';
 export {
   DEFAULT_NETWORK_BROKER_CONFIG,
   NetworkInstanceLimitExceededError,
@@ -41,8 +44,11 @@ export {
   NetworkInstanceStatus,
 } from './network-types.js';
 export type {
+  NetworkAttachParams,
   NetworkBackend,
   NetworkBrokerConfig,
+  NetworkDetachParams,
+  NetworkDiscoverAgentsResult,
   NetworkInstance,
   NetworkListParams,
   NetworkListResult,
@@ -50,6 +56,17 @@ export type {
   NetworkStatusParams,
   NetworkStopParams,
 } from './network-types.js';
+export {
+  LOCAL_SHELL_MAX_OUTPUT_BYTES,
+  LOCAL_SHELL_NULL_EXIT_FALLBACK,
+  LOCAL_SHELL_TIMEOUT_EXIT_CODE,
+  LocalNetworkShellTool,
+} from './local-network-shell.tool.js';
+export type {
+  LocalNetworkShellToolConfig,
+  LocalShellExecInput,
+  LocalShellExecResult,
+} from './local-network-shell.tool.js';
 
 // libp2p client helper
 export { withOlaneClient, OlaneOSNotRunningError } from './olane-client.js';

@@ -48,20 +48,48 @@ import type {
   NetworkBackend,
   NetworkBrokerConfig,
   NetworkInstance,
+  NetworkAttachParams,
+  NetworkDetachParams,
+  NetworkDiscoverAgentsResult,
   NetworkListParams,
   NetworkListResult,
   NetworkStartParams,
   NetworkStatusParams,
   NetworkStopParams,
 } from './network-types.js';
+import { LocalNetworkShellTool } from './local-network-shell.tool.js';
 
 /** Internal record — the `NetworkInstance` plus the live provider handle. */
 interface NetworkInstanceRecord {
   instance: NetworkInstance;
-  /** E2B sandbox handle. Opaque `unknown` so this file doesn't pin a
-   *  specific e2b SDK version at compile time — callers cast on use. */
+  /** E2B sandbox handle (e2b backend) OR the LocalNetworkShellTool
+   *  instance (local backend). Opaque to callers; the broker uses it
+   *  for cleanup at stop time. */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  sandbox: any;
+  providerHandle: any;
+}
+
+/**
+ * Daemon hooks for the broker's `local` backend (Path B per ADR 0027).
+ * Provided by `runOlaneOSHost` — it owns the OlaneOS instance and the
+ * leader, so it can mount/unmount tool nodes for us.
+ */
+export interface NetworkBrokerDaemonHooks {
+  /** Mount a tool node into the daemon's olane runtime. */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  registerLocalTool: (node: any) => Promise<void>;
+  /**
+   * Best-effort tool-node teardown. The base olane runtime doesn't
+   * expose `removeNode` today; implementations typically call
+   * `node.stop()` and accept that the address remains in the registry
+   * until daemon restart.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  unregisterLocalTool: (node: any) => Promise<void>;
+  /** Daemon leader's libp2p multiaddrs — used as `leaderAddress` for
+   *  local-backend NetworkInstances (callers dial these to reach the
+   *  per-network shell tool via olane routing). */
+  getDaemonLeaderTransports: () => string[];
 }
 
 /**
@@ -85,10 +113,15 @@ export interface NetworkBrokerNodeConfig extends oNodeConfig {
   /** Optional broker config overrides — falls back to
    *  `DEFAULT_NETWORK_BROKER_CONFIG`. */
   broker?: Partial<NetworkBrokerConfig>;
+  /** Daemon-side hooks. Required for the `local` backend (used to
+   *  mount LocalNetworkShellTool); ignored if every network you start
+   *  uses the `e2b` backend. */
+  daemonHooks?: NetworkBrokerDaemonHooks;
 }
 
 export class NetworkBrokerNode extends oLaneTool {
   private readonly brokerConfig: NetworkBrokerConfig;
+  private readonly daemonHooks?: NetworkBrokerDaemonHooks;
   private readonly instances = new Map<string, NetworkInstanceRecord>();
   // Lazy-loaded e2b SDK — keeps this module importable in environments
   // that don't have the e2b package installed (the dep is declared at
@@ -113,6 +146,8 @@ export class NetworkBrokerNode extends oLaneTool {
           parameters: [
             { name: 'name', type: 'string', description: 'Human-friendly name', required: true },
             { name: 'ownerUserId', type: 'string', description: 'Calling user id', required: true },
+            { name: 'backend', type: 'string', description: '`e2b` (default) or `local`', required: false },
+            { name: 'cwd', type: 'string', description: 'Working directory for the local backend\'s shell', required: false },
             { name: 'e2bTemplate', type: 'string', description: 'Override broker template name', required: false },
             { name: 'metadata', type: 'object', description: 'Cost-attribution tags', required: false },
           ],
@@ -143,12 +178,37 @@ export class NetworkBrokerNode extends oLaneTool {
           ],
           dependencies: [],
         },
+        attach: {
+          name: 'attach',
+          description: 'Record an existing AgentNode session as a participant in this network.',
+          parameters: [
+            { name: 'networkId', type: 'string', description: 'Network instance id', required: true },
+            { name: 'agentSessionId', type: 'string', description: 'Stable agent session id', required: true },
+          ],
+          dependencies: [],
+        },
+        detach: {
+          name: 'detach',
+          description: 'Remove an agent session from a network\'s attached list.',
+          parameters: [
+            { name: 'networkId', type: 'string', description: 'Network instance id', required: true },
+            { name: 'agentSessionId', type: 'string', description: 'Stable agent session id', required: true },
+          ],
+          dependencies: [],
+        },
+        discoverAgents: {
+          name: 'discoverAgents',
+          description: 'List existing AgentNode sessions available to attach.',
+          parameters: [],
+          dependencies: [],
+        },
       },
     });
     this.brokerConfig = {
       ...DEFAULT_NETWORK_BROKER_CONFIG,
       ...(config.broker || {}),
     };
+    this.daemonHooks = config.daemonHooks;
   }
 
   /** Number of currently-allocated instances (any non-terminal status). */
@@ -229,24 +289,38 @@ export class NetworkBrokerNode extends oLaneTool {
         'NetworkBrokerNode._tool_start: `name` and `ownerUserId` are required.',
       );
     }
+    const backend: NetworkBackend = params.backend || 'e2b';
+    if (backend !== 'e2b' && backend !== 'local') {
+      throw new Error(
+        `NetworkBrokerNode._tool_start: unknown backend '${backend}' (expected 'e2b' or 'local').`,
+      );
+    }
+    if (backend === 'local' && !params.cwd) {
+      throw new Error(
+        'NetworkBrokerNode._tool_start: `cwd` is required when backend === "local".',
+      );
+    }
+    if (backend === 'local' && !this.daemonHooks) {
+      throw new Error(
+        'NetworkBrokerNode._tool_start: backend === "local" requires daemonHooks to be ' +
+          'configured. Pass `daemonHooks` to NetworkBrokerNode in `runOlaneOSHost`.',
+      );
+    }
 
     const active = this.activeCount();
     if (active >= this.brokerConfig.softCap) {
       throw new NetworkInstanceLimitExceededError(active, this.brokerConfig.softCap);
     }
 
-    const id = (globalThis.crypto?.randomUUID && globalThis.crypto.randomUUID()) || '';
-    if (!id) {
-      // Node 18+ has globalThis.crypto.randomUUID; fall back to Math.random
-      // (acceptable for in-memory ids that don't leave the daemon).
-    }
-    const instanceId = id || Math.random().toString(36).slice(2, 18);
+    const id =
+      (globalThis.crypto?.randomUUID && globalThis.crypto.randomUUID()) ||
+      Math.random().toString(36).slice(2, 18);
+    // Short id used to scope per-network tool addresses (avoids collisions
+    // when multiple local-backend networks coexist in the same daemon).
+    const shortId = id.slice(0, 8).replace(/-/g, '');
+    const instanceId = id;
     const startedAt = new Date().toISOString();
-    const template = params.e2bTemplate || this.brokerConfig.defaultE2bTemplate;
-    const backend: NetworkBackend = 'e2b';
 
-    // Reserve a slot eagerly with PROVISIONING status so concurrent
-    // start() calls see the count.
     const reservedInstance: NetworkInstance = {
       id: instanceId,
       name: params.name,
@@ -258,68 +332,128 @@ export class NetworkBrokerNode extends oLaneTool {
       relayAddress: undefined,
       backend,
       providerSessionId: '',
-      registeredToolAddresses: ['o://shell'],
+      cwd: backend === 'local' ? params.cwd : undefined,
+      registeredToolAddresses: [],
+      attachedAgents: [],
       metadata: { ...(params.metadata || {}) },
     };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    this.instances.set(instanceId, { instance: reservedInstance, sandbox: null as any });
+    this.instances.set(instanceId, {
+      instance: reservedInstance,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      providerHandle: null as any,
+    });
 
     try {
-      const SandboxClass = await this.getSandboxClass();
-      const sandbox = await SandboxClass.create(template, {
-        metadata: {
-          olane_network_instance_id: instanceId,
-          olane_network_name: params.name,
-          olane_owner_user_id: params.ownerUserId,
-          ...(params.metadata || {}),
-        },
+      if (backend === 'e2b') {
+        return await this.startE2B(instanceId, params, reservedInstance);
+      }
+      return await this.startLocal(instanceId, shortId, params, reservedInstance);
+    } catch (err) {
+      this.instances.set(instanceId, {
+        instance: { ...reservedInstance, status: NetworkInstanceStatus.FAILED },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        providerHandle: null as any,
       });
+      throw err;
+    }
+  }
+
+  /** E2B backend — same path the libp2p-smoke validates end-to-end. */
+  private async startE2B(
+    instanceId: string,
+    params: NetworkStartParams,
+    reservedInstance: NetworkInstance,
+  ): Promise<NetworkInstance> {
+    const SandboxClass = await this.getSandboxClass();
+    const template = params.e2bTemplate || this.brokerConfig.defaultE2bTemplate;
+    const sandbox = await SandboxClass.create(template, {
+      metadata: {
+        olane_network_instance_id: instanceId,
+        olane_network_name: params.name,
+        olane_owner_user_id: params.ownerUserId,
+        ...(params.metadata || {}),
+      },
+    });
+    // Park the sandbox handle in the instances map IMMEDIATELY so that
+    // any failure between here and the end-of-method records is cleaned
+    // up by `_tool_start`'s catch.
+    this.instances.set(instanceId, { instance: reservedInstance, providerHandle: sandbox });
+    try {
       const sandboxId: string = sandbox.sandboxId || sandbox.id || '';
       if (!sandboxId) {
-        throw new Error(
-          'NetworkBrokerNode._tool_start: e2b sandbox returned without an id.',
-        );
+        throw new Error('NetworkBrokerNode.startE2B: e2b sandbox returned without an id.');
       }
-
       const { leaderPeerId, relayPeerId } = await this.readBrokerMultiaddrs(sandbox);
-
       const leaderHost: string = sandbox.getHost(this.brokerConfig.leaderPortWs);
       const relayHost: string | undefined = relayPeerId
         ? sandbox.getHost(this.brokerConfig.relayPortWs)
         : undefined;
-
       const leaderAddress = `/dns4/${leaderHost}/tcp/443/tls/ws/p2p/${leaderPeerId}`;
       const relayAddress =
         relayHost && relayPeerId
           ? `/dns4/${relayHost}/tcp/443/tls/ws/p2p/${relayPeerId}`
           : undefined;
-
       const ready: NetworkInstance = {
         ...reservedInstance,
         status: NetworkInstanceStatus.RUNNING,
         leaderAddress,
         relayAddress,
         providerSessionId: sandboxId,
+        registeredToolAddresses: ['o://shell'],
       };
-      this.instances.set(instanceId, { instance: ready, sandbox });
+      this.instances.set(instanceId, { instance: ready, providerHandle: sandbox });
       return ready;
     } catch (err) {
-      // Mark FAILED + try to clean up the sandbox if it spawned.
-      const rec = this.instances.get(instanceId);
-      if (rec?.sandbox && typeof rec.sandbox.kill === 'function') {
-        try {
-          await rec.sandbox.kill();
-        } catch {
-          /* best-effort */
+      // Best-effort cleanup of the spawned sandbox before letting the
+      // outer catch mark FAILED.
+      try {
+        if (sandbox && typeof sandbox.kill === 'function') {
+          await sandbox.kill();
         }
+      } catch {
+        /* best-effort */
       }
-      this.instances.set(instanceId, {
-        instance: { ...reservedInstance, status: NetworkInstanceStatus.FAILED },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        sandbox: null as any,
-      });
       throw err;
     }
+  }
+
+  /** Local backend — mount a LocalNetworkShellTool in the daemon's
+   *  runtime; cwd binds to the user-specified folder. */
+  private async startLocal(
+    instanceId: string,
+    shortId: string,
+    params: NetworkStartParams,
+    reservedInstance: NetworkInstance,
+  ): Promise<NetworkInstance> {
+    const hooks = this.daemonHooks!;
+    const cwd = params.cwd!;
+    const shellAddress = `o://shell-${shortId}`;
+    const shellTool = new LocalNetworkShellTool({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      address: new oAddress(shellAddress) as any,
+      // The local shell is a child of the daemon's leader. Parent +
+      // leader fields populated by `addNode` once mounted; we don't need
+      // to wire them at construction time.
+      cwd,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
+    await hooks.registerLocalTool(shellTool);
+
+    const transports = hooks.getDaemonLeaderTransports();
+    // Pick the first non-loopback transport if available; else first.
+    const leaderAddress =
+      transports.find((t) => !t.includes('/127.0.0.1/')) || transports[0] || '';
+
+    const ready: NetworkInstance = {
+      ...reservedInstance,
+      status: NetworkInstanceStatus.RUNNING,
+      leaderAddress,
+      relayAddress: undefined,
+      providerSessionId: shellAddress,
+      registeredToolAddresses: [shellAddress],
+    };
+    this.instances.set(instanceId, { instance: ready, providerHandle: shellTool });
+    return ready;
   }
 
   // ─── _tool_stop ──────────────────────────────────────────────────────
@@ -336,15 +470,22 @@ export class NetworkBrokerNode extends oLaneTool {
 
     rec.instance.status = NetworkInstanceStatus.STOPPING;
     try {
-      if (rec.sandbox && typeof rec.sandbox.kill === 'function') {
-        await rec.sandbox.kill();
+      if (rec.instance.backend === 'e2b') {
+        if (rec.providerHandle && typeof rec.providerHandle.kill === 'function') {
+          await rec.providerHandle.kill();
+        }
+      } else if (rec.instance.backend === 'local') {
+        if (this.daemonHooks && rec.providerHandle) {
+          await this.daemonHooks.unregisterLocalTool(rec.providerHandle);
+        }
       }
       rec.instance.status = NetworkInstanceStatus.STOPPED;
       rec.instance.stoppedAt = new Date().toISOString();
-      // Drop the live handle but keep the record so list() can show
-      // recently-stopped entries until the next daemon restart.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      this.instances.set(params.id, { instance: rec.instance, sandbox: null as any });
+      this.instances.set(params.id, {
+        instance: rec.instance,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        providerHandle: null as any,
+      });
       return { ok: true, id: params.id };
     } catch (err) {
       rec.instance.status = NetworkInstanceStatus.FAILED;
@@ -382,5 +523,104 @@ export class NetworkBrokerNode extends oLaneTool {
       throw new NetworkInstanceNotFoundError(params.id);
     }
     return rec.instance;
+  }
+
+  // ─── _tool_attach ────────────────────────────────────────────────────
+
+  /**
+   * Record an existing AgentNode session as a participant in this network.
+   * The agent is already addressable on `o://agent-…` (registered there
+   * by `runAgentDaemon`); attach() is purely a logical grouping that lets
+   * `list()` show network membership and lets the front-end fan-out
+   * messages via `AgentBroker.send` to all attached agents.
+   *
+   * Idempotent: re-attaching the same agent is a no-op.
+   */
+  async _tool_attach(
+    arg: NetworkAttachParams | { params: NetworkAttachParams },
+  ) {
+    const params = unwrapParams(arg);
+    if (!params?.networkId || !params?.agentSessionId) {
+      throw new Error(
+        'NetworkBrokerNode._tool_attach: `networkId` and `agentSessionId` are required.',
+      );
+    }
+    const rec = this.instances.get(params.networkId);
+    if (!rec) {
+      throw new NetworkInstanceNotFoundError(params.networkId);
+    }
+    if (!rec.instance.attachedAgents.includes(params.agentSessionId)) {
+      rec.instance.attachedAgents = [
+        ...rec.instance.attachedAgents,
+        params.agentSessionId,
+      ];
+    }
+    return {
+      ok: true,
+      networkId: params.networkId,
+      agentSessionId: params.agentSessionId,
+      attachedAgents: rec.instance.attachedAgents,
+    };
+  }
+
+  // ─── _tool_detach ────────────────────────────────────────────────────
+
+  async _tool_detach(
+    arg: NetworkDetachParams | { params: NetworkDetachParams },
+  ) {
+    const params = unwrapParams(arg);
+    if (!params?.networkId || !params?.agentSessionId) {
+      throw new Error(
+        'NetworkBrokerNode._tool_detach: `networkId` and `agentSessionId` are required.',
+      );
+    }
+    const rec = this.instances.get(params.networkId);
+    if (!rec) {
+      throw new NetworkInstanceNotFoundError(params.networkId);
+    }
+    rec.instance.attachedAgents = rec.instance.attachedAgents.filter(
+      (id) => id !== params.agentSessionId,
+    );
+    return {
+      ok: true,
+      networkId: params.networkId,
+      agentSessionId: params.agentSessionId,
+      attachedAgents: rec.instance.attachedAgents,
+    };
+  }
+
+  // ─── _tool_discoverAgents ────────────────────────────────────────────
+
+  /**
+   * List existing AgentNode sessions on the daemon. Implemented as
+   * `useSelf({address: 'o://agents', method: 'list', params: {}})`
+   * — the registry is in the same daemon, so we route via the parent
+   * leader. Caller-side filtering by `kind` (e.g. claude-code) is
+   * encouraged but not enforced here.
+   */
+  async _tool_discoverAgents(): Promise<NetworkDiscoverAgentsResult> {
+    try {
+      // Cast — `use` is not strictly typed on the base oLaneTool
+      // surface, but it exists at runtime. Same pattern as how
+      // `agent-broker.ts` uses withOlaneClient externally; here we're
+      // routing via the same leader, so we use the framework's own
+      // dispatch.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const self = this as any;
+      const raw = await self.use(new oAddress('o://agents'), {
+        method: 'list',
+        params: {},
+      });
+      const inner = (raw as { result?: { data?: { entries?: unknown[] } } })?.result;
+      const entries = (inner?.data?.entries as unknown[]) || [];
+      return { entries };
+    } catch (err) {
+      // If o://agents isn't registered (no agents have been started),
+      // return an empty list rather than failing the call.
+      if (err instanceof Error && /not found|not registered|no.*agents/i.test(err.message)) {
+        return { entries: [] };
+      }
+      throw err;
+    }
   }
 }

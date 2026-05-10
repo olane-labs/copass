@@ -67,12 +67,37 @@ export async function runOlaneOSHost(
 
   // Mount the network broker (ADR 0027 — `o://networks`). Lifecycle
   // envelope for user-managed network instances; provisions broker
-  // sandboxes via E2B at MVP. Lives for the daemon's lifetime; state
-  // is in-memory and wiped on stop (per ADR 0027 §"What NetworkInstance is").
+  // sandboxes via E2B (default) OR mounts an in-daemon shell tool with
+  // cwd=<user folder> (the `local` backend). Lives for the daemon's
+  // lifetime; state is in-memory and wiped on stop.
   const networkBroker = new NetworkBrokerNode({
     address: new oAddress('o://networks'),
     leader: os.rootLeader?.address || null,
     parent: os.rootLeader?.address || null,
+    daemonHooks: {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      registerLocalTool: async (node: any) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await os.addNode(node as any);
+      },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      unregisterLocalTool: async (node: any) => {
+        // Best-effort — the base olane runtime doesn't expose
+        // removeNode today; stop() releases the libp2p listener.
+        try {
+          if (node && typeof node.stop === 'function') {
+            await node.stop();
+          }
+        } catch {
+          /* best-effort */
+        }
+      },
+      getDaemonLeaderTransports: () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const transports = (os.rootLeader as any)?.transports || [];
+        return transports.map((t: { toString(): string }) => t.toString());
+      },
+    },
   });
   // Cast — NetworkBrokerNode extends oLaneTool (same base as RelayNode)
   // but the OlaneOSNode union is not exported with the right shape.

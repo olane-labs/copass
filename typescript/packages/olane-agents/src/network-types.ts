@@ -24,8 +24,15 @@ export enum NetworkInstanceStatus {
   FAILED = 'failed',
 }
 
-/** Backend that fulfills a network instance. MVP supports `e2b` only. */
-export type NetworkBackend = 'e2b' | 'docker';
+/**
+ * Backend that fulfills a network instance.
+ *   - `e2b` — spawn the broker template (`olane-compute-sandbox`) on E2B
+ *     and dial via E2B's HTTPS-WS proxy.
+ *   - `local` — mount a `LocalNetworkShellTool` in the daemon's own
+ *     olane runtime, with cwd bound to the user-specified folder.
+ *     No separate process; reaches the daemon's existing leader.
+ */
+export type NetworkBackend = 'e2b' | 'local';
 
 /**
  * The wire shape exchanged between the broker tool, the TS wrapper,
@@ -48,29 +55,47 @@ export interface NetworkInstance {
   /** ISO timestamp when stop was called. Null while alive. */
   stoppedAt?: string | null;
   /**
-   * Leader libp2p multiaddr — application-layer dial target (callers
-   * use this for `o://shell.exec`, `register_leader`, etc.).
-   * Example E2B form:
-   *   /dns4/4016-<sandbox-id>.e2b.app/tcp/443/tls/ws/p2p/<leader-peer-id>
+   * Leader libp2p multiaddr — application-layer dial target.
+   *   - `e2b` backend: the spawned sandbox's leader, exposed via E2B's
+   *     HTTPS-WS proxy:
+   *     /dns4/4016-<sandbox-id>.e2b.app/tcp/443/tls/ws/p2p/<leader-peer-id>
+   *   - `local` backend: the running daemon's own leader (single-process
+   *     architecture). Callers in the same daemon can `o://shell-<id>`
+   *     directly; external callers dial the daemon's leader transports.
    */
   leaderAddress: string;
   /**
    * Relay libp2p multiaddr — circuit-relay-v2 reservation target.
-   * Distinct peer-id from leaderAddress. Optional for MVP.
-   * Example E2B form:
-   *   /dns4/4018-<sandbox-id>.e2b.app/tcp/443/tls/ws/p2p/<relay-peer-id>
+   * Only populated for `e2b` backend at MVP.
    */
   relayAddress?: string;
   /** Backend that fulfilled this instance. */
   backend: NetworkBackend;
   /**
-   * Backend-specific session handle. For E2B: the sandbox id (string).
-   * Opaque to callers — only the broker uses it for lookup at stop time.
+   * Backend-specific session handle.
+   *   - `e2b`: the sandbox id.
+   *   - `local`: the LocalNetworkShellTool's address (e.g. `o://shell-<id>`).
    */
   providerSessionId: string;
+  /**
+   * Working directory the local-backend shell tool spawns commands in.
+   * Only populated for `local` backend. The full point of the local
+   * backend is for the user to run commands in their project folder —
+   * this field IS that folder.
+   */
+  cwd?: string;
   /** Tools currently registered against this network's broker.
-   *  MVP: just ["o://shell"]. Phase 2: dynamic Copass tooling. */
+   *  MVP: just the shell tool address. */
   registeredToolAddresses: string[];
+  /**
+   * Existing Claude Code (or other AgentNode) sessions attached to
+   * this network — recorded by `attach()`. Routing is unchanged
+   * (the agents are already on `o://agent-…` in the same daemon);
+   * the network is just a logical grouping that lets the user see
+   * them together and message-fan-out via AgentBroker.send.
+   * Each entry is the agent's stable session id.
+   */
+  attachedAgents: string[];
   /** Free-form metadata — cost-attribution tags etc. Reserved. */
   metadata: Record<string, string>;
 }
@@ -79,11 +104,44 @@ export interface NetworkInstance {
 export interface NetworkStartParams {
   name: string;
   ownerUserId: string;
+  /** Backend choice. Default: `e2b`. Use `local` to mount a shell tool
+   *  in the daemon's own runtime with cwd=<your folder>. */
+  backend?: NetworkBackend;
+  /** Working directory for the `local` backend's shell. Required when
+   *  backend === 'local'. Ignored for `e2b`. */
+  cwd?: string;
   /** Override the default broker template for E2B. Defaults to
-   *  `olane-compute-sandbox`. */
+   *  `olane-compute-sandbox`. Ignored for `local`. */
   e2bTemplate?: string;
   /** Free-form metadata stamped on the instance for cost attribution. */
   metadata?: Record<string, string>;
+}
+
+/** Input for `o://networks.attach` — record an existing AgentNode session
+ *  as a participant in this network. Routing is unchanged; this just
+ *  groups the agent under the network in `list()` output. */
+export interface NetworkAttachParams {
+  /** Network instance id. */
+  networkId: string;
+  /** Stable session id of the agent (matches AgentBroker session files). */
+  agentSessionId: string;
+}
+
+/** Input for `o://networks.detach` — remove an agent from a network's
+ *  attached list. Does NOT stop the agent itself. */
+export interface NetworkDetachParams {
+  networkId: string;
+  agentSessionId: string;
+}
+
+/** Output of `o://networks.discoverAgents` — proxies o://agents.list
+ *  so callers can see what's available to attach. Caller-side filtering
+ *  by `kind` (e.g. claude-code) is recommended. */
+export interface NetworkDiscoverAgentsResult {
+  /** Raw RegistryEntry list from o://agents.list. Opaque to the
+   *  network broker; passes through verbatim. */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  entries: any[];
 }
 
 /** Input for `o://networks.stop`. */
