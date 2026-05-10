@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.8.0](https://github.com/olane-labs/copass/compare/@copass/agent-router@0.7.2...@copass/agent-router@0.8.0) (2026-05-10)
+
+### Features
+
+- **core:** ComputeSession gateway surface (ADR 0026 Phase 2) ([#25](https://github.com/olane-labs/copass/issues/25)) ([3aa4966](https://github.com/olane-labs/copass/commit/3aa4966a5f1da2165c2225fe61e00e66699500af))
+
 ## [0.7.2](https://github.com/olane-labs/copass/compare/@copass/agent-router@0.7.0...@copass/agent-router@0.7.2) (2026-05-09)
 
 ### Bug Fixes

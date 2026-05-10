@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.10.0](https://github.com/olane-labs/copass/compare/@copass/core@0.8.1...@copass/core@0.10.0) (2026-05-10)
+
+### Features
+
+- **core:** ComputeSession gateway surface (ADR 0026 Phase 2) ([#25](https://github.com/olane-labs/copass/issues/25)) ([3aa4966](https://github.com/olane-labs/copass/commit/3aa4966a5f1da2165c2225fe61e00e66699500af))
+
 ## [0.8.1](https://github.com/olane-labs/copass/compare/@copass/core@0.8.0...@copass/core@0.8.1) (2026-05-09)
 
 ### Bug Fixes
