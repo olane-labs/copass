@@ -272,7 +272,11 @@ class ManagedAgentBackend(AgentBackend):
                             "ManagedAgentBackend: agent.custom_tool_use missing id — aborting run",
                             extra={
                                 "session_id": session_id,
-                                "name": name,
+                                # ``name`` collides with ``LogRecord.name`` —
+                                # passing it via ``extra`` raises
+                                # ``KeyError: "Attempt to overwrite 'name'"``
+                                # at log time. Use ``tool_name`` instead.
+                                "tool_name": name,
                                 "event_repr": repr(sdk_event)[:500],
                             },
                         )
@@ -471,11 +475,14 @@ class ManagedAgentBackend(AgentBackend):
                     # we catch beta-API event-type drift (e.g. a renamed
                     # ``agent.custom_tool_use`` envelope, or a
                     # newly-introduced server-tool event class) before it
-                    # silently breaks the requires_action path.
+                    # silently breaks the requires_action path. Embed the
+                    # event_type in the message text so it surfaces even
+                    # in formatters that drop the ``extra`` payload.
                     if evt_type and evt_type not in seen_unknown_event_types:
                         seen_unknown_event_types.add(evt_type)
                         logger.warning(
-                            "ManagedAgentBackend: unknown event type",
+                            "ManagedAgentBackend: unknown event type %r",
+                            evt_type,
                             extra={
                                 "session_id": session_id,
                                 "event_type": evt_type,
@@ -570,7 +577,9 @@ class ManagedAgentBackend(AgentBackend):
                     extra={
                         "session_id": session_id,
                         "event_id": evt_id,
-                        "name": name,
+                        # ``name`` collides with ``LogRecord.name`` — see
+                        # the matching note in the missing-id error above.
+                        "tool_name": name,
                     },
                 )
         except Exception as exc:
