@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.8.1](https://github.com/olane-labs/copass/compare/@copass/core@0.8.0...@copass/core@0.8.1) (2026-05-09)
+
+### Bug Fixes
+
+- resolve outstanding merge-conflict markers on production branch ([719afa7](https://github.com/olane-labs/copass/commit/719afa74ad528135ad371d6ed8a6e9d8056bba74))
+
 # [0.8.0](https://github.com/olane-labs/copass/compare/@copass/core@0.6.3...@copass/core@0.8.0) (2026-05-09)
 
 ### Bug Fixes

@@ -8,6 +8,18 @@ from copass_core.resources.agents import (
 )
 from copass_core.resources.api_keys import ApiKeysResource
 from copass_core.resources.base import BaseResource
+from copass_core.resources.compute import (
+    ComputeExecResponse,
+    ComputeGateway,
+    ComputeResource,
+    ComputeSession,
+    ComputeSessionHealthResponse,
+    ComputeSessionResponse,
+    ComputeTemplate,
+    ListComputeSessionsResponse,
+    ListComputeTemplatesResponse,
+    StopComputeSessionResponse,
+)
 from copass_core.resources.entities import (
     CanonicalEntity,
     EntitiesResource,
@@ -85,4 +97,15 @@ __all__ = [
     "IntegrationsResource",
     # Sandbox connections
     "SandboxConnectionsResource",
+    # Compute
+    "ComputeResource",
+    "ComputeSession",
+    "ComputeGateway",
+    "ComputeTemplate",
+    "ComputeSessionResponse",
+    "ListComputeTemplatesResponse",
+    "ListComputeSessionsResponse",
+    "ComputeExecResponse",
+    "ComputeSessionHealthResponse",
+    "StopComputeSessionResponse",
 ]

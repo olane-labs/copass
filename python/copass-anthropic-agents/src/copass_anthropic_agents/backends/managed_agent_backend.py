@@ -272,7 +272,11 @@ class ManagedAgentBackend(AgentBackend):
                             "ManagedAgentBackend: agent.custom_tool_use missing id — aborting run",
                             extra={
                                 "session_id": session_id,
-                                "name": name,
+                                # ``name`` collides with ``LogRecord.name`` —
+                                # passing it via ``extra`` raises
+                                # ``KeyError: "Attempt to overwrite 'name'"``
+                                # at log time. Use ``tool_name`` instead.
+                                "tool_name": name,
                                 "event_repr": repr(sdk_event)[:500],
                             },
                         )
@@ -474,8 +478,12 @@ class ManagedAgentBackend(AgentBackend):
                     # silently breaks the requires_action path.
                     if evt_type and evt_type not in seen_unknown_event_types:
                         seen_unknown_event_types.add(evt_type)
+                        # Embed ``evt_type`` in the message text so it
+                        # surfaces even in formatters that drop the
+                        # structured ``extra`` payload.
                         logger.warning(
-                            "ManagedAgentBackend: unknown event type",
+                            "ManagedAgentBackend: unknown event type %r",
+                            evt_type,
                             extra={
                                 "session_id": session_id,
                                 "event_type": evt_type,
@@ -570,7 +578,9 @@ class ManagedAgentBackend(AgentBackend):
                     extra={
                         "session_id": session_id,
                         "event_id": evt_id,
-                        "name": name,
+                        # ``name`` collides with ``LogRecord.name`` — see
+                        # the matching note in the missing-id error above.
+                        "tool_name": name,
                     },
                 )
         except Exception as exc:

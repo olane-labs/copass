@@ -19,7 +19,7 @@ from typing import Any, Awaitable, Callable, Dict, List, Optional, Union
 
 import httpx
 
-from copass_core.auth.types import AuthProvider
+from copass_core.auth.types import AuthProvider, SessionContext
 from copass_core.http.errors import CopassApiError
 from copass_core.http.retry import retry_with_backoff
 from copass_core.types import RetryConfig
@@ -96,6 +96,18 @@ class HttpClient:
         self._on_request = list(options.on_request or [])
         self._on_response = list(options.on_response or [])
         self._timeout = options.timeout
+
+    async def get_auth_session(self) -> SessionContext:
+        """Return the current :class:`SessionContext` from the auth provider.
+
+        Public accessor mirroring the TS ``HttpClient.getAuthSession()``
+        method. ``ComputeSession.fetch`` (ADR 0026) uses this to pull a
+        fresh bearer token per gateway call without going through the
+        regular :meth:`request` path (which would impose JSON
+        serialization, retry, and error normalization that the
+        transparent gateway passthrough must NOT inherit).
+        """
+        return await self._auth_provider.get_session()
 
     async def request(self, path: str, options: Optional[RequestOptions] = None) -> Any:
         opts = options or RequestOptions()

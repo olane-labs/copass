@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.5.8](https://github.com/olane-labs/copass/compare/@copass/mastra@0.5.6...@copass/mastra@0.5.8) (2026-05-09)
+
+### Bug Fixes
+
+- widen @copass/core peer range so dependents accept core 0.8.x ([#21](https://github.com/olane-labs/copass/issues/21)) ([c08999c](https://github.com/olane-labs/copass/commit/c08999c9b4c9a5bde7d2be08b6de0bc495358379))
+
 ## [0.5.6](https://github.com/olane-labs/copass/compare/@copass/mastra@0.5.5...@copass/mastra@0.5.6) (2026-05-08)
 
 **Note:** Version bump only for package @copass/mastra
