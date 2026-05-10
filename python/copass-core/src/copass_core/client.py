@@ -29,6 +29,7 @@ from copass_core.http.http_client import (
 )
 from copass_core.resources.agents import AgentsResource
 from copass_core.resources.api_keys import ApiKeysResource
+from copass_core.resources.compute import ComputeResource
 from copass_core.resources.entities import EntitiesResource
 from copass_core.resources.ingest import IngestResource
 from copass_core.resources.integrations import IntegrationsResource
@@ -118,6 +119,9 @@ class CopassClient:
     integrations: IntegrationsResource
     sandbox_connections: SandboxConnectionsResource
 
+    # Compute Router v1
+    compute: ComputeResource
+
     # Higher-order primitive (builds on sources + ingest)
     context_window: ContextWindowResource
 
@@ -165,6 +169,9 @@ class CopassClient:
         self.agents = AgentsResource(http)
         self.integrations = IntegrationsResource(http)
         self.sandbox_connections = SandboxConnectionsResource(http)
+
+        # Compute Router v1
+        self.compute = ComputeResource(http)
 
         # Higher-order — depends on sources + ingest, init last.
         self.context_window = ContextWindowResource(self)

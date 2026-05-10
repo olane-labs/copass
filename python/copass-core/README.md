@@ -83,6 +83,31 @@ await window.add_turn(ChatMessage(role="user", content="..."))
 await client.retrieval.search(sandbox_id, query="...", window=window)
 ```
 
+## Reaching your sandbox
+
+Compute sessions ship with a per-session reverse-proxy gateway (ADR 0026)
+so you can hit any port inside the sandbox over HTTPS without managing
+your own tunnel. `client.compute.create_session` / `get_session` /
+`list_sessions` return `ComputeSession` instances that expose
+`proxy_url`, `websocket_url`, and `fetch`:
+
+```python
+session = await client.compute.create_session(
+    sandbox_id, template="copass-hermes-py311", timeout_seconds=600,
+)
+# Hit port 3000 inside the sandbox via the public gateway.
+resp = await session.fetch(3000, "/api/v1/health")
+print(resp.status_code, await resp.aread())
+print(session.proxy_url(3000, "/dashboard"))      # https://...
+print(session.websocket_url(8080, "/ws"))         # wss://...
+await client.compute.stop_session(sandbox_id, session.session_id)
+```
+
+`fetch` is a thin passthrough — bearer auth is added for you, but body,
+headers, method, and timeout flow through `httpx` untouched (no JSON
+serialization, no retries, no error normalization). Pass `""` for the
+bare per-port URL or a string starting with `/` for a sub-path.
+
 ## Conversation metadata: speaker, participants, timestamp
 
 Every ingestion path accepts optional metadata that travels alongside the

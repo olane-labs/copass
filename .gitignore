@@ -2,6 +2,7 @@
 node_modules/
 
 .claude
+.scratch/
 # Build output
 dist/
 *.tsbuildinfo
