@@ -23,6 +23,8 @@ import {
 import { oAddress, setupGracefulShutdown } from '@olane/o-core';
 import portfinder from 'portfinder';
 
+import { NetworkBrokerNode } from './network-broker-node.js';
+
 export interface RunOlaneOSHostOptions {
   /** OS instance name — typically the user's Copass ID or unix username. */
   instanceName: string;
@@ -62,6 +64,20 @@ export async function runOlaneOSHost(
     parent: os.rootLeader?.address || null,
   });
   await os.addNode(relay);
+
+  // Mount the network broker (ADR 0027 — `o://networks`). Lifecycle
+  // envelope for user-managed network instances; provisions broker
+  // sandboxes via E2B at MVP. Lives for the daemon's lifetime; state
+  // is in-memory and wiped on stop (per ADR 0027 §"What NetworkInstance is").
+  const networkBroker = new NetworkBrokerNode({
+    address: new oAddress('o://networks'),
+    leader: os.rootLeader?.address || null,
+    parent: os.rootLeader?.address || null,
+  });
+  // Cast — NetworkBrokerNode extends oLaneTool (same base as RelayNode)
+  // but the OlaneOSNode union is not exported with the right shape.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await os.addNode(networkBroker as any);
 
   setupGracefulShutdown(
     async () => {
