@@ -1090,15 +1090,23 @@ class ManagedAgentBackend(AgentBackend):
         if gateway_on:
             # ADR 0029: ``mcp_toolset`` references the server by name
             # — the name MUST match the corresponding ``mcp_servers``
-            # entry on ``agents.create``. ``permission_policy:
-            # always_allow`` is the accepted trade-off (gateway is the
-            # real enforcement point); see ADR 0029 §Accepted
-            # Trade-Offs §3.
+            # entry on ``agents.create``. ``permission_policy`` lives
+            # under ``default_config`` per
+            # ``BetaManagedAgentsMCPToolsetParams`` and is itself a
+            # typed dict ``{"type": "always_allow"}`` per
+            # ``BetaManagedAgentsAlwaysAllowPolicyParam`` — a flat
+            # ``"permission_policy": "always_allow"`` is rejected by
+            # the API as ``tools.N.permission_policy: Extra inputs are
+            # not permitted``. ``always_allow`` is the accepted
+            # trade-off (gateway is the real enforcement point); see
+            # ADR 0029 §Accepted Trade-Offs §3.
             tools.append(
                 {
                     "type": "mcp_toolset",
                     "mcp_server_name": self._gateway_mcp_name,
-                    "permission_policy": "always_allow",
+                    "default_config": {
+                        "permission_policy": {"type": "always_allow"},
+                    },
                 }
             )
         for spec in specs:
