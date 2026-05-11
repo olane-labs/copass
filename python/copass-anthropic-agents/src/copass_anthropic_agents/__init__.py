@@ -58,7 +58,11 @@ from copass_core_agents import (
 # Anthropic-specific (owned here).
 from copass_anthropic_agents.backends.managed_agent_backend import (
     DEFAULT_ENVIRONMENT_CONFIG,
+    DEFAULT_GATEWAY_MCP_NAME,
+    DEFAULT_GATEWAY_MCP_URL,
     SESSION_ID_HANDLE,
+    USE_GATEWAY_MCP_HANDLE,
+    VAULT_IDS_HANDLE,
     ManagedAgentBackend,
 )
 from copass_anthropic_agents.managed_agent import DEFAULT_MODEL, CopassManagedAgent
@@ -78,7 +82,11 @@ __all__ = [
     "DEFAULT_MODEL",
     "ManagedAgentBackend",
     "DEFAULT_ENVIRONMENT_CONFIG",
+    "DEFAULT_GATEWAY_MCP_NAME",
+    "DEFAULT_GATEWAY_MCP_URL",
     "SESSION_ID_HANDLE",
+    "USE_GATEWAY_MCP_HANDLE",
+    "VAULT_IDS_HANDLE",
     # Copass context-engineering primitives
     "copass_retrieval_tools",
     "copass_ingest_tool",
