@@ -72,6 +72,19 @@ export type {
 export { withOlaneClient, OlaneOSNotRunningError } from './olane-client.js';
 export type { UseFn, WithOlaneClientOptions } from './olane-client.js';
 
+// Gateway registrar (ADR 0027) — daemon-side registration with a remote
+// compute-gateway (the `o://daemons` registry tool on a publicly-deployed
+// compute-sandbox; see o-private-network/nodes/compute-sandbox/registry.tool.ts).
+export {
+  registerWithGateway,
+  GATEWAY_REGISTRY_ADDRESS,
+  DEFAULT_HEARTBEAT_MS,
+} from './gateway-registrar.js';
+export type {
+  GatewayRegistrarOptions,
+  RegisteredGatewayHandle,
+} from './gateway-registrar.js';
+
 // Filesystem layout helpers
 export {
   olaneHome,
