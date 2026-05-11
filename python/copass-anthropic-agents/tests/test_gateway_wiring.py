@@ -64,7 +64,14 @@ def test_specs_to_tools_flag_on_prepends_mcp_toolset() -> None:
     """Gateway path prepends a single ``mcp_toolset`` entry pointing
     at the gateway server by name. ``permission_policy: always_allow``
     is the accepted trade-off — gateway enforcement is the real
-    boundary (ADR 0029 §Accepted Trade-Offs §3)."""
+    boundary (ADR 0029 §Accepted Trade-Offs §3).
+
+    Per ``BetaManagedAgentsMCPToolsetParams``, ``permission_policy``
+    lives under ``default_config`` (not at the top level), and is
+    itself a typed dict ``{"type": "always_allow"}``. A flat
+    ``"permission_policy": "always_allow"`` at the top level is
+    rejected by the API as
+    ``tools.0.permission_policy: Extra inputs are not permitted``."""
     backend = _make_backend(use_gateway_mcp=True)
     specs = [ToolSpec(name="a", description="tool a", input_schema={"type": "object"})]
     tools = backend._specs_to_tools(specs)
@@ -72,7 +79,12 @@ def test_specs_to_tools_flag_on_prepends_mcp_toolset() -> None:
     # tools — matters when both surface tools with the same name.
     assert tools[0]["type"] == "mcp_toolset"
     assert tools[0]["mcp_server_name"] == DEFAULT_GATEWAY_MCP_NAME
-    assert tools[0]["permission_policy"] == "always_allow"
+    # No flat ``permission_policy`` at the top level — that shape is
+    # what the API rejected in the 1.2.0 prod run.
+    assert "permission_policy" not in tools[0]
+    assert tools[0]["default_config"] == {
+        "permission_policy": {"type": "always_allow"},
+    }
     # Custom tools still come through behind the toolset.
     assert any(t["type"] == "custom" and t["name"] == "a" for t in tools)
 
