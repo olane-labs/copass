@@ -23,6 +23,13 @@ import {
 import { oAddress, setupGracefulShutdown } from '@olane/o-core';
 import portfinder from 'portfinder';
 
+import { NetworkBrokerNode } from './network-broker-node.js';
+import {
+  registerWithGateway,
+  type GatewayRegistrarOptions,
+  type RegisteredGatewayHandle,
+} from './gateway-registrar.js';
+
 export interface RunOlaneOSHostOptions {
   /** OS instance name — typically the user's Copass ID or unix username. */
   instanceName: string;
@@ -32,6 +39,55 @@ export interface RunOlaneOSHostOptions {
   noIndexNetwork?: boolean;
   /** Optional Copass token manager — destroyed on graceful shutdown. */
   tokenManager?: { destroy?: () => Promise<void> } | null;
+  /**
+   * Optional remote compute-gateway to register with on startup. When
+   * set, the daemon dials the gateway's `o://daemons` registry tool,
+   * registers itself, and heartbeats periodically so callers (Copass
+   * API, web-app) can discover it. On graceful shutdown it unregisters.
+   *
+   * If omitted (and `GATEWAY_MULTIADDR` / `GATEWAY_USER_ID` envs are
+   * also unset), the daemon runs without gateway presence — fine for
+   * local-only development.
+   */
+  gateway?: Partial<GatewayRegistrarOptions> & {
+    /** Set false to opt out even when env vars are present. */
+    enabled?: boolean;
+  };
+}
+
+/**
+ * Resolve gateway options from explicit options + env fallbacks.
+ * Returns null when gateway registration is disabled or not configured.
+ */
+function resolveGatewayOptions(
+  opts: RunOlaneOSHostOptions,
+): GatewayRegistrarOptions | null {
+  if (opts.gateway?.enabled === false) return null;
+  const gatewayMultiaddr =
+    opts.gateway?.gatewayMultiaddr ?? process.env.GATEWAY_MULTIADDR ?? '';
+  const userId = opts.gateway?.userId ?? process.env.GATEWAY_USER_ID ?? '';
+  if (!gatewayMultiaddr || !userId) return null;
+  const daemonId =
+    opts.gateway?.daemonId ?? process.env.GATEWAY_DAEMON_ID ?? undefined;
+  const capabilities =
+    opts.gateway?.capabilities ??
+    (process.env.GATEWAY_CAPABILITIES
+      ? process.env.GATEWAY_CAPABILITIES.split(',').map((s) => s.trim()).filter(Boolean)
+      : undefined);
+  const heartbeatMs =
+    opts.gateway?.heartbeatMs ??
+    (process.env.GATEWAY_HEARTBEAT_MS
+      ? Number(process.env.GATEWAY_HEARTBEAT_MS)
+      : undefined);
+  return {
+    gatewayMultiaddr,
+    userId,
+    daemonId,
+    capabilities,
+    metadata: opts.gateway?.metadata,
+    heartbeatMs,
+    log: opts.gateway?.log,
+  };
 }
 
 /**
@@ -63,8 +119,77 @@ export async function runOlaneOSHost(
   });
   await os.addNode(relay);
 
+  // Mount the network broker (ADR 0027 — `o://networks`). Lifecycle
+  // envelope for user-managed network instances; provisions broker
+  // sandboxes via E2B (default) OR mounts an in-daemon shell tool with
+  // cwd=<user folder> (the `local` backend). Lives for the daemon's
+  // lifetime; state is in-memory and wiped on stop.
+  const networkBroker = new NetworkBrokerNode({
+    address: new oAddress('o://networks'),
+    leader: os.rootLeader?.address || null,
+    parent: os.rootLeader?.address || null,
+    daemonHooks: {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      registerLocalTool: async (node: any) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await os.addNode(node as any);
+      },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      unregisterLocalTool: async (node: any) => {
+        // Best-effort — the base olane runtime doesn't expose
+        // removeNode today; stop() releases the libp2p listener.
+        try {
+          if (node && typeof node.stop === 'function') {
+            await node.stop();
+          }
+        } catch {
+          /* best-effort */
+        }
+      },
+      getDaemonLeaderTransports: () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const transports = (os.rootLeader as any)?.transports || [];
+        return transports.map((t: { toString(): string }) => t.toString());
+      },
+    },
+  });
+  // Cast — NetworkBrokerNode extends oLaneTool (same base as RelayNode)
+  // but the OlaneOSNode union is not exported with the right shape.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await os.addNode(networkBroker as any);
+
+  // Optional: register the daemon with a remote compute gateway so
+  // external callers (Copass API, web-app) can discover it. Skipped
+  // silently if neither `options.gateway.{gatewayMultiaddr,userId}` nor
+  // the matching env vars are set — local-only dev runs fine without it.
+  const gatewayOptions = resolveGatewayOptions(options);
+  let gatewayHandle: RegisteredGatewayHandle | null = null;
+  if (gatewayOptions) {
+    try {
+      gatewayHandle = await registerWithGateway(os, gatewayOptions);
+    } catch (err) {
+      // Don't block daemon startup on gateway failure — the daemon
+      // still works locally; we just won't appear in the gateway
+      // registry until next attempt.
+      console.warn(
+        '[runOlaneOSHost] gateway registration failed; daemon will run without gateway presence',
+        err,
+      );
+    }
+  }
+
   setupGracefulShutdown(
     async () => {
+      // Unregister BEFORE stopping the OS — gives the gateway a clean
+      // signal that we're going away instead of waiting for the
+      // stale-after-N-minutes filter.
+      if (gatewayHandle) {
+        try {
+          await gatewayHandle.unregister();
+        } catch {
+          /* best-effort */
+        }
+      }
       try {
         if (
           tokenManager &&
