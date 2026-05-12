@@ -20,6 +20,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   autoResolveGateway,
+  startGatewayKeepalive,
   _resetDaemonIdForTest,
   type GatewayAutoResolveTransport,
 } from '../src/auto-resolve-gateway.js';
@@ -419,5 +420,240 @@ describe('resolveGatewayOptions — precedence chain', () => {
       gateway: { enabled: false },
     });
     expect(result).toBeNull();
+  });
+});
+
+// =======================================================================
+// startGatewayKeepalive — api keepalive loop (ADR 0030 lifecycle B)
+// =======================================================================
+//
+// The keepalive POSTs to `/local/gateway/heartbeat` on a fixed cadence
+// so the api can refresh the E2B sandbox's idle-stop timer. It runs
+// independently of the libp2p heartbeat in `gateway-registrar.ts` —
+// different transport, different failure modes.
+//
+// Test surface:
+//   * POSTs to the right path with the right auth.
+//   * 200 ticks reset the consecutive-failure counter.
+//   * 410 fires `onGatewayGone` once + stops the loop.
+//   * N consecutive 5xx ticks fire `onFailure` at the threshold.
+//   * Returned unsubscribe stops further ticks.
+//
+// We use fake timers + a manual tick driver so tests don't pay
+// real-time wall costs.
+
+describe('startGatewayKeepalive — happy path', () => {
+  it('POSTs to /local/gateway/heartbeat with the bearer', async () => {
+    vi.useFakeTimers();
+    const fetchSpy = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          ok: true,
+          refreshed_until: new Date(Date.now() + 900_000).toISOString(),
+          sandbox_id: 'sbx-x',
+          session_id: 'sess-x',
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      ),
+    );
+    const stop = startGatewayKeepalive({
+      transport: makeTransport(),
+      intervalMs: 1000,
+      fetchImpl: fetchSpy,
+      log: () => {},
+    });
+    // Let the initial tick fire (it's queued synchronously inside the
+    // IIFE; awaiting a microtask drains the await chain).
+    await vi.runOnlyPendingTimersAsync();
+    // First tick has fired — assert URL + headers.
+    expect(fetchSpy).toHaveBeenCalled();
+    const [url, init] = fetchSpy.mock.calls[0];
+    expect(url).toBe(
+      `${TEST_API_BASE}/api/v1/storage/compute-providers/local/gateway/heartbeat`,
+    );
+    const headers = (init as RequestInit).headers as Record<string, string>;
+    expect(headers.authorization).toBe('Bearer test-bearer-token');
+    expect((init as RequestInit).method).toBe('POST');
+    stop();
+    vi.useRealTimers();
+  });
+
+  it('fires onGatewayGone exactly once on a 410, then stops', async () => {
+    vi.useFakeTimers();
+    const fetchSpy = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(
+        new Response(
+          JSON.stringify({ detail: { error_code: 'gateway_gone' } }),
+          { status: 410, headers: { 'content-type': 'application/json' } },
+        ),
+      );
+    const onGone = vi.fn();
+    const stop = startGatewayKeepalive({
+      transport: makeTransport(),
+      intervalMs: 1000,
+      fetchImpl: fetchSpy,
+      onGatewayGone: onGone,
+      log: () => {},
+    });
+    // Drive the first tick.
+    await vi.runOnlyPendingTimersAsync();
+    expect(onGone).toHaveBeenCalledTimes(1);
+
+    // Subsequent ticks: the loop is stopped, so no further fetches and
+    // no further callback invocations. Advance time well past
+    // intervalMs and confirm.
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(onGone).toHaveBeenCalledTimes(1);
+
+    stop();
+    vi.useRealTimers();
+  });
+
+  it('returned unsubscribe stops further ticks', async () => {
+    vi.useFakeTimers();
+    const fetchSpy = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          ok: true,
+          refreshed_until: new Date(Date.now() + 900_000).toISOString(),
+          sandbox_id: 'sbx-x',
+          session_id: 'sess-x',
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      ),
+    );
+    const stop = startGatewayKeepalive({
+      transport: makeTransport(),
+      intervalMs: 1000,
+      fetchImpl: fetchSpy,
+      log: () => {},
+    });
+    // Initial tick fires immediately on the first run.
+    await vi.runOnlyPendingTimersAsync();
+    const callsAfterFirstTick = fetchSpy.mock.calls.length;
+    expect(callsAfterFirstTick).toBeGreaterThanOrEqual(1);
+    // Unsubscribe. No further ticks should fire even though we let
+    // wall-time-equivalent run past the interval.
+    stop();
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(fetchSpy.mock.calls.length).toBe(callsAfterFirstTick);
+    vi.useRealTimers();
+  });
+});
+
+describe('startGatewayKeepalive — failure counting', () => {
+  it('fires onFailure exactly once when consecutive failures hit threshold', async () => {
+    vi.useFakeTimers();
+    const fetchSpy = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(makeErrorResponse(503));
+    const onFailure = vi.fn();
+    const stop = startGatewayKeepalive({
+      transport: makeTransport(),
+      intervalMs: 100,
+      failureThreshold: 3,
+      fetchImpl: fetchSpy,
+      onFailure,
+      log: () => {},
+    });
+    // 3 ticks at intervalMs = 100ms. Drive each one + drain microtasks.
+    for (let i = 0; i < 3; i += 1) {
+      await vi.advanceTimersByTimeAsync(120);
+    }
+    expect(fetchSpy.mock.calls.length).toBeGreaterThanOrEqual(3);
+    // onFailure should fire exactly once — equality, not >=, in the
+    // implementation so we don't spam the callback on every subsequent
+    // failed tick.
+    expect(onFailure).toHaveBeenCalledTimes(1);
+    stop();
+    vi.useRealTimers();
+  });
+
+  it('a successful tick resets the failure counter', async () => {
+    // Pattern: every-other success — fail/success/fail/success/...
+    // With threshold=3 we should NEVER hit 3 consecutive failures
+    // since a success always lands between two fails. This is the
+    // strict-monotonic version of the reset-counter behavior — no
+    // matter how long the loop runs, onFailure must stay silent.
+    vi.useFakeTimers();
+    let callCount = 0;
+    const fetchSpy = vi.fn<typeof fetch>().mockImplementation(async () => {
+      callCount += 1;
+      if (callCount % 2 === 0) {
+        return new Response(
+          JSON.stringify({
+            ok: true,
+            refreshed_until: new Date(Date.now() + 900_000).toISOString(),
+            sandbox_id: 'sbx',
+            session_id: 'sess',
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        );
+      }
+      return makeErrorResponse(500);
+    });
+    const onFailure = vi.fn();
+    const stop = startGatewayKeepalive({
+      transport: makeTransport(),
+      intervalMs: 100,
+      failureThreshold: 3,
+      fetchImpl: fetchSpy,
+      onFailure,
+      log: () => {},
+    });
+    // Run the loop through 8 ticks (4 fail, 4 success interleaved).
+    for (let i = 0; i < 10; i += 1) {
+      await vi.advanceTimersByTimeAsync(110);
+    }
+    // Several failures accumulated but never 3 consecutive — onFailure
+    // must not have fired.
+    expect(callCount).toBeGreaterThanOrEqual(4);
+    expect(onFailure).not.toHaveBeenCalled();
+    stop();
+    vi.useRealTimers();
+  });
+
+  it('does NOT fire onGatewayGone for non-410 errors', async () => {
+    vi.useFakeTimers();
+    const fetchSpy = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(makeErrorResponse(500));
+    const onGone = vi.fn();
+    const onFailure = vi.fn();
+    const stop = startGatewayKeepalive({
+      transport: makeTransport(),
+      intervalMs: 100,
+      failureThreshold: 1,
+      fetchImpl: fetchSpy,
+      onGatewayGone: onGone,
+      onFailure,
+      log: () => {},
+    });
+    await vi.advanceTimersByTimeAsync(120);
+    expect(onGone).not.toHaveBeenCalled();
+    // Threshold of 1 → onFailure fires on the first 5xx.
+    expect(onFailure).toHaveBeenCalledTimes(1);
+    stop();
+    vi.useRealTimers();
+  });
+
+  it('returns null-op unsubscribe when no fetch is available', () => {
+    // No fetchImpl AND no global fetch → loop never starts. The
+    // returned function must be callable without error.
+    const originalFetch = globalThis.fetch;
+    // @ts-expect-error — clearing the global for the test.
+    globalThis.fetch = undefined;
+    try {
+      const stop = startGatewayKeepalive({
+        transport: makeTransport(),
+        log: () => {},
+      });
+      expect(typeof stop).toBe('function');
+      stop(); // must not throw
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
   });
 });

@@ -232,3 +232,225 @@ export async function autoResolveGateway(
     daemonId: options.daemonId ?? defaultDaemonId(),
   };
 }
+
+// =======================================================================
+// Gateway keepalive — ADR 0030 lifecycle option B (CLI consumer of the
+// api-side ``POST /local/gateway/heartbeat`` endpoint).
+// =======================================================================
+//
+// The E2B gateway sandbox auto-stops after `cfg.idle_timeout_seconds`
+// (default 900s / 15min) of E2B-side idle. Libp2p heartbeats from this
+// daemon to the in-sandbox broker don't refresh the timer — only the
+// api process's SDK call does. Without this keepalive the gateway dies
+// 15 minutes after the user's last api-side call regardless of whether
+// the daemon is happily heartbeating, and the daemon orphans against a
+// dead multiaddr / new peer-id.
+//
+// `startGatewayKeepalive` runs on its OWN loop independent of the
+// libp2p heartbeat in `gateway-registrar.ts` — different transports,
+// different failure modes. The libp2p loop tells us whether the
+// gateway is *reachable*; this loop tells the api the gateway is
+// *wanted*.
+
+const LOCAL_GATEWAY_HEARTBEAT_PATH =
+  '/api/v1/storage/compute-providers/local/gateway/heartbeat';
+
+/** Default cadence matches the libp2p heartbeat for legibility. The
+ *  api side refreshes the E2B timer to `cfg.idle_timeout_seconds`
+ *  (typically 900s) so 60s gives 15x headroom — every refresh resets
+ *  the deadline. */
+export const DEFAULT_KEEPALIVE_MS = 60_000;
+
+/** After this many consecutive non-410 failures (network blips, 5xx,
+ *  etc.), the keepalive's `onFailure` fires. The CLI uses it as a soft
+ *  alarm — `reconnect-needed` is what actually drives recovery, and
+ *  that signal comes from the libp2p heartbeat in `gateway-registrar`
+ *  (different transport, different fault mode). A high threshold here
+ *  avoids reconnect storms from transient api flakiness. */
+export const DEFAULT_KEEPALIVE_FAILURE_THRESHOLD = 5;
+
+export interface GatewayKeepaliveOptions {
+  transport: GatewayAutoResolveTransport;
+  /** Cadence between heartbeat ticks, ms. Default 60s. */
+  intervalMs?: number;
+  /** Emit after N consecutive non-410 failures. Default 5. */
+  failureThreshold?: number;
+  /** Called once when the api returns 410 ``gateway_gone`` — the
+   *  underlying sandbox is dead, the api has marked the session
+   *  STOPPED, and the daemon must tear down + re-resolve. */
+  onGatewayGone?: () => void;
+  /** Called once each time the consecutive-failure counter crosses the
+   *  threshold. NOT a per-tick callback — the counter resets to 0 the
+   *  next successful tick and the next breach fires again. */
+  onFailure?: (err: unknown) => void;
+  /** Optional logger. */
+  log?: (msg: string, err?: unknown) => void;
+  /** Test-only fetch seam. */
+  fetchImpl?: typeof fetch;
+}
+
+/**
+ * Start a recurring api-side heartbeat against the user's local gateway.
+ * Returns an unsubscribe function — call it on shutdown to stop the
+ * loop cleanly.
+ *
+ * The loop is fire-and-await — successive ticks don't pile up if one
+ * is slow. We don't strict-interval; we sleep N ms after the previous
+ * tick settles. That's correct posture for a keepalive: drifting a
+ * little is fine, doubling up is not.
+ *
+ * Idempotency:
+ *   * `onGatewayGone` fires at most once per loop instance. The api's
+ *     410 means "this session is dead"; further ticks against the same
+ *     session would return 404 (since the api just marked it STOPPED),
+ *     so we stop the loop after the first 410.
+ *   * `onFailure` re-fires only on threshold breaches; a single
+ *     transient blip won't trigger anything.
+ */
+export function startGatewayKeepalive(
+  opts: GatewayKeepaliveOptions,
+): () => void {
+  const log =
+    opts.log ??
+    ((msg: string, err?: unknown) => {
+      if (err) {
+        console.warn(`[gateway-keepalive] ${msg}`, err);
+      } else {
+        console.warn(`[gateway-keepalive] ${msg}`);
+      }
+    });
+  const fetchImpl = opts.fetchImpl ?? globalThis.fetch;
+  const intervalMs = opts.intervalMs ?? DEFAULT_KEEPALIVE_MS;
+  const failureThreshold =
+    opts.failureThreshold ?? DEFAULT_KEEPALIVE_FAILURE_THRESHOLD;
+
+  let stopped = false;
+  let goneFired = false;
+  let consecutiveFailures = 0;
+  // Holds the active sleep timer between ticks so unsubscribe can
+  // abort it immediately instead of waiting for `intervalMs` to elapse.
+  let sleepTimer: ReturnType<typeof setTimeout> | null = null;
+  let sleepResolve: (() => void) | null = null;
+
+  if (!fetchImpl) {
+    log(
+      'no global fetch available; gateway keepalive disabled. ' +
+        'Upgrade to Node 20+ to enable.',
+    );
+    // Return a no-op unsubscribe so callers always have a teardown
+    // handle — keeps the call site uniform.
+    return () => {};
+  }
+
+  const tick = async (): Promise<void> => {
+    let token: string | null;
+    try {
+      token = await opts.transport.getAccessToken();
+    } catch (err) {
+      consecutiveFailures += 1;
+      log('keepalive: failed to resolve access token', err);
+      maybeFireFailure(err);
+      return;
+    }
+    if (!token) {
+      // Treat "no token" as a soft failure — log + bump counter. The
+      // daemon may have lost its session; the libp2p path will catch
+      // a real outage faster than we will.
+      consecutiveFailures += 1;
+      log('keepalive: no access token available');
+      maybeFireFailure(new Error('no access token'));
+      return;
+    }
+
+    const base = opts.transport.apiBaseUrl.replace(/\/+$/, '');
+    const url = `${base}${LOCAL_GATEWAY_HEARTBEAT_PATH}`;
+    let resp: Response;
+    try {
+      resp = await fetchImpl(url, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          accept: 'application/json',
+          authorization: `Bearer ${token}`,
+        },
+        // The api endpoint reads the user_id from the bearer, not the
+        // body — empty body is the contract.
+        body: '',
+      });
+    } catch (err) {
+      consecutiveFailures += 1;
+      log('keepalive: network error', err);
+      maybeFireFailure(err);
+      return;
+    }
+
+    if (resp.status === 410) {
+      // Gateway is gone — api has already marked the session STOPPED.
+      // Fire the callback ONCE and stop the loop; the host wires this
+      // event into its reconnect cycle.
+      if (!goneFired) {
+        goneFired = true;
+        log('keepalive: api reports gateway_gone — triggering reconnect');
+        try {
+          opts.onGatewayGone?.();
+        } catch (err) {
+          log('keepalive: onGatewayGone callback threw', err);
+        }
+      }
+      stopped = true;
+      return;
+    }
+
+    if (!resp.ok) {
+      consecutiveFailures += 1;
+      log(`keepalive: api returned HTTP ${resp.status}`);
+      maybeFireFailure(new Error(`HTTP ${resp.status}`));
+      return;
+    }
+
+    // Successful tick — reset the failure counter.
+    consecutiveFailures = 0;
+  };
+
+  function maybeFireFailure(err: unknown): void {
+    if (consecutiveFailures === failureThreshold) {
+      // Equality (not >=) so the callback fires exactly ONCE per breach;
+      // the counter resets to 0 on next success and the next breach
+      // re-fires.
+      try {
+        opts.onFailure?.(err);
+      } catch (cbErr) {
+        log('keepalive: onFailure callback threw', cbErr);
+      }
+    }
+  }
+
+  // Background loop. We intentionally do NOT block the caller — start
+  // returns immediately and the loop runs on its own.
+  void (async () => {
+    while (!stopped) {
+      await tick();
+      if (stopped) break;
+      await new Promise<void>((resolve) => {
+        sleepResolve = resolve;
+        sleepTimer = setTimeout(() => {
+          sleepTimer = null;
+          sleepResolve = null;
+          resolve();
+        }, intervalMs);
+      });
+    }
+  })();
+
+  return () => {
+    stopped = true;
+    if (sleepTimer) {
+      clearTimeout(sleepTimer);
+      sleepTimer = null;
+    }
+    if (sleepResolve) {
+      sleepResolve();
+      sleepResolve = null;
+    }
+  };
+}

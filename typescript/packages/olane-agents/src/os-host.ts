@@ -31,6 +31,7 @@ import {
 } from './gateway-registrar.js';
 import {
   autoResolveGateway,
+  startGatewayKeepalive,
   type GatewayAutoResolveTransport,
 } from './auto-resolve-gateway.js';
 
@@ -239,11 +240,155 @@ export async function runOlaneOSHost(
   // external callers (Copass API, web-app) can discover it. Skipped
   // silently if neither `options.gateway.{gatewayMultiaddr,userId}` nor
   // the matching env vars are set — local-only dev runs fine without it.
-  const gatewayOptions = await resolveGatewayOptions(options);
+  //
+  // ADR 0030 lifecycle (option B + C): the registration is now backed
+  // by TWO failure-detection loops, on separate transports:
+  //   * The libp2p heartbeat (inside `registerWithGateway`) — surfaces
+  //     `onReconnectNeeded` after N consecutive libp2p failures, which
+  //     means the gateway is unreachable (network glitch, laptop
+  //     closed, etc.).
+  //   * The api keepalive (`startGatewayKeepalive` below) — POSTs to
+  //     `/local/gateway/heartbeat`, refreshing the E2B idle-stop timer
+  //     so the sandbox doesn't auto-stop after 15 min. Surfaces
+  //     `onGatewayGone` on 410 = sandbox was already stopped by E2B.
+  //
+  // Both routes converge on the same recovery path: tear down the
+  // current registrar, re-resolve the gateway multiaddr via the api,
+  // build a fresh registrar. The reconnect path is idempotent (a stale
+  // event firing during shutdown is a no-op) and bounded by
+  // exponential backoff (1s → 2s → ... → 60s cap).
   let gatewayHandle: RegisteredGatewayHandle | null = null;
-  if (gatewayOptions) {
+  let keepaliveStop: (() => void) | null = null;
+  let reconnecting = false;
+  let shuttingDown = false;
+  let reconnectAttempts = 0;
+  const MAX_RECONNECT_BACKOFF_MS = 60_000;
+  const BASE_RECONNECT_BACKOFF_MS = 1_000;
+
+  const initialGatewayOptions = await resolveGatewayOptions(options);
+
+  // The reconnect cycle. Idempotent + recursive-safe — if a reconnect
+  // is already in flight subsequent triggers are dropped, and we never
+  // recurse on success (the new registrar wires its own callbacks).
+  // On failure we back off exponentially and retry until either the
+  // daemon shuts down or a reconnect succeeds.
+  const reconnect = async (reason: string): Promise<void> => {
+    if (shuttingDown) return;
+    if (reconnecting) {
+      console.warn(
+        `[runOlaneOSHost] reconnect already in flight; ignoring trigger (${reason})`,
+      );
+      return;
+    }
+    reconnecting = true;
     try {
-      gatewayHandle = await registerWithGateway(os, gatewayOptions);
+      console.warn(`[runOlaneOSHost] reconnecting to gateway: ${reason}`);
+      // Tear down the previous registrar's heartbeat + libp2p client
+      // before resolving fresh — keeps the registry clean and avoids
+      // dialing the dead multiaddr on the next tick.
+      if (gatewayHandle) {
+        try {
+          await gatewayHandle.unregister();
+        } catch (err) {
+          console.warn(
+            '[runOlaneOSHost] reconnect: previous unregister failed (continuing)',
+            err,
+          );
+        }
+        gatewayHandle = null;
+      }
+      if (keepaliveStop) {
+        try {
+          keepaliveStop();
+        } catch {
+          /* best-effort */
+        }
+        keepaliveStop = null;
+      }
+
+      // Re-resolve via the api + rebuild. Each attempt sleeps
+      // BASE_BACKOFF * 2^(attempts-1) ms (capped) before trying.
+      while (!shuttingDown) {
+        reconnectAttempts += 1;
+        try {
+          const fresh = await resolveGatewayOptions(options);
+          if (!fresh) {
+            console.warn(
+              '[runOlaneOSHost] reconnect: resolveGatewayOptions returned null; ' +
+                'falling back to no-registration mode',
+            );
+            reconnectAttempts = 0;
+            return;
+          }
+          await wireGatewayRegistrationAndKeepalive(fresh);
+          console.warn(
+            `[runOlaneOSHost] reconnect: success after ${reconnectAttempts} attempt(s)`,
+          );
+          reconnectAttempts = 0;
+          return;
+        } catch (err) {
+          const backoffMs = Math.min(
+            BASE_RECONNECT_BACKOFF_MS *
+              Math.pow(2, Math.max(0, reconnectAttempts - 1)),
+            MAX_RECONNECT_BACKOFF_MS,
+          );
+          console.warn(
+            `[runOlaneOSHost] reconnect attempt ${reconnectAttempts} failed; ` +
+              `retrying in ${backoffMs}ms`,
+            err,
+          );
+          await new Promise((resolve) => setTimeout(resolve, backoffMs));
+        }
+      }
+    } finally {
+      reconnecting = false;
+    }
+  };
+
+  // Wires both the libp2p registrar and the api keepalive against a
+  // given options bundle, with both callbacks pointed at `reconnect`.
+  // Pulled out so the initial registration + every reconnect path
+  // share the same setup — keeps the wiring honest.
+  const wireGatewayRegistrationAndKeepalive = async (
+    opts: GatewayRegistrarOptions,
+  ): Promise<void> => {
+    // The libp2p heartbeat reconnect signal (option C).
+    const optsWithCallback: GatewayRegistrarOptions = {
+      ...opts,
+      onReconnectNeeded: (info) => {
+        // Fire-and-forget — don't await inside the registrar's
+        // heartbeat loop. The reconnect cycle owns its own lifecycle.
+        void reconnect(
+          `libp2p heartbeat dead after ${info.consecutiveFailures} ` +
+            `consecutive failures`,
+        );
+      },
+    };
+    gatewayHandle = await registerWithGateway(os, optsWithCallback);
+
+    // The api keepalive (option B). Only wired when we have an
+    // auto-resolve transport — without it the api side has no way to
+    // refresh the E2B timer and the gateway dies at the 15-min mark
+    // regardless. Power-user setups with env-var multiaddr can opt
+    // out by leaving `autoResolveTransport` unset; they're expected
+    // to manage gateway lifecycle externally.
+    const keepaliveTransport = options.gateway?.autoResolveTransport;
+    if (keepaliveTransport) {
+      keepaliveStop = startGatewayKeepalive({
+        transport: keepaliveTransport,
+        intervalMs: opts.heartbeatMs,
+        log: opts.log,
+        fetchImpl: options.gateway?.autoResolveFetchImpl,
+        onGatewayGone: () => {
+          void reconnect('api reported gateway_gone (sandbox stopped)');
+        },
+      });
+    }
+  };
+
+  if (initialGatewayOptions) {
+    try {
+      await wireGatewayRegistrationAndKeepalive(initialGatewayOptions);
     } catch (err) {
       // Don't block daemon startup on gateway failure — the daemon
       // still works locally; we just won't appear in the gateway
@@ -257,6 +402,16 @@ export async function runOlaneOSHost(
 
   setupGracefulShutdown(
     async () => {
+      shuttingDown = true;
+      // Stop the keepalive first so a final 410/5xx doesn't trigger
+      // a reconnect mid-shutdown.
+      if (keepaliveStop) {
+        try {
+          keepaliveStop();
+        } catch {
+          /* best-effort */
+        }
+      }
       // Unregister BEFORE stopping the OS — gives the gateway a clean
       // signal that we're going away instead of waiting for the
       // stale-after-N-minutes filter.
