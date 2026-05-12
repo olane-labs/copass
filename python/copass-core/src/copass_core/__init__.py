@@ -95,6 +95,7 @@ from copass_core.resources import (
 )
 from copass_core.types import (
     AgentBackend,
+    AgentComputeProvider,
     ChatMessage,
     ChatRole,
     DEFAULT_MODEL_BY_BACKEND,
@@ -182,6 +183,7 @@ __all__ = [
     "ensure_data_source",
     # Types
     "AgentBackend",
+    "AgentComputeProvider",
     "DEFAULT_MODEL_BY_BACKEND",
     "RetryConfig",
     "ChatMessage",
