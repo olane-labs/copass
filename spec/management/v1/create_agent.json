@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "name": "create_agent",
-  "description": "Create a new Reactive Agent in the current sandbox. Required: `slug` (lowercase, [a-z0-9-]+), `name`, `system_prompt`. Optional: `description`, `tool_allowlist` (resolve via `list_trigger_components` or by asking the user), `backend`, `model`, temperature/max_tokens/max_turns/timeout_s. ALWAYS confirm the slug + system_prompt with the user before calling \u2014 agents can be updated but not renamed.",
+  "description": "Create a new Reactive Agent in the current sandbox. Required: `slug` (lowercase, [a-z0-9-]+), `name`, `system_prompt`. Optional: `description`, `tool_allowlist` (resolve via `list_trigger_components` or by asking the user), `backend` (`anthropic` | `google` | `hermes`), `model`, `compute_provider` (required when `backend='hermes'`; currently only `e2b`), temperature/max_tokens/max_turns/timeout_s. For `hermes`, `model` is an OpenRouter-routed id prefixed with `hermes/` (e.g. `hermes/anthropic/claude-sonnet-4-5`, `hermes/deepseek/deepseek-v4-pro`). ALWAYS confirm the slug + system_prompt with the user before calling \u2014 agents can be updated but not renamed.",
   "inputSchema": {
     "type": "object",
     "required": [
@@ -38,13 +38,21 @@
         "type": "string",
         "enum": [
           "anthropic",
-          "google"
+          "google",
+          "hermes"
         ],
-        "description": "Which shared agent runtime services this agent."
+        "description": "Which shared agent runtime services this agent. `hermes` routes through the managed LLM gateway and accepts any OpenRouter-supported model."
       },
       "model": {
         "type": "string",
-        "description": "Backend-specific model id, e.g. 'claude-sonnet-4-6'."
+        "description": "Backend-specific model id. Anthropic: e.g. 'claude-sonnet-4-6'. Google: e.g. 'gemini-2.5-flash'. Hermes: any OpenRouter model id prefixed with 'hermes/' (e.g. 'hermes/anthropic/claude-sonnet-4-5', 'hermes/deepseek/deepseek-v4-pro')."
+      },
+      "compute_provider": {
+        "type": "string",
+        "enum": [
+          "e2b"
+        ],
+        "description": "Compute provider for sandboxed runtimes. REQUIRED when `backend='hermes'`; MUST be omitted otherwise. Currently only `e2b` is accepted (Daytona is planned but blocked upstream)."
       },
       "temperature": {
         "type": "number",
