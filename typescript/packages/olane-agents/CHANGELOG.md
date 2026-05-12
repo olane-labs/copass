@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.7.2](https://github.com/olane-labs/copass/compare/@copass/olane-agents@0.7.0...@copass/olane-agents@0.7.2) (2026-05-12)
+
+### Bug Fixes
+
+- **olane-agents:** wire libp2p transports on gateway-registrar transient client (v0.7.1) ([3244297](https://github.com/olane-labs/copass/commit/3244297580b5549807e4c08ba5c65bcd6cc143d7))
+
 # [0.7.0](https://github.com/olane-labs/copass/compare/@copass/olane-agents@0.6.5...@copass/olane-agents@0.7.0) (2026-05-12)
 
 ### Bug Fixes
