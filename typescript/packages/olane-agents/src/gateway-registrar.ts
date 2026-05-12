@@ -41,6 +41,7 @@ import {
   oNodeAddress,
   oNodeTransport,
 } from '@olane/o-node';
+import { webTransport, webSockets, tcp, memory } from '@olane/o-config';
 
 /** Olane address of the registry tool on the gateway. Matches
  *  `REGISTRY_TOOL_ADDRESS` in
@@ -171,10 +172,20 @@ export async function registerWithGateway(
     [new oNodeTransport(options.gatewayMultiaddr)],
   );
   const clientId = Math.random().toString(36).slice(2, 10);
+  // Explicit libp2p transports — the gateway can be reached over WSS
+  // (E2B-deployed via `/dns4/.../tcp/443/tls/ws/p2p/<id>`), TCP (local
+  // docker-compose), webTransport (browser-side daemons), or in-memory
+  // (tests). Without setting these on the transient client, the
+  // outbound dial fails with "No transports provided for the address"
+  // because the auto-defaults don't propagate through `oClientNode`'s
+  // explicit-leader path the same way they do through `oHost`.
   const client = new oClientNode({
     address: new oNodeAddress(`o://gateway-registrar-${clientId}`),
     leader: gatewayLeaderAddress,
     parent: null,
+    network: {
+      transports: [webTransport(), webSockets(), tcp(), memory()],
+    },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any);
   await client.start();
