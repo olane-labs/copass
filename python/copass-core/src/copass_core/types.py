@@ -12,12 +12,24 @@ from dataclasses import dataclass, field
 from typing import Any, Final, List, Literal, Mapping, Optional, Protocol
 
 
-AgentBackend = Literal["anthropic", "google"]
+AgentBackend = Literal["anthropic", "google", "hermes"]
+
+# Compute provider for sandboxed runtimes. Required when
+# ``backend == "hermes"``; must be omitted otherwise. Daytona is
+# planned but blocked on upstream; ``"e2b"`` is the only accepted
+# value today. Matches the TS source-of-truth at
+# ``typescript/packages/core/src/types/agents.ts``.
+AgentComputeProvider = Literal["e2b"]
 
 
+# Hermes models are namespaced ``hermes/<openrouter-model-id>`` — the
+# ``hermes/`` prefix is consumed by Hermes' provider router; the
+# remaining segment is forwarded to the managed LLM gateway as the
+# literal OpenRouter model id.
 DEFAULT_MODEL_BY_BACKEND: Final[Mapping[AgentBackend, str]] = {
     "anthropic": "claude-sonnet-4-6",
     "google": "gemini-2.5-flash",
+    "hermes": "hermes/anthropic/claude-sonnet-4-5",
 }
 
 

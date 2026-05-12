@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "name": "update_agent_model_settings",
-  "description": "Patch an existing agent's `model_settings` (backend, model, temperature, max_tokens, max_turns, timeout_s). Pass only the fields to change \u2014 others are preserved. Use to switch model (e.g. haiku \u2192 sonnet), tighten temperature, or extend max_turns. Show the user the current settings via `get_agent` first when the change is non-trivial.",
+  "description": "Patch an existing agent's `model_settings` (backend, model, compute_provider, temperature, max_tokens, max_turns, timeout_s). Pass only the fields to change \u2014 others are preserved. Use to switch model (e.g. haiku \u2192 sonnet), tighten temperature, or extend max_turns. `compute_provider` is REQUIRED when changing `backend` to `hermes`. Show the user the current settings via `get_agent` first when the change is non-trivial.",
   "inputSchema": {
     "type": "object",
     "required": [
@@ -16,13 +16,21 @@
         "type": "string",
         "enum": [
           "anthropic",
-          "google"
+          "google",
+          "hermes"
         ],
-        "description": "Which shared agent runtime services this agent."
+        "description": "Which shared agent runtime services this agent. `hermes` routes through the managed LLM gateway and accepts any OpenRouter-supported model."
       },
       "model": {
         "type": "string",
-        "description": "Backend-specific model id (e.g. 'claude-sonnet-4-6')."
+        "description": "Backend-specific model id. Anthropic: e.g. 'claude-sonnet-4-6'. Google: e.g. 'gemini-2.5-flash'. Hermes: any OpenRouter model id prefixed with 'hermes/' (e.g. 'hermes/deepseek/deepseek-v4-pro')."
+      },
+      "compute_provider": {
+        "type": "string",
+        "enum": [
+          "e2b"
+        ],
+        "description": "Compute provider for sandboxed runtimes. REQUIRED when `backend='hermes'`; MUST be omitted otherwise. Currently only `e2b` is accepted (Daytona is planned but blocked upstream)."
       },
       "temperature": {
         "type": "number",

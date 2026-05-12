@@ -15,9 +15,14 @@ export type AgentStatus = 'active' | 'archived';
  * Compute provider for sandboxed runtimes. Required when
  * ``backend === 'hermes'``; must be omitted otherwise. The server-side
  * validator enforces the pairing — see ADR 0008 (Hermes runtime) +
- * ADR 0008 Phase 2b (E2B as second concrete provider).
+ * ADR 0008 Phase 2b (E2B as the concrete provider).
+ *
+ * Daytona is planned but blocked on upstream support; only ``'e2b'`` is
+ * accepted today. When Daytona is unblocked, re-add it to this literal,
+ * to the server-side ``_HERMES_COMPUTE_PROVIDERS`` set, and to the
+ * ``compute_provider`` enum in the management spec JSON.
  */
-export type AgentComputeProvider = 'daytona' | 'e2b';
+export type AgentComputeProvider = 'e2b';
 
 /**
  * Default model id per backend used when ``create_agent`` callers
