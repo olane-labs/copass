@@ -237,7 +237,7 @@ export class NetworkBrokerNode extends oLaneTool {
       throw new Error(
         'NetworkBrokerNode: the `e2b` package is required for the e2b ' +
           'backend but is not installed. Add it as a dependency of the ' +
-          'host package.',
+          `host package. Underlying error: ${err instanceof Error ? err.message : String(err)}`,
       );
     }
     return this.e2bSandboxClass;

@@ -3,6 +3,14 @@
  * "compute gateway" (the `o://daemons` tool on a publicly-deployed
  * compute-sandbox instance, per ADR 0027 / o-private-network #16).
  *
+ * Note (ADR 0030 Phase 2a): `runOlaneOSHost` now api-resolves the
+ * gateway multiaddr by default — when no `GATEWAY_MULTIADDR` env var
+ * is set, it POSTs to the Copass api to fetch the per-user gateway's
+ * libp2p multiaddr + peer-id and passes the result here. This module
+ * itself doesn't talk to the api; it operates on the already-resolved
+ * multiaddr supplied via `GatewayRegistrarOptions.gatewayMultiaddr`.
+ * See `auto-resolve-gateway.ts` for the api-side resolver.
+ *
  * Flow on daemon boot:
  *   1. Build a transient `oClientNode` pointing at the gateway multiaddr.
  *   2. Call `o://daemons.register({daemon_id, user_id, daemon_address,
@@ -43,6 +51,13 @@ export const GATEWAY_REGISTRY_ADDRESS = 'o://daemons';
  *  `DEFAULT_REGISTRY_STALE_MS` (5 min) — at 60s we have ~5x headroom. */
 export const DEFAULT_HEARTBEAT_MS = 60_000;
 
+/** Default consecutive-failure threshold before emitting
+ *  `reconnect-needed`. At the default 60s cadence, 2 failures = ~2 min
+ *  of dead state — enough to ride out single-blip transients, short
+ *  enough that a real outage gets caught before the user notices.
+ *  (ADR 0030 lifecycle option C.) */
+export const DEFAULT_HEARTBEAT_FAILURE_THRESHOLD = 2;
+
 export interface GatewayRegistrarOptions {
   /**
    * libp2p multiaddr of the gateway's leader. The leader hosts the
@@ -67,6 +82,27 @@ export interface GatewayRegistrarOptions {
   heartbeatMs?: number;
   /** Logger for non-fatal failures. Defaults to `console.warn`. */
   log?: (msg: string, err?: unknown) => void;
+  /**
+   * Fired after `failureThreshold` consecutive libp2p heartbeat
+   * failures (ADR 0030 lifecycle option C). The host wires this to its
+   * reconnect cycle — tear down the libp2p client, re-resolve the
+   * gateway multiaddr via the api, build a new client, re-register.
+   *
+   * The callback fires AT MOST ONCE per registrar lifetime —
+   * subsequent failures past the threshold don't keep firing. The host
+   * is expected to either unregister + drive a reconnect (which
+   * spawns a fresh registrar) or treat the event as fatal.
+   */
+  onReconnectNeeded?: (info: {
+    consecutiveFailures: number;
+    lastError: unknown;
+  }) => void;
+  /**
+   * Override the consecutive-failure threshold. Default
+   * `DEFAULT_HEARTBEAT_FAILURE_THRESHOLD` (2 — about 2 min of dead
+   * state at the default cadence).
+   */
+  failureThreshold?: number;
 }
 
 export interface RegisteredGatewayHandle {
@@ -164,6 +200,10 @@ export async function registerWithGateway(
   }
 
   let stopped = false;
+  let consecutiveFailures = 0;
+  let reconnectFired = false;
+  const failureThreshold =
+    options.failureThreshold ?? DEFAULT_HEARTBEAT_FAILURE_THRESHOLD;
   const timer = setInterval(async () => {
     if (stopped) return;
     try {
@@ -185,8 +225,36 @@ export async function registerWithGateway(
         });
         log(`re-registered (gateway dropped our row)`);
       }
+      // Successful tick — reset the failure counter. A single live
+      // heartbeat undoes the entire "dead state" accumulation. The
+      // reconnect signal is meant for genuinely-dead gateways, not
+      // single-tick blips.
+      consecutiveFailures = 0;
     } catch (err) {
       log('heartbeat failed', err);
+      consecutiveFailures += 1;
+      // ADR 0030 lifecycle option C: when the libp2p heartbeat fails
+      // N times in a row (default 2 ≈ ~2 min) we surface a
+      // reconnect-needed signal. The host listens for this and drives
+      // tear-down + re-resolve + re-register. We deliberately fire
+      // only ONCE per registrar — the host is expected to spawn a
+      // fresh registrar instance on reconnect, so a continued failure
+      // loop is the host's problem, not this module's.
+      if (
+        consecutiveFailures >= failureThreshold &&
+        !reconnectFired &&
+        options.onReconnectNeeded
+      ) {
+        reconnectFired = true;
+        try {
+          options.onReconnectNeeded({
+            consecutiveFailures,
+            lastError: err,
+          });
+        } catch (cbErr) {
+          log('onReconnectNeeded callback threw', cbErr);
+        }
+      }
     }
   }, heartbeatMs);
 
