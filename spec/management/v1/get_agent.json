@@ -94,7 +94,18 @@
                     "type": "string",
                     "enum": [
                       "anthropic",
-                      "google"
+                      "google",
+                      "hermes"
+                    ]
+                  },
+                  "compute_provider": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "enum": [
+                      "e2b",
+                      null
                     ]
                   },
                   "model": {
