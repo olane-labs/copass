@@ -85,6 +85,18 @@ export type {
   RegisteredGatewayHandle,
 } from './gateway-registrar.js';
 
+// Gateway auto-resolution (ADR 0030 Phase 2a) — POST against the
+// Copass api to resolve the per-user gateway multiaddr when the
+// env-var escape hatch isn't set. Consumers (CLI front-ends) wire
+// their already-built CopassClient's transport into
+// ``RunOlaneOSHostOptions.gateway.autoResolveTransport``.
+export { autoResolveGateway } from './auto-resolve-gateway.js';
+export type {
+  AutoResolveGatewayOptions,
+  AutoResolveGatewayResult,
+  GatewayAutoResolveTransport,
+} from './auto-resolve-gateway.js';
+
 // Filesystem layout helpers
 export {
   olaneHome,

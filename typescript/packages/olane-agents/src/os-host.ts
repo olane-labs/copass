@@ -29,6 +29,10 @@ import {
   type GatewayRegistrarOptions,
   type RegisteredGatewayHandle,
 } from './gateway-registrar.js';
+import {
+  autoResolveGateway,
+  type GatewayAutoResolveTransport,
+} from './auto-resolve-gateway.js';
 
 export interface RunOlaneOSHostOptions {
   /** OS instance name — typically the user's Copass ID or unix username. */
@@ -52,21 +56,60 @@ export interface RunOlaneOSHostOptions {
   gateway?: Partial<GatewayRegistrarOptions> & {
     /** Set false to opt out even when env vars are present. */
     enabled?: boolean;
+    /**
+     * Optional Copass api transport for auto-resolving the gateway
+     * multiaddr when ``GATEWAY_MULTIADDR`` is not set (ADR 0030 Phase
+     * 2a). When supplied, the daemon POSTs to
+     * ``/api/v1/storage/compute-providers/local/gateway`` to fetch
+     * the per-user gateway's libp2p multiaddr + peer-id and uses
+     * those to register itself.
+     *
+     * Precedence:
+     *   1. ``options.gateway.gatewayMultiaddr`` (explicit override).
+     *   2. ``GATEWAY_MULTIADDR`` env var.
+     *   3. api auto-resolution via this transport (if supplied AND
+     *      ``OLANE_GATEWAY_AUTO_RESOLVE !== 'false'``).
+     *   4. No registration.
+     *
+     * Callers that already construct a ``CopassClient`` (e.g. the
+     * CLI's ``getSdk``) can adapt it to this shape with a thin
+     * wrapper around ``client.apiUrl`` + the auth provider's
+     * ``getSession()``. The library deliberately stays unaware of
+     * ``@copass/core`` to keep the dep graph minimal.
+     */
+    autoResolveTransport?: GatewayAutoResolveTransport;
+    /**
+     * Override the fetch implementation used by auto-resolve.
+     * Test-only seam — production callers should let it default to
+     * the global ``fetch``.
+     */
+    autoResolveFetchImpl?: typeof fetch;
   };
 }
 
 /**
- * Resolve gateway options from explicit options + env fallbacks.
- * Returns null when gateway registration is disabled or not configured.
+ * Resolve gateway options from explicit options + env fallbacks +
+ * (since ADR 0030 Phase 2a) auto-resolution against the Copass api.
+ *
+ * Precedence:
+ *   1. ``opts.gateway.gatewayMultiaddr`` (explicit override).
+ *   2. ``GATEWAY_MULTIADDR`` env var.
+ *   3. api auto-resolution via ``opts.gateway.autoResolveTransport``
+ *      (skipped if ``OLANE_GATEWAY_AUTO_RESOLVE=false``).
+ *   4. Returns null → daemon runs without gateway presence.
+ *
+ * Env wins by design — power users and local-dev workflows want a
+ * deterministic escape hatch. Auto-resolve is the default UX for
+ * ``copass os start`` with no env setup.
  */
-function resolveGatewayOptions(
+export async function resolveGatewayOptions(
   opts: RunOlaneOSHostOptions,
-): GatewayRegistrarOptions | null {
+): Promise<GatewayRegistrarOptions | null> {
   if (opts.gateway?.enabled === false) return null;
-  const gatewayMultiaddr =
+
+  const explicitMultiaddr =
     opts.gateway?.gatewayMultiaddr ?? process.env.GATEWAY_MULTIADDR ?? '';
-  const userId = opts.gateway?.userId ?? process.env.GATEWAY_USER_ID ?? '';
-  if (!gatewayMultiaddr || !userId) return null;
+  const envUserId = opts.gateway?.userId ?? process.env.GATEWAY_USER_ID ?? '';
   const daemonId =
     opts.gateway?.daemonId ?? process.env.GATEWAY_DAEMON_ID ?? undefined;
   const capabilities =
@@ -79,15 +122,49 @@ function resolveGatewayOptions(
     (process.env.GATEWAY_HEARTBEAT_MS
       ? Number(process.env.GATEWAY_HEARTBEAT_MS)
       : undefined);
-  return {
-    gatewayMultiaddr,
-    userId,
-    daemonId,
-    capabilities,
-    metadata: opts.gateway?.metadata,
-    heartbeatMs,
-    log: opts.gateway?.log,
-  };
+
+  // Path 1+2 — explicit env / option supplied. Use it verbatim.
+  if (explicitMultiaddr && envUserId) {
+    return {
+      gatewayMultiaddr: explicitMultiaddr,
+      userId: envUserId,
+      daemonId,
+      capabilities,
+      metadata: opts.gateway?.metadata,
+      heartbeatMs,
+      log: opts.gateway?.log,
+    };
+  }
+
+  // Path 3 — auto-resolve via Copass api.
+  const autoResolveEnabled =
+    process.env.OLANE_GATEWAY_AUTO_RESOLVE !== 'false';
+  const transport = opts.gateway?.autoResolveTransport;
+  if (autoResolveEnabled && transport && envUserId) {
+    const result = await autoResolveGateway({
+      transport,
+      daemonId,
+      log: opts.gateway?.log,
+      userId: envUserId,
+      fetchImpl: opts.gateway?.autoResolveFetchImpl,
+    });
+    if (result) {
+      return {
+        gatewayMultiaddr: result.gatewayMultiaddr,
+        userId: envUserId,
+        daemonId: result.daemonId,
+        capabilities: capabilities ?? ['network-broker', 'shell'],
+        metadata: opts.gateway?.metadata,
+        heartbeatMs,
+        log: opts.gateway?.log,
+      };
+    }
+    // result === null → autoResolveGateway already logged the failure.
+    // Fall through to no-registration mode rather than throwing — the
+    // daemon still works locally; the gateway just won't see us.
+  }
+
+  return null;
 }
 
 /**
@@ -162,7 +239,7 @@ export async function runOlaneOSHost(
   // external callers (Copass API, web-app) can discover it. Skipped
   // silently if neither `options.gateway.{gatewayMultiaddr,userId}` nor
   // the matching env vars are set — local-only dev runs fine without it.
-  const gatewayOptions = resolveGatewayOptions(options);
+  const gatewayOptions = await resolveGatewayOptions(options);
   let gatewayHandle: RegisteredGatewayHandle | null = null;
   if (gatewayOptions) {
     try {

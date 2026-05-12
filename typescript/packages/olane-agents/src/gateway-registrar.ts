@@ -3,6 +3,14 @@
  * "compute gateway" (the `o://daemons` tool on a publicly-deployed
  * compute-sandbox instance, per ADR 0027 / o-private-network #16).
  *
+ * Note (ADR 0030 Phase 2a): `runOlaneOSHost` now api-resolves the
+ * gateway multiaddr by default — when no `GATEWAY_MULTIADDR` env var
+ * is set, it POSTs to the Copass api to fetch the per-user gateway's
+ * libp2p multiaddr + peer-id and passes the result here. This module
+ * itself doesn't talk to the api; it operates on the already-resolved
+ * multiaddr supplied via `GatewayRegistrarOptions.gatewayMultiaddr`.
+ * See `auto-resolve-gateway.ts` for the api-side resolver.
+ *
  * Flow on daemon boot:
  *   1. Build a transient `oClientNode` pointing at the gateway multiaddr.
  *   2. Call `o://daemons.register({daemon_id, user_id, daemon_address,
