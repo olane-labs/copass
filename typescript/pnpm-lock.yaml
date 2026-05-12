@@ -90,7 +90,7 @@ importers:
   packages/agent-router:
     devDependencies:
       '@copass/core':
-        specifier: ^0.10.0
+        specifier: ^0.10.1
         version: link:../core
       '@types/node':
         specifier: ^25.0.0
@@ -15196,7 +15196,7 @@ snapshots:
       jsonwebtoken: 9.0.3
       load-esm: 1.0.3
       mime-types: 2.1.35
-      retry-axios: 2.6.0(axios@1.15.0)
+      retry-axios: 2.6.0(axios@1.15.0(debug@4.4.3))
       tough-cookie: 4.1.4
     transitivePeerDependencies:
       - supports-color
@@ -17221,7 +17221,7 @@ snapshots:
 
   retimeable-signal@1.0.1: {}
 
-  retry-axios@2.6.0(axios@1.15.0):
+  retry-axios@2.6.0(axios@1.15.0(debug@4.4.3)):
     dependencies:
       axios: 1.15.0(debug@4.4.3)
 
