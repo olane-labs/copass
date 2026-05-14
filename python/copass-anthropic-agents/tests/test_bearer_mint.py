@@ -21,14 +21,21 @@ from __future__ import annotations
 
 import pytest
 
-from copass_anthropic_agents import ManagedAgentBackend
-from copass_anthropic_agents.backends.managed_agent_backend import (
+from copass_anthropic_agents.backends.in_memory_provider_binding_registry import (
+    InMemoryProviderBindingRegistry,
+)
+from copass_anthropic_agents.backends.managed_agent_backend_v2 import (
     VAULT_IDS_HANDLE,
+    ManagedAgentBackendV2,
 )
 
 
-def _make_backend(**kwargs) -> ManagedAgentBackend:
-    return ManagedAgentBackend(api_key="sk-fake-test", **kwargs)
+def _make_backend(**kwargs) -> ManagedAgentBackendV2:
+    return ManagedAgentBackendV2(
+        api_key="sk-fake-test",
+        registry=InMemoryProviderBindingRegistry(),
+        **kwargs,
+    )
 
 
 @pytest.mark.asyncio
@@ -106,11 +113,8 @@ async def test_create_session_omits_vault_ids_when_caller_supplied_none() -> Non
     assert "vault_ids" not in captured[0]
 
 
-def test_vault_ids_handle_constant_is_exported() -> None:
-    """The runtime imports the handle key by symbol so a typo on
-    either side surfaces at import time rather than at runtime as a
-    silently-ignored handles entry."""
-    from copass_anthropic_agents import VAULT_IDS_HANDLE as _exported
-
-    assert _exported == VAULT_IDS_HANDLE
-    assert isinstance(_exported, str) and _exported
+# NOTE: ``test_vault_ids_handle_constant_is_exported`` (the top-level
+# re-export assertion) is intentionally dropped in Phase 1. Per ADR
+# 0001 Q2, v2 lives in ``copass_anthropic_agents.backends`` only and
+# is NOT exported from ``copass_anthropic_agents`` at the top level
+# until Phase 4 of the ADR (v1 removal). Re-add the assertion then.

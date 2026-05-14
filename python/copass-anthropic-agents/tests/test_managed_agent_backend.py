@@ -1,12 +1,20 @@
-"""ManagedAgentBackend — message normalization, fingerprinting, tools payload.
+"""ManagedAgentBackendV2 — message normalization, fingerprinting, tools payload.
 
 Integration-level flow (``stream``, ``run``) is exercised by the
 server-side Copass repo's end-to-end tests with a live Anthropic key.
 Here we verify the vendor-neutral plumbing that can be tested without
 network I/O.
+
+These tests originally targeted v1's :class:`ManagedAgentBackend`. Per
+ADR 0001 §7 the contract assertions repoint to
+:class:`ManagedAgentBackendV2`; v1 stays callable through Phase 1 but
+the helper-shape contract is now owned by v2's per-variant
+:class:`PendingToolCall` reply builders.
 """
 
 from __future__ import annotations
+
+from typing import get_args
 
 import pytest
 
@@ -16,12 +24,23 @@ from copass_anthropic_agents import (
     ManagedAgentBackend,
     ToolSpec,
 )
-from copass_anthropic_agents.backends.managed_agent_backend import (
+from copass_anthropic_agents.backends._stream_event_types import (
     _IDLE_EVENT_TYPES,
     _KNOWN_NOOP_EVENT_TYPES,
     _TERMINATED_EVENT_TYPES,
-    _TOOL_USE_EVENT_TYPES,
-    _build_user_event_for_tool_use,
+)
+from copass_anthropic_agents.backends.in_memory_provider_binding_registry import (
+    InMemoryProviderBindingRegistry,
+)
+from copass_anthropic_agents.backends.managed_agent_backend_v2 import (
+    ManagedAgentBackendV2,
+)
+from copass_anthropic_agents.backends.pending_tool_call import (
+    CustomToolCall,
+    McpToolCall,
+    PendingToolCall,
+    ServerToolCall,
+    from_sdk_event,
 )
 
 
@@ -41,7 +60,26 @@ class _DummyTool(AgentTool):
         return {}
 
 
-def _make_backend() -> ManagedAgentBackend:
+def _make_backend() -> ManagedAgentBackendV2:
+    """Construct a v2 backend stub for vendor-neutral plumbing tests.
+
+    v2-only helpers (``_normalize_messages``, ``_specs_to_tools``,
+    ``_fingerprint_agent``) preserve v1's semantics so the contract
+    tests carry over with this helper swap.
+    """
+    return ManagedAgentBackendV2(
+        api_key="sk-fake-test",
+        registry=InMemoryProviderBindingRegistry(),
+    )
+
+
+def _make_v1_backend() -> ManagedAgentBackend:
+    """v1 helper for the v1-only ``_send_events_soft`` tests.
+
+    Phase 1 keeps v1 callable and on-by-default, so these tests
+    continue to exercise v1's helper. Phase 4 of ADR 0001 deletes the
+    helper and the tests together.
+    """
     return ManagedAgentBackend(api_key="sk-fake-test")
 
 
@@ -88,7 +126,11 @@ def test_specs_to_tools_without_builtin_toolset() -> None:
 
 
 def test_specs_to_tools_with_builtin_toolset() -> None:
-    backend = ManagedAgentBackend(api_key="sk-fake", include_builtin_toolset=True)
+    backend = ManagedAgentBackendV2(
+        api_key="sk-fake",
+        include_builtin_toolset=True,
+        registry=InMemoryProviderBindingRegistry(),
+    )
     specs = [ToolSpec(name="a", description="tool a", input_schema={"type": "object"})]
     tools = backend._specs_to_tools(specs)
     assert tools[0] == {"type": "agent_toolset_20260401"}
@@ -150,15 +192,18 @@ def test_fingerprint_differs_when_tools_change() -> None:
 # agent.mcp_tool_use was being answered with a user.custom_tool_result. The
 # server kept those events as pending — the next events.send returned 400
 # ``waiting on responses to events [sevt_...]`` and the run failed mid-turn.
+#
+# v1's single string-dispatch ``_build_user_event_for_tool_use`` is replaced
+# in v2 by per-variant ``PendingToolCall`` reply builders. Each variant owns
+# its reply shape; the parser routes by class, not by string.
 
 
 def test_build_user_event_for_custom_tool_use_returns_custom_result() -> None:
-    evt = _build_user_event_for_tool_use(
-        source_type="agent.custom_tool_use",
-        event_id="sevt_custom_1",
-        result={"value": 1},
-        error=None,
-    )
+    """``CustomToolCall.build_reply_from_result`` builds the
+    ``user.custom_tool_result`` envelope. The result dict is JSON-
+    serialized into the ``content[0].text`` payload."""
+    call = CustomToolCall(event_id="sevt_custom_1", name="t", arguments={})
+    evt = call.build_reply_from_result({"value": 1}, None)
     assert evt["type"] == "user.custom_tool_result"
     assert evt["custom_tool_use_id"] == "sevt_custom_1"
     # Content carries the serialized result so the model can read it back.
@@ -167,12 +212,10 @@ def test_build_user_event_for_custom_tool_use_returns_custom_result() -> None:
 
 
 def test_build_user_event_for_mcp_tool_use_returns_confirmation() -> None:
-    evt = _build_user_event_for_tool_use(
-        source_type="agent.mcp_tool_use",
-        event_id="sevt_mcp_1",
-        result={},
-        error=None,
-    )
+    """``McpToolCall.build_reply`` returns ``user.tool_confirmation(allow)``
+    — never ``user.custom_tool_result``. Anthropic 400s on the wrong
+    envelope (the May 2026 incident)."""
+    evt = McpToolCall(event_id="sevt_mcp_1", name="x").build_reply()
     assert evt["type"] == "user.tool_confirmation"
     assert evt["tool_use_id"] == "sevt_mcp_1"
     assert evt["result"] == "allow"
@@ -180,42 +223,35 @@ def test_build_user_event_for_mcp_tool_use_returns_confirmation() -> None:
 
 
 def test_build_user_event_for_builtin_tool_use_returns_confirmation() -> None:
-    evt = _build_user_event_for_tool_use(
-        source_type="agent.tool_use",
-        event_id="sevt_builtin_1",
-        result={},
-        error=None,
-    )
+    """``ServerToolCall.build_reply`` returns the same shape as
+    :class:`McpToolCall`'s; the routing inside Anthropic is the only
+    distinction, so v2 keeps the variants separate."""
+    evt = ServerToolCall(event_id="sevt_builtin_1", name="bash").build_reply()
     assert evt["type"] == "user.tool_confirmation"
     assert evt["tool_use_id"] == "sevt_builtin_1"
     assert evt["result"] == "allow"
 
 
-def test_build_user_event_for_unknown_source_does_not_raise() -> None:
-    # Defensive: if Anthropic ships a new tool-use envelope we don't yet
-    # model, the backend should still emit *some* reply rather than crash
-    # the run. The reply will likely be rejected by the API, but
-    # ``_send_events_soft`` catches that and surfaces a soft AgentFinish.
-    evt = _build_user_event_for_tool_use(
-        source_type="agent.future_tool_use",
-        event_id="sevt_future_1",
-        result={"ok": True},
-        error=None,
-    )
-    assert evt["type"] in (
-        "user.custom_tool_result",
-        "user.tool_confirmation",
-    )
+def test_unknown_envelope_is_a_type_error() -> None:
+    """ADR 0001 §7 flips this test: v1 emitted a defensive fallback
+    envelope; v2 makes an unknown envelope a programmer error. The
+    sealed union refuses construction so the gap surfaces in a failing
+    test rather than as silently-mis-routed prod replies."""
+    class _UnknownEvt:
+        type = "agent.future_tool_use"
+        id = "sevt_future_1"
+        name = "?"
+
+    with pytest.raises(TypeError):
+        from_sdk_event(_UnknownEvt())
 
 
 def test_tool_use_event_types_include_all_three_envelopes() -> None:
-    # If this set ever shrinks, server-side tool calls will fall through
-    # to the unknown-event-type warning and the requires_action signal
-    # will arrive with un-buffered ids — the exact failure mode that
-    # stranded the May 2026 sessions.
-    assert "agent.custom_tool_use" in _TOOL_USE_EVENT_TYPES
-    assert "agent.tool_use" in _TOOL_USE_EVENT_TYPES
-    assert "agent.mcp_tool_use" in _TOOL_USE_EVENT_TYPES
+    """v1's ``_TOOL_USE_EVENT_TYPES`` frozenset is replaced by the
+    :data:`PendingToolCall` sealed union. ``typing.get_args`` is the
+    test-time equivalent of "is this envelope modeled?"."""
+    variants = set(get_args(PendingToolCall))
+    assert variants == {CustomToolCall, ServerToolCall, McpToolCall}
 
 
 def test_idle_event_types_include_thread_scoped_alias() -> None:
@@ -255,7 +291,11 @@ async def test_send_events_soft_returns_exception_on_400_and_sends_interrupt() -
     # and return the exception so the streaming generator can emit a
     # soft AgentFinish(error). Without this, the streaming generator
     # crashed mid-yield and the credit-gate release was skipped.
-    backend = _make_backend()
+    #
+    # v1-only test — v2's send path is structurally different
+    # (``RequiresActionCycle.send_replies`` + BadRequestError catch).
+    # Stays green through Phase 1; deleted with v1 in Phase 4.
+    backend = _make_v1_backend()
     sent_payloads: list[list[dict]] = []
 
     class _BoomEvents:
@@ -289,7 +329,8 @@ async def test_send_events_soft_returns_exception_on_400_and_sends_interrupt() -
 
 @pytest.mark.asyncio
 async def test_send_events_soft_returns_none_on_success() -> None:
-    backend = _make_backend()
+    # v1-only test — see the matching ``_send_events_soft`` note above.
+    backend = _make_v1_backend()
     sent_payloads: list[list[dict]] = []
 
     class _OkEvents:
