@@ -348,6 +348,85 @@ async def test_requires_action_before_use_events_buffers_until_arrival() -> None
 
 
 @pytest.mark.asyncio
+async def test_requires_action_arrives_before_use_events_drains_stream() -> None:
+    """Regression for staging incident 2026-05-14 — the Concierge
+    4-tool burst surfaced ``requires_action`` BEFORE the matching
+    ``agent.custom_tool_use`` events.
+
+    Phase 1's ``_await_pending_calls`` had a TODO ("no live trace
+    shows this") and aborted immediately on a miss. Staging proved
+    the assumption wrong: the SSE iterator yielded
+    ``session.thread_status_idle`` with
+    ``stop_reason.type='requires_action'`` ahead of the use events,
+    causing v2 to interrupt with empty post-tool synthesis. v2 must
+    drain additional events from the stream until every requested id
+    is buffered, then resolve the cycle cleanly.
+    """
+    stream = _StubStream([
+        # requires_action FIRST, before any use events.
+        _StubSdkEvent(
+            type="session.thread_status_idle",
+            id="idle_1",
+            stop_reason=_StubStopReason(
+                type="requires_action",
+                event_ids=["sevt_a", "sevt_b"],
+            ),
+        ),
+        # Use events arrive AFTER — out-of-order on the wire. v2 must
+        # drain these into the buffer to satisfy the cycle.
+        _StubSdkEvent(
+            type="agent.custom_tool_use",
+            id="sevt_a",
+            name="echo",
+            input={"q": "x"},
+        ),
+        _StubSdkEvent(
+            type="agent.custom_tool_use",
+            id="sevt_b",
+            name="echo",
+            input={"q": "y"},
+        ),
+        # After we POST the replies, model emits end_turn.
+        _StubSdkEvent(
+            type="session.thread_status_idle",
+            id="idle_2",
+            stop_reason=_StubStopReason(type="end_turn"),
+        ),
+    ])
+    backend = _make_backend(stream)
+    agent = _agent_with_tool(_EchoTool("echo", {"k": "v"}))
+
+    events = []
+    async for evt in backend.stream(agent, "hello", _ctx()):
+        events.append(evt)
+
+    # Both tool calls surfaced.
+    tool_calls = [e for e in events if isinstance(e, AgentToolCall)]
+    assert len(tool_calls) == 2
+    assert {c.call_id for c in tool_calls} == {"sevt_a", "sevt_b"}
+
+    # Both tools executed.
+    tool_results = [e for e in events if isinstance(e, AgentToolResult)]
+    assert len(tool_results) == 2
+
+    # End cleanly with end_turn — NOT requires_action_missing_event_id.
+    assert events[-1] == AgentFinish(
+        stop_reason=STOP_REASON_END_TURN,
+        usage={},
+        session_id="sesn_test_1",
+    )
+
+    # Replies POSTed for both ids. No events.list call (the stub
+    # doesn't expose one, so the test would crash).
+    sent = backend._client.beta.sessions.events.sent  # type: ignore[attr-defined]
+    # 1 user.message + 1 batched cycle reply (both custom_tool_results).
+    assert len(sent) == 2
+    assert sent[0]["events"][0]["type"] == "user.message"
+    reply_ids = {e["custom_tool_use_id"] for e in sent[1]["events"]}
+    assert reply_ids == {"sevt_a", "sevt_b"}
+
+
+@pytest.mark.asyncio
 async def test_unknown_event_id_in_requires_action_aborts_via_interrupt() -> None:
     """ADR 0001 §7 test #1 (stale-rehydrate-resistance).
 
