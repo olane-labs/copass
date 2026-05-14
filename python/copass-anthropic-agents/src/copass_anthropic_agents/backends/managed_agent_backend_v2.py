@@ -564,6 +564,7 @@ class ManagedAgentBackendV2(AgentBackend):
                                     cycle=cycle,
                                     events_by_id=events_by_id,
                                     stream=stream,
+                                    session_id=session_id,
                                 ),
                                 timeout=self._policy.cycle_timeout_s,
                             )
@@ -795,42 +796,99 @@ class ManagedAgentBackendV2(AgentBackend):
         cycle: RequiresActionCycle,
         events_by_id: dict[str, PendingToolCall],
         stream: Any,
+        session_id: str,
     ) -> List[PendingToolCall]:
-        """Block until ``events_by_id`` covers every requested id, then
-        return the resolved calls.
+        """Resolve ``cycle.requested_ids`` against the live SSE buffer,
+        falling back to ``events.list`` for ids the stream never
+        surfaced.
 
-        The wait is bounded by ``BackendRunPolicy.cycle_timeout_s`` via
-        the caller's :func:`asyncio.wait_for`. If the SSE stream
-        terminates before all ids are buffered, the call raises
-        :class:`MissingPendingToolCallError` so the caller can
-        ``user.interrupt`` and finish with error.
+        Recovery order:
 
-        Observed on staging 2026-05-14 with a Concierge 4-tool burst:
-        the SSE iterator yields ``session.thread_status_idle`` with
-        ``stop_reason.type='requires_action'`` BEFORE the matching
-        ``agent.*_tool_use`` envelopes surface — the documented SSE
-        ordering invariant is best-effort, not strict. The Phase 1
-        TODO assumption ("no live trace shows this") was wrong. When
-        the cycle's ``calls()`` raises a miss, drain additional
-        ``agent.*_tool_use`` events from the live stream, append them
-        to ``events_by_id``, and retry. Bounded by the caller's
-        ``asyncio.wait_for(timeout=cycle_timeout_s)``.
+        1. **Fast path:** ``events_by_id`` already covers the cycle.
+           Most cycles in normal SSE ordering hit this.
+        2. **`events.list` fallback for missing ids.** Staging
+           2026-05-14 showed Anthropic's managed-agents API emits
+           ``requires_action.event_ids`` that never surface on the
+           live SSE stream — the matching ``agent.*_tool_use`` events
+           live only in the session log. ``events.list`` filtered to
+           the cycle's id set recovers them. This *cannot*
+           reintroduce v1's stale-rehydrate bug (May 13 2026 prod
+           incident) because :class:`RequiresActionCycle.requested_ids`
+           is the barrier — any id outside the set is discarded
+           before it touches ``events_by_id``.
+        3. **SSE drain for late arrivals.** If list also misses (the
+           events.list endpoint can lag the requires_action emit),
+           drain more events from the live stream as they arrive.
+           Bounded by the caller's
+           ``asyncio.wait_for(timeout=cycle_timeout_s)``.
 
-        Non-tool-use events drained here (e.g. ``agent.message`` text
-        emitted between use events) would otherwise be missed because
-        the outer ``async for`` only resumes after this method
-        returns. Surface ``agent.message`` text as :class:`AgentTextDelta`
-        via the stream iterator pattern — no, can't yield from inside
-        an async method that returns a list. Compromise: tool-use
-        events are the load-bearing ones; missing inter-tool text is
-        an observability gap but not a correctness gap. Logged at
-        WARNING so it surfaces if it ever matters.
+        ADR 0001 Decision 2 banned ``events.list`` outright. That ban
+        was too broad: the RequiresActionCycle barrier already
+        prevents stale-id replies. The 2026-05-14 staging incident
+        forced this revision — without the list fallback, Concierge
+        multi-tool turns interrupted on every requires_action cycle
+        and ran with empty post-tool synthesis.
         """
         from copass_anthropic_agents.backends.requires_action_cycle import (
             MissingPendingToolCallError,
         )
 
         # Fast path: buffer already covers the cycle.
+        try:
+            return cycle.calls(events_by_id)
+        except MissingPendingToolCallError:
+            pass
+
+        # events.list fallback for ids that never surfaced on SSE.
+        missing = sorted(cycle.requested_ids - set(events_by_id.keys()))
+        try:
+            recovered = await self._fetch_missing_events_via_list(
+                session_id=session_id,
+                missing_ids=missing,
+            )
+        except Exception:  # noqa: BLE001 — list is best-effort
+            logger.exception(
+                "ManagedAgentBackendV2: events.list fallback failed during "
+                "requires_action recovery",
+                extra={
+                    "session_id": session_id,
+                    "missing_ids": missing,
+                },
+            )
+            recovered = []
+
+        listed_in_cycle = 0
+        for evt in recovered:
+            evt_type = getattr(evt, "type", None)
+            evt_id = getattr(evt, "id", None)
+            # Cycle barrier in code: refuse to buffer anything outside
+            # the cycle's id set. Defense in depth even though we
+            # already filtered the list call by ``missing_ids``.
+            if not evt_id or evt_id not in cycle.requested_ids:
+                continue
+            if evt_type not in (
+                ENVELOPE_CUSTOM_TOOL_USE,
+                ENVELOPE_SERVER_TOOL_USE,
+                ENVELOPE_MCP_TOOL_USE,
+            ):
+                continue
+            name = getattr(evt, "name", "") or ""
+            call = self._build_pending_tool_call(evt, evt_type, evt_id, name)
+            events_by_id[evt_id] = call
+            listed_in_cycle += 1
+
+        if listed_in_cycle:
+            logger.info(
+                "ManagedAgentBackendV2: recovered tool-use events via "
+                "events.list during requires_action cycle",
+                extra={
+                    "session_id": session_id,
+                    "recovered_count": listed_in_cycle,
+                    "cycle_id": cycle.cycle_id,
+                },
+            )
+
+        # Retry the cycle resolve with the list-recovered events.
         try:
             return cycle.calls(events_by_id)
         except MissingPendingToolCallError:
@@ -894,6 +952,48 @@ class ManagedAgentBackendV2(AgentBackend):
             missing_ids=missing,
             known_ids=sorted(events_by_id.keys()),
         )
+
+    async def _fetch_missing_events_via_list(
+        self,
+        *,
+        session_id: Optional[str],
+        missing_ids: List[str],
+    ) -> List[Any]:
+        """Pull ``missing_ids`` from the session's persisted event log.
+
+        ADR 0001 Decision 2 banned ``events.list`` to prevent v1's
+        stale-rehydrate failure (May 13 2026). This is the carefully-
+        scoped revival of the call: we list events from the session
+        log and return ONLY entries whose ids appear in the caller's
+        ``missing_ids`` filter. The caller (``_await_pending_calls``)
+        then double-checks against ``cycle.requested_ids`` before
+        buffering, so a prior-cycle id slipping through cannot land
+        as a reply.
+
+        Best-effort: failures return an empty list; the caller treats
+        that the same as "list returned nothing" and falls through to
+        the SSE-drain / interrupt path.
+        """
+        if not session_id or not missing_ids:
+            return []
+        missing_set = set(missing_ids)
+        recovered: List[Any] = []
+        # ``order="desc"`` so the most recent events surface first —
+        # for the requires_action cycle the relevant tool-use events
+        # are by definition the most recent. ``limit`` covers the
+        # cycle's id count with headroom; bursts of 10 tool-use events
+        # per cycle aren't unusual for Concierge management.
+        paginator = self._client.beta.sessions.events.list(
+            session_id, order="desc", limit=max(50, len(missing_ids) * 5),
+        )
+        async for evt in paginator:
+            evt_id = getattr(evt, "id", None)
+            if evt_id and evt_id in missing_set:
+                recovered.append(evt)
+                missing_set.discard(evt_id)
+                if not missing_set:
+                    break
+        return recovered
 
     async def _send_interrupt_soft(self, session_id: str) -> None:
         """POST ``user.interrupt`` to terminate the session cleanly.
