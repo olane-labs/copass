@@ -4,9 +4,10 @@ Maps to ADR 0001 §7 net-new tests **#3 (cross-process duplicate-create
 resistance, in-memory mirror)** and **#4 (for_version cache miss on
 version bump)**.
 
-The MySQL mirror (``test_mysql_provider_binding_registry.py``) is
-skipped by default; ADR 0001 §7 test #3's MySQL flavor activates only
-when ``COPASS_INTEGRATION=1`` is set.
+The MySQL mirror of test #3 lives in ``o-twin-data-pipeline`` next
+to the deployment-specific :class:`MysqlProviderBindingRegistry`
+implementation — the library only ships the in-memory variant and
+the :class:`ProviderBindingRegistry` Protocol.
 """
 
 from __future__ import annotations

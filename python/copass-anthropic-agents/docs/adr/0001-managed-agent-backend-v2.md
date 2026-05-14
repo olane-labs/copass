@@ -130,12 +130,11 @@ WHERE user_id = :user_id AND agent_id = :agent_id
 
 **VSchema note:** `copass_agents` already has a vindex on `user_id`; an `ALTER` to add a non-vindexed column does not touch routing. No VSchema deploy-request is needed. The SQL migration is a standard pscale deploy-request flow against both `copass-staging` and `copass-twin-01` per CLAUDE.md's "PlanetScale / Vitess" section.
 
-**New seam:** `ProviderBindingRegistry` (defined in Decision 4) with two implementations:
+**New seam:** `ProviderBindingRegistry` Protocol (defined in Decision 4). The library ships **one** implementation:
 
-- `MysqlProviderBindingRegistry` — hits `copass_agents.provider_bindings`. Used in our deployment.
-- `InMemoryProviderBindingRegistry` — dict-backed, the default for library adopters who do not have the Copass MySQL schema. Same interface; same CAS semantics emulated in-process via `asyncio.Lock` per `(user_id, agent_id)`.
+- `InMemoryProviderBindingRegistry` — dict-backed, the default for library adopters. CAS semantics emulated in-process via `asyncio.Lock` per `(user_id, agent_id, provider)`.
 
-The runtime injects the registry into the v2 backend at construction time; the backend never imports a DB driver.
+The deployment-specific persistent implementation (`MysqlProviderBindingRegistry`, backed by `copass_agents.provider_bindings`) **lives in `o-twin-data-pipeline`**, not in `copass-anthropic-agents`. The library never imports a DB driver and never names a schema choice — keeping the public surface storage-agnostic. The runtime injects whichever implementation it owns at backend-construction time.
 
 ### Decision 4 — New types live in `copass-anthropic-agents`, not core-agents (yet)
 
@@ -197,7 +196,7 @@ Gateway-wiring tests (`test_gateway_wiring.py`) and bearer-mint tests (`test_bea
 
 1. **Stale-rehydrate-resistance.** Simulate a sequence where the SSE stream surfaces a fresh `requires_action` carrying ids the local buffer doesn't have; assert v2 does NOT call `events.list` and instead aborts via `user.interrupt` + `AgentFinish(error)`. Must fail on v1, pass on v2.
 2. **SSE-vs-`requires_action` race.** Simulate `requires_action` arriving before the corresponding `agent.custom_tool_use` events; assert v2 waits / buffers until the matching use events arrive, then enters the cycle cleanly. The bound is `BackendRunPolicy.cycle_timeout_s`.
-3. **Cross-process duplicate-create resistance.** Spawn two coroutines that race to provision the same agent fingerprint against `InMemoryProviderBindingRegistry`; assert exactly one binding entry, and the second coroutine reuses the first's `agent_id`. Mirror with a `MysqlProviderBindingRegistry` integration test against staging that uses the CAS WHERE clause.
+3. **Cross-process duplicate-create resistance.** Spawn two coroutines that race to provision the same agent fingerprint against `InMemoryProviderBindingRegistry`; assert exactly one binding entry, and the second coroutine reuses the first's `agent_id`. The MySQL mirror test lives in `o-twin-data-pipeline` next to `MysqlProviderBindingRegistry`; it uses a mocked `aiomysql` pool to exercise the same CAS WHERE clause without staging access.
 4. **`for_version` cache miss on version bump.** Pre-populate `provider_bindings` with `for_version=12`, bump `copass_agents.version` to 13; assert next run mints a fresh Anthropic agent and overwrites the binding (with `for_version=13`).
 5. **Cycle-barrier enforcement.** Construct a `RequiresActionCycle` with `requested_ids={"sevt_a"}`; attempt to enqueue a reply for `"sevt_b"`; assert the type / code path refuses at construction, not at send.
 6. **Policy timeout enforcement.** Simulate a model that streams indefinitely without `end_turn`; assert v2 fires `user.interrupt` and yields `AgentFinish(stop_reason="error")` at `total_timeout_s` rather than blocking forever.
@@ -377,8 +376,11 @@ from typing import Awaitable, Callable, Optional, Protocol
 class ProviderBindingRegistry(Protocol):
     """Race-safe identity store for provider-side agent/environment ids.
 
-    Implementations: MysqlProviderBindingRegistry (copass_agents JSON column,
-    CAS UPDATE) and InMemoryProviderBindingRegistry (dict + asyncio.Lock).
+    Library ships InMemoryProviderBindingRegistry (dict + asyncio.Lock).
+    Deployments that need cross-process persistence supply their own
+    Protocol implementation outside the library (for our deployment
+    that's MysqlProviderBindingRegistry in o-twin-data-pipeline, backed
+    by the copass_agents.provider_bindings JSON column).
     """
 
     async def get_binding(

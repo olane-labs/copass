@@ -1,17 +1,19 @@
 """InMemoryProviderBindingRegistry — dict + asyncio.Lock implementation.
 
-The default for library adopters without the Copass MySQL schema.
-Same interface as :class:`MysqlProviderBindingRegistry` (the registry
-protocol is defined in :mod:`.provider_binding_registry`); same CAS
-semantics emulated in-process.
+The default :class:`ProviderBindingRegistry` shipped with the library.
+Suitable for single-process deployments and tests; CAS semantics are
+emulated via :class:`asyncio.Lock` per ``(user_id, agent_id, provider)``
+key.
 
-This is also the implementation Phase 1 tests run against — the MySQL
-variant is gated behind ``COPASS_INTEGRATION=1`` and is not exercised
-by CI in Phase 1.
+Deployments that need cross-process race-safety (e.g. a fleet of
+Anthropic-agent workers across multiple pods) supply their own Protocol
+implementation backed by their own storage — the library never imports
+a DB driver, never names a schema. Our deployment's persistent
+implementation lives in the ``o-twin-data-pipeline`` repo next to its
+schema.
 
 Key shape: ``(user_id, agent_id, provider)``. A lock per key prevents
-the cache-miss check-then-set race within a single process; for
-cross-process safety the MySQL variant uses a CAS UPDATE.
+the cache-miss check-then-set race within a single process.
 """
 
 from __future__ import annotations

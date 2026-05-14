@@ -10,19 +10,20 @@ CLAUDE.md).
 
 ADR 0001 Decision 3 collapses this to one ``agents.create`` per
 fingerprint revision across the entire fleet by moving the mapping
-into persistent storage with a race-safe write pattern. Two
-implementations ship:
+into persistent storage with a race-safe write pattern.
 
-- :class:`MysqlProviderBindingRegistry` — hits a JSON column on the
-  existing ``copass_agents`` table with a compare-and-swap UPDATE.
-  Used in our deployment.
-- :class:`InMemoryProviderBindingRegistry` — dict-backed, default for
-  library adopters who don't have the Copass MySQL schema. Same
-  interface; same CAS semantics emulated via :class:`asyncio.Lock`
-  per ``(user_id, agent_id, provider)`` key.
+This module defines the **Protocol only**. The default implementation
+that ships with the library is :class:`InMemoryProviderBindingRegistry`
+— dict-backed, with CAS semantics emulated via :class:`asyncio.Lock`
+per ``(user_id, agent_id, provider)`` key. Library adopters can use
+that out of the box.
 
-The v2 backend never imports a DB driver: the runtime injects whichever
-implementation matches the deployment.
+Deployments that want persistent, cross-process race-safe bindings
+implement this Protocol against their own storage layer (for our
+deployment that's a ``copass_agents.provider_bindings`` JSON column in
+``o-twin-data-pipeline``; the implementation lives in that repo, not
+here — the library never imports a DB driver and never names a schema
+choice).
 
 When the abstractions lift to ``copass-core-agents`` (Decision 4's
 lift trigger), this protocol goes with them.
@@ -31,7 +32,16 @@ lift trigger), this protocol goes with them.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Awaitable, Callable, Optional, Protocol
+
+
+def _now_iso_utc() -> str:
+    """Return current time as an ISO-8601 UTC string with second precision.
+
+    Helper for constructing :attr:`ProviderBinding.provisioned_at`.
+    """
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 @dataclass(frozen=True)
@@ -61,15 +71,16 @@ class ProviderBinding:
 class ProviderBindingRegistry(Protocol):
     """Race-safe identity store for provider-side agent/environment ids.
 
-    Implementations: :class:`MysqlProviderBindingRegistry` (CAS UPDATE
-    against ``copass_agents.provider_bindings``) and
+    The library ships one implementation —
     :class:`InMemoryProviderBindingRegistry` (dict + :class:`asyncio.Lock`).
-    Library adopters who don't have the Copass MySQL schema use the
-    in-memory variant — the v2 backend doesn't care which.
+    Deployments that need cross-process persistence supply their own
+    Protocol implementation backed by whatever storage they use; the
+    v2 backend doesn't import a driver or name a schema, so the
+    library remains storage-agnostic.
 
-    All methods are async because both implementations are async at
-    the I/O boundary (asyncio lock for the in-memory variant; aiomysql
-    pool for the MySQL variant).
+    All methods are async because the in-memory implementation already
+    awaits a lock at the I/O boundary, and out-of-process implementations
+    will always be async at the DB driver boundary.
     """
 
     async def get_binding(
@@ -112,4 +123,4 @@ class ProviderBindingRegistry(Protocol):
         ...
 
 
-__all__ = ["ProviderBinding", "ProviderBindingRegistry"]
+__all__ = ["ProviderBinding", "ProviderBindingRegistry", "_now_iso_utc"]

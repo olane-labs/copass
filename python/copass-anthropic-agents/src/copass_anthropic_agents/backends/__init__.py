@@ -28,9 +28,6 @@ from copass_anthropic_agents.backends.in_memory_provider_binding_registry import
 from copass_anthropic_agents.backends.managed_agent_backend_v2 import (
     ManagedAgentBackendV2,
 )
-from copass_anthropic_agents.backends.mysql_provider_binding_registry import (
-    MysqlProviderBindingRegistry,
-)
 from copass_anthropic_agents.backends.pending_tool_call import (
     CustomToolCall,
     McpToolCall,
@@ -61,7 +58,6 @@ __all__ = [
     "ProviderBindingRegistry",
     "ProviderBinding",
     "InMemoryProviderBindingRegistry",
-    "MysqlProviderBindingRegistry",
     "PendingToolCall",
     "CustomToolCall",
     "ServerToolCall",

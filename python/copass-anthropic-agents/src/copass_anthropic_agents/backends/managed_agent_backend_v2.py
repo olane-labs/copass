@@ -838,9 +838,7 @@ class ManagedAgentBackendV2(AgentBackend):
         in sequence and binds them into the :class:`ProviderBinding`
         the registry persists.
         """
-        # Lazy import inside the method body so adopters who don't
-        # install the helper at runtime don't crash at module load.
-        from copass_anthropic_agents.backends.mysql_provider_binding_registry import (
+        from copass_anthropic_agents.backends.provider_binding_registry import (
             _now_iso_utc,
         )
 

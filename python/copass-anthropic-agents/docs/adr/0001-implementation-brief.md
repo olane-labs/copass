@@ -1,11 +1,13 @@
 # ADR 0001 — Phase 1 Implementation Brief
 
+> **Revision 2026-05-14 — boundary correction.** The original brief placed `MysqlProviderBindingRegistry` inside `copass-anthropic-agents` (the public library). That leaks our deployment's storage choice into the library surface. The MySQL implementation now lives in `o-twin-data-pipeline` (PR-A worktree) alongside the schema migration. The library ships only the `ProviderBindingRegistry` Protocol and the `InMemoryProviderBindingRegistry` default. Sections below that refer to `mysql_provider_binding_registry.py` under `copass-anthropic-agents/backends/` should be read as "in `o-twin-data-pipeline/frame_graph/copass_id/agents/`" instead.
+
 - **Source ADR (locked):** `/Users/brendon/Development/olane/copass-harness/.claude/worktrees/managed-agent-v2-phase1/python/copass-anthropic-agents/docs/adr/0001-managed-agent-backend-v2.md`
 - **Phase:** 1 — schema + v2 class + tests; no traffic.
 - **Worktrees:**
-  - **PR-A (schema only):** `/Users/brendon/Development/olane/o-twin-data-pipeline/.claude/worktrees/managed-agent-v2-schema/` — branch `feat/managed-agent-v2-schema` → PR base `staging`.
-  - **PR-B (Python code + tests):** `/Users/brendon/Development/olane/copass-harness/.claude/worktrees/managed-agent-v2-phase1/` — branch `feat/managed-agent-v2-phase1` → PR base `main`.
-- **Cross-PR independence:** PR-A and PR-B may be implemented and merged in parallel. The Phase 1 deliverable is non-traffic: the schema column is unused by code until Phase 2 wires the runtime; v2 backend code reads/writes through `ProviderBindingRegistry` and the in-memory implementation is sufficient for all Phase 1 tests.
+  - **PR-A (schema + MySQL registry impl):** `/Users/brendon/Development/olane/o-twin-data-pipeline/.claude/worktrees/managed-agent-v2-schema/` — branch `feat/managed-agent-v2-schema` → PR base `staging`.
+  - **PR-B (Python library + tests):** `/Users/brendon/Development/olane/copass-harness/.claude/worktrees/managed-agent-v2-phase1/` — branch `feat/managed-agent-v2-phase1` → PR base `main`.
+- **Cross-PR independence:** PR-A and PR-B may be implemented and merged in parallel. The Phase 1 deliverable is non-traffic: the schema column is unused by code until Phase 2 wires the runtime; v2 backend code reads/writes through `ProviderBindingRegistry` and the in-memory implementation is sufficient for all PR-B tests.
 
 ---
 
