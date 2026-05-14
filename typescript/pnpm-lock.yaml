@@ -33,7 +33,7 @@ importers:
     dependencies:
       '@ai-sdk/anthropic':
         specifier: ^3.0.0
-        version: 3.0.76(zod@4.3.6)
+        version: 3.0.77(zod@4.3.6)
       '@copass/ai-sdk':
         specifier: ^0.2.3
         version: 0.2.7(@copass/core@0.2.7)(ai@6.0.168(zod@4.3.6))(zod@4.3.6)
@@ -90,7 +90,7 @@ importers:
   packages/agent-router:
     devDependencies:
       '@copass/core':
-        specifier: ^0.10.0
+        specifier: ^0.10.1
         version: link:../core
       '@types/node':
         specifier: ^25.0.0
@@ -345,6 +345,9 @@ importers:
       '@olane/o-agent':
         specifier: ^0.9.0
         version: 0.9.0
+      '@olane/o-config':
+        specifier: ^0.9.0
+        version: 0.9.0
       '@olane/o-core':
         specifier: ^0.9.0
         version: 0.9.0
@@ -388,10 +391,10 @@ packages:
       }
     engines: { node: '>=18' }
 
-  '@ai-sdk/anthropic@3.0.76':
+  '@ai-sdk/anthropic@3.0.77':
     resolution:
       {
-        integrity: sha512-kOuvT9e6PygFvgYpkr4v9gjvmcMPfJp79jaXjeRl9Gpoj2OXdtc3ero7o1ic+tiSBw5IMubxXFO68BCA/axGJA==,
+        integrity: sha512-ML8C2M1YvPA1ulEx4TiyF0k1xvC2ikEiPBIC1PPQ0a5xELUGrO2lAaEzsTEoJ+eCeDd8PSBuFJjs+r+9yIwQXA==,
       }
     engines: { node: '>=18' }
     peerDependencies:
@@ -10581,7 +10584,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@ai-sdk/anthropic@3.0.76(zod@4.3.6)':
+  '@ai-sdk/anthropic@3.0.77(zod@4.3.6)':
     dependencies:
       '@ai-sdk/provider': 3.0.10
       '@ai-sdk/provider-utils': 4.0.27(zod@4.3.6)
@@ -15196,7 +15199,7 @@ snapshots:
       jsonwebtoken: 9.0.3
       load-esm: 1.0.3
       mime-types: 2.1.35
-      retry-axios: 2.6.0(axios@1.15.0)
+      retry-axios: 2.6.0(axios@1.15.0(debug@4.4.3))
       tough-cookie: 4.1.4
     transitivePeerDependencies:
       - supports-color
@@ -17221,7 +17224,7 @@ snapshots:
 
   retimeable-signal@1.0.1: {}
 
-  retry-axios@2.6.0(axios@1.15.0):
+  retry-axios@2.6.0(axios@1.15.0(debug@4.4.3)):
     dependencies:
       axios: 1.15.0(debug@4.4.3)
 

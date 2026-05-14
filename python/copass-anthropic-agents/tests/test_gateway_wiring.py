@@ -1,4 +1,4 @@
-"""ADR 0029 — gateway-MCP wiring on ``ManagedAgentBackend``.
+"""ADR 0029 — gateway-MCP wiring on ``ManagedAgentBackendV2``.
 
 When the backend is constructed (or invoked) with the gateway flag on,
 ``agents.create`` MUST advertise the unified MCP gateway server in
@@ -8,6 +8,11 @@ preserved exactly — no ``mcp_servers``, no ``mcp_toolset``. The
 per-invocation override via ``context.handles[USE_GATEWAY_MCP_HANDLE]``
 takes precedence over the constructor flag so the runtime can flip the
 path per-request without re-instantiating the singleton.
+
+Per ADR 0001 §7 the tests target :class:`ManagedAgentBackendV2`. The
+gateway-wiring contract carries over from v1 unchanged — v2 inherits
+ADR 0029's surface — so the assertions are identical except for the
+backend type and the new mandatory ``registry`` kwarg.
 """
 
 from __future__ import annotations
@@ -17,12 +22,15 @@ import pytest
 from copass_anthropic_agents import (
     AgentTool,
     AgentToolRegistry,
-    ManagedAgentBackend,
     ToolSpec,
 )
-from copass_anthropic_agents.backends.managed_agent_backend import (
+from copass_anthropic_agents.backends.in_memory_provider_binding_registry import (
+    InMemoryProviderBindingRegistry,
+)
+from copass_anthropic_agents.backends.managed_agent_backend_v2 import (
     DEFAULT_GATEWAY_MCP_NAME,
     DEFAULT_GATEWAY_MCP_URL,
+    ManagedAgentBackendV2,
 )
 
 
@@ -42,8 +50,12 @@ class _DummyTool(AgentTool):
         return {}
 
 
-def _make_backend(**kwargs) -> ManagedAgentBackend:
-    return ManagedAgentBackend(api_key="sk-fake-test", **kwargs)
+def _make_backend(**kwargs) -> ManagedAgentBackendV2:
+    return ManagedAgentBackendV2(
+        api_key="sk-fake-test",
+        registry=InMemoryProviderBindingRegistry(),
+        **kwargs,
+    )
 
 
 # --- _specs_to_tools: flag gates the mcp_toolset entry ---------------------
@@ -99,28 +111,46 @@ def test_specs_to_tools_per_invocation_override_on_top_of_constructor_off() -> N
     assert tools[0]["type"] == "mcp_toolset"
 
 
-# --- _ensure_agent_id: flag gates the mcp_servers kwarg --------------------
+# --- _provision_anthropic_agent: flag gates the mcp_servers kwarg ----------
+#
+# v1's ``_ensure_agent_id`` is split in v2: the cache-or-mint plumbing moves
+# into :class:`ProviderBindingRegistry`, and the actual ``agents.create`` /
+# ``environments.create`` calls live in ``_provision_anthropic_agent`` (the
+# closure the registry invokes exactly once across racing callers). The
+# gateway-wiring contract — flag-off → no ``mcp_servers``, flag-on →
+# single gateway server + matching ``mcp_toolset`` — is unchanged in v2.
 
 
 @pytest.mark.asyncio
-async def test_ensure_agent_id_flag_off_does_not_send_mcp_servers() -> None:
-    """The legacy ``agents.create`` payload must not include
-    ``mcp_servers`` — adding it would change Anthropic's billing /
-    routing posture for every existing deployment running flag-off."""
-    captured: list[dict] = []
+async def test_provision_anthropic_agent_flag_off_does_not_send_mcp_servers() -> None:
+    """Legacy ``agents.create`` payload must not include ``mcp_servers`` —
+    adding it would change Anthropic's billing / routing posture for
+    every existing deployment running flag-off."""
+    agent_captured: list[dict] = []
+    env_captured: list[dict] = []
 
     class _FakeAgents:
         async def create(self, **kwargs):
-            captured.append(kwargs)
+            agent_captured.append(kwargs)
 
             class _A:
                 id = "agnt_off_1"
 
             return _A()
 
+    class _FakeEnvironments:
+        async def create(self, **kwargs):
+            env_captured.append(kwargs)
+
+            class _E:
+                id = "env_off_1"
+
+            return _E()
+
     class _FakeBeta:
         def __init__(self) -> None:
             self.agents = _FakeAgents()
+            self.environments = _FakeEnvironments()
 
     class _Client:
         def __init__(self) -> None:
@@ -136,31 +166,46 @@ async def test_ensure_agent_id_flag_off_does_not_send_mcp_servers() -> None:
         system_prompt = "sp"
         identity = "id1"
 
-    agent_id = await backend._ensure_agent_id(_Agent(), reg)
-    assert agent_id == "agnt_off_1"
-    assert len(captured) == 1
-    assert "mcp_servers" not in captured[0]
+    binding = await backend._provision_anthropic_agent(
+        agent=_Agent(),
+        effective_tools=reg,
+        use_gateway_mcp=False,
+        fingerprint="fp-test",
+        for_version=1,
+    )
+    assert binding.agent_id == "agnt_off_1"
+    assert binding.environment_id == "env_off_1"
+    assert len(agent_captured) == 1
+    assert "mcp_servers" not in agent_captured[0]
 
 
 @pytest.mark.asyncio
-async def test_ensure_agent_id_flag_on_sends_gateway_mcp_servers() -> None:
+async def test_provision_anthropic_agent_flag_on_sends_gateway_mcp_servers() -> None:
     """Gateway path must register the single ``mcp.copass.com`` server
     with name matching the ``mcp_toolset`` entry. One server, one
     tool shim — see ADR 0029 §Stage 1 invariants."""
-    captured: list[dict] = []
+    agent_captured: list[dict] = []
 
     class _FakeAgents:
         async def create(self, **kwargs):
-            captured.append(kwargs)
+            agent_captured.append(kwargs)
 
             class _A:
                 id = "agnt_on_1"
 
             return _A()
 
+    class _FakeEnvironments:
+        async def create(self, **kwargs):
+            class _E:
+                id = "env_on_1"
+
+            return _E()
+
     class _FakeBeta:
         def __init__(self) -> None:
             self.agents = _FakeAgents()
+            self.environments = _FakeEnvironments()
 
     class _Client:
         def __init__(self) -> None:
@@ -176,10 +221,16 @@ async def test_ensure_agent_id_flag_on_sends_gateway_mcp_servers() -> None:
         system_prompt = "sp"
         identity = "id1"
 
-    agent_id = await backend._ensure_agent_id(_Agent(), reg)
-    assert agent_id == "agnt_on_1"
-    assert len(captured) == 1
-    create_kwargs = captured[0]
+    binding = await backend._provision_anthropic_agent(
+        agent=_Agent(),
+        effective_tools=reg,
+        use_gateway_mcp=True,
+        fingerprint="fp-test",
+        for_version=1,
+    )
+    assert binding.agent_id == "agnt_on_1"
+    assert len(agent_captured) == 1
+    create_kwargs = agent_captured[0]
     assert "mcp_servers" in create_kwargs
     servers = list(create_kwargs["mcp_servers"])
     assert len(servers) == 1
