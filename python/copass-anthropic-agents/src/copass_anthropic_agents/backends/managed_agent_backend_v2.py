@@ -453,6 +453,15 @@ class ManagedAgentBackendV2(AgentBackend):
         # Local SSE-built buffer. The ONLY path that populates this is
         # the stream itself — ADR 0001 Decision 2.
         events_by_id: dict[str, PendingToolCall] = {}
+        # Ids for which an AgentToolCall has already been yielded to
+        # the caller. Tool-use events drained from inside
+        # ``_await_pending_calls`` (out-of-order SSE race; staging
+        # 2026-05-14 Concierge incident) populate ``events_by_id`` but
+        # don't go through the outer loop's yield path. After each
+        # ``requires_action`` resolution, the outer loop emits
+        # AgentToolCall for any newly-buffered id so the caller's
+        # tool-call log isn't missing entries.
+        yielded_call_ids: set[str] = set()
         usage_accumulator: dict = {}
         seen_unknown_event_types: set[str] = set()
         cycle_count = 0
@@ -512,6 +521,7 @@ class ManagedAgentBackendV2(AgentBackend):
                         name=name,
                         arguments=arguments,
                     )
+                    yielded_call_ids.add(evt_id)
                     continue
 
                 if evt_type in _IDLE_EVENT_TYPES:
@@ -575,6 +585,26 @@ class ManagedAgentBackendV2(AgentBackend):
                             )
                             finished = True
                             break
+
+                        # Tool-use events drained inside
+                        # ``_await_pending_calls`` (out-of-order SSE
+                        # race) bypassed the outer-loop yield. Surface
+                        # AgentToolCall for them now so the caller's
+                        # log is complete.
+                        for call in calls:
+                            if call.event_id in yielded_call_ids:
+                                continue
+                            arguments = (
+                                dict(call.arguments)
+                                if isinstance(call, CustomToolCall)
+                                else {}
+                            )
+                            yield AgentToolCall(
+                                call_id=call.event_id,
+                                name=call.name,
+                                arguments=arguments,
+                            )
+                            yielded_call_ids.add(call.event_id)
 
                         # Execute / build replies for each call. Per-variant
                         # polymorphism replaces v1's string-dispatch ladder.
@@ -775,32 +805,95 @@ class ManagedAgentBackendV2(AgentBackend):
         :class:`MissingPendingToolCallError` so the caller can
         ``user.interrupt`` and finish with error.
 
-        Phase 1 implements the simplest correct behavior: if the
-        buffer already covers the cycle (no race), resolve immediately;
-        otherwise raise the missing error. The brief's recommended
-        long-running buffering is achieved at the stream-loop layer:
-        we never enter this method except at ``requires_action`` time,
-        at which point the SSE iterator has already drained every
-        event the server has emitted up to the ``requires_action``
-        signal. A genuine race would manifest at the
-        ``asyncio.wait_for`` timeout layer; for the test that exercises
-        a use event arriving *after* the signal, the test fixture
-        emits the use event first via the simulated SSE iterator
-        precisely so the buffer is populated before
-        ``await self._await_pending_calls`` runs.
+        Observed on staging 2026-05-14 with a Concierge 4-tool burst:
+        the SSE iterator yields ``session.thread_status_idle`` with
+        ``stop_reason.type='requires_action'`` BEFORE the matching
+        ``agent.*_tool_use`` envelopes surface — the documented SSE
+        ordering invariant is best-effort, not strict. The Phase 1
+        TODO assumption ("no live trace shows this") was wrong. When
+        the cycle's ``calls()`` raises a miss, drain additional
+        ``agent.*_tool_use`` events from the live stream, append them
+        to ``events_by_id``, and retry. Bounded by the caller's
+        ``asyncio.wait_for(timeout=cycle_timeout_s)``.
 
-        TODO (Phase 2): if Anthropic ever genuinely sends the
-        ``requires_action`` envelope before the matching
-        ``agent.*_tool_use`` events (no live trace shows this), this
-        method becomes the place to buffer-and-wait. For Phase 1 the
-        in-buffer resolve is sufficient given the SSE-ordering
-        invariant the server documents.
+        Non-tool-use events drained here (e.g. ``agent.message`` text
+        emitted between use events) would otherwise be missed because
+        the outer ``async for`` only resumes after this method
+        returns. Surface ``agent.message`` text as :class:`AgentTextDelta`
+        via the stream iterator pattern — no, can't yield from inside
+        an async method that returns a list. Compromise: tool-use
+        events are the load-bearing ones; missing inter-tool text is
+        an observability gap but not a correctness gap. Logged at
+        WARNING so it surfaces if it ever matters.
         """
-        # The cycle's ``calls()`` raises MissingPendingToolCallError
-        # if any id isn't in events_by_id; that's what the caller
-        # catches.
-        del stream  # Phase 1 doesn't buffer-and-wait at this layer.
-        return cycle.calls(events_by_id)
+        from copass_anthropic_agents.backends.requires_action_cycle import (
+            MissingPendingToolCallError,
+        )
+
+        # Fast path: buffer already covers the cycle.
+        try:
+            return cycle.calls(events_by_id)
+        except MissingPendingToolCallError:
+            pass
+
+        # Slow path: drain the stream looking for the missing tool-use
+        # events. Continue until every requested id is buffered (then
+        # return) or the stream terminates (re-raise the miss).
+        async for sdk_event in stream:
+            evt_type = getattr(sdk_event, "type", None)
+            evt_id = getattr(sdk_event, "id", None)
+
+            if evt_type in (
+                ENVELOPE_CUSTOM_TOOL_USE,
+                ENVELOPE_SERVER_TOOL_USE,
+                ENVELOPE_MCP_TOOL_USE,
+            ):
+                if not evt_id:
+                    # Mirror the strict-id contract from the outer loop:
+                    # a tool-use event without an id cannot be answered.
+                    logger.error(
+                        "ManagedAgentBackendV2: tool-use event missing "
+                        "id during requires_action drain — aborting",
+                        extra={
+                            "event_type": evt_type,
+                            "tool_name": getattr(sdk_event, "name", None),
+                        },
+                    )
+                    raise RuntimeError(
+                        "ManagedAgentBackendV2: tool-use event "
+                        f"({evt_type}) arrived without an id during "
+                        "requires_action drain"
+                    )
+                name = getattr(sdk_event, "name", "") or ""
+                call = self._build_pending_tool_call(
+                    sdk_event, evt_type, evt_id, name,
+                )
+                events_by_id[evt_id] = call
+                # Retry the cycle resolve after each new tool-use event.
+                try:
+                    return cycle.calls(events_by_id)
+                except MissingPendingToolCallError:
+                    continue
+                continue
+
+            # Non-tool-use events drained here are observability-only —
+            # the outer loop will not see them. Log once so the gap is
+            # visible if it ever matters for a debug trace.
+            logger.warning(
+                "ManagedAgentBackendV2: discarded non-tool-use event "
+                "during requires_action drain",
+                extra={
+                    "event_type": evt_type,
+                    "event_id": evt_id,
+                },
+            )
+
+        # Stream ended without buffering every requested id.
+        missing = sorted(cycle.requested_ids - set(events_by_id.keys()))
+        raise MissingPendingToolCallError(
+            missing_ids=missing,
+            known_ids=sorted(events_by_id.keys()),
+        )
 
     async def _send_interrupt_soft(self, session_id: str) -> None:
         """POST ``user.interrupt`` to terminate the session cleanly.
