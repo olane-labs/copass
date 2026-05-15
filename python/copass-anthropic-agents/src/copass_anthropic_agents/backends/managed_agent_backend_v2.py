@@ -568,8 +568,50 @@ class ManagedAgentBackendV2(AgentBackend):
                                 timeout=self._policy.cycle_timeout_s,
                             )
                         except (asyncio.TimeoutError, MissingPendingToolCallError) as exc:
-                            logger.error(
-                                "ManagedAgentBackendV2: requires_action ids not buffered — interrupting",
+                            # Staging incident 2026-05-16 (Anthropic console
+                            # transcript): for sessions using server-executed
+                            # tool surfaces (``mcp_toolset`` via the gateway,
+                            # ``agent_toolset_20260401`` built-ins), Anthropic
+                            # does NOT wait for the client to reply to
+                            # ``requires_action``. The model continues
+                            # running server-side, executes tools, and emits
+                            # the final ``agent.message`` text deltas.
+                            #
+                            # The old behavior here — POST ``user.interrupt``
+                            # + yield AgentFinish(error) + ``break`` out of
+                            # the ``async for sdk_event in stream`` loop —
+                            # was hostile to that flow: we'd interrupt while
+                            # Anthropic had already generated the final
+                            # answer 30+ seconds earlier, and our break
+                            # discarded the text deltas the client was
+                            # supposed to receive. Anthropic's session log
+                            # showed the agent ran to completion; our
+                            # client received only the preamble.
+                            #
+                            # New behavior: log a WARNING and ``continue``
+                            # the stream loop. Three outcomes:
+                            #
+                            # 1. Server-side tools (MCP/builtin): Anthropic
+                            #    keeps generating; subsequent
+                            #    ``agent.message`` events stream through to
+                            #    the client; the session ends naturally
+                            #    with ``end_turn``.
+                            # 2. Genuinely custom tools we can't resolve:
+                            #    Anthropic waits indefinitely; the outer
+                            #    ``total_timeout_s`` enforcement fires
+                            #    (300s default) and terminates the run.
+                            #    Same eventual outcome as the old behavior,
+                            #    just without the premature interrupt.
+                            # 3. Late SSE arrival: a subsequent
+                            #    ``session.thread_status_idle(requires_action)``
+                            #    may re-cite the same ids; by then the use
+                            #    events have surfaced and the cycle resolves
+                            #    cleanly.
+                            logger.warning(
+                                "ManagedAgentBackendV2: requires_action ids "
+                                "not resolved within cycle_timeout_s — "
+                                "continuing stream (server-side tools may "
+                                "not require a reply)",
                                 extra={
                                     "session_id": session_id,
                                     "requested_ids": event_ids,
@@ -577,14 +619,16 @@ class ManagedAgentBackendV2(AgentBackend):
                                     "error": str(exc),
                                 },
                             )
-                            await self._send_interrupt_soft(session_id)
-                            yield AgentFinish(
-                                stop_reason=STOP_REASON_REQUIRES_ACTION_MISSING_EVENT_ID,
-                                usage=dict(usage_accumulator),
-                                session_id=session_id,
-                            )
-                            finished = True
-                            break
+                            # Do NOT send user.interrupt — that's actively
+                            # hostile to a server-driven session.
+                            # Do NOT yield AgentFinish(error) — the stream
+                            # will provide its own terminal event when the
+                            # model genuinely finishes.
+                            # Do NOT break — drop back to the outer
+                            # ``async for sdk_event in stream`` loop so
+                            # subsequent agent.message text deltas reach
+                            # the caller.
+                            continue
 
                         # Tool-use events drained inside
                         # ``_await_pending_calls`` (out-of-order SSE
@@ -829,71 +873,27 @@ class ManagedAgentBackendV2(AgentBackend):
         from copass_anthropic_agents.backends.requires_action_cycle import (
             MissingPendingToolCallError,
         )
+        del stream  # explicitly unused — see docstring rationale below
 
-        # Fast path: buffer already covers the cycle.
-        try:
-            return cycle.calls(events_by_id)
-        except MissingPendingToolCallError:
-            pass
-
-        # Slow path: drain the stream looking for the missing tool-use
-        # events. Continue until every requested id is buffered (then
-        # return) or the stream terminates (re-raise the miss).
-        async for sdk_event in stream:
-            evt_type = getattr(sdk_event, "type", None)
-            evt_id = getattr(sdk_event, "id", None)
-
-            if evt_type in (
-                ENVELOPE_CUSTOM_TOOL_USE,
-                ENVELOPE_SERVER_TOOL_USE,
-                ENVELOPE_MCP_TOOL_USE,
-            ):
-                if not evt_id:
-                    # Mirror the strict-id contract from the outer loop:
-                    # a tool-use event without an id cannot be answered.
-                    logger.error(
-                        "ManagedAgentBackendV2: tool-use event missing "
-                        "id during requires_action drain — aborting",
-                        extra={
-                            "event_type": evt_type,
-                            "tool_name": getattr(sdk_event, "name", None),
-                        },
-                    )
-                    raise RuntimeError(
-                        "ManagedAgentBackendV2: tool-use event "
-                        f"({evt_type}) arrived without an id during "
-                        "requires_action drain"
-                    )
-                name = getattr(sdk_event, "name", "") or ""
-                call = self._build_pending_tool_call(
-                    sdk_event, evt_type, evt_id, name,
-                )
-                events_by_id[evt_id] = call
-                # Retry the cycle resolve after each new tool-use event.
-                try:
-                    return cycle.calls(events_by_id)
-                except MissingPendingToolCallError:
-                    continue
-                continue
-
-            # Non-tool-use events drained here are observability-only —
-            # the outer loop will not see them. Log once so the gap is
-            # visible if it ever matters for a debug trace.
-            logger.warning(
-                "ManagedAgentBackendV2: discarded non-tool-use event "
-                "during requires_action drain",
-                extra={
-                    "event_type": evt_type,
-                    "event_id": evt_id,
-                },
-            )
-
-        # Stream ended without buffering every requested id.
-        missing = sorted(cycle.requested_ids - set(events_by_id.keys()))
-        raise MissingPendingToolCallError(
-            missing_ids=missing,
-            known_ids=sorted(events_by_id.keys()),
-        )
+        # Fast path AND only path: buffer already covers the cycle.
+        # Miss → raise; the caller's exception handler logs and
+        # continues the outer stream loop.
+        #
+        # Why no SSE drain here (despite 1.4.1's attempt):
+        # consuming events from ``stream`` inside this method races
+        # the outer ``async for sdk_event in stream`` loop — events
+        # we read here never reach the outer dispatcher, so any
+        # ``agent.message`` text deltas streamed by Anthropic between
+        # ``requires_action`` and the model's final ``end_turn`` are
+        # silently dropped. Staging 2026-05-16: the Anthropic console
+        # showed the model emitting a 14kB final ``agent.message``
+        # after tool execution, but our client received only the
+        # preamble because this method drained those events and
+        # logged them as "discarded non-tool-use event."
+        #
+        # The outer loop is the ONLY legitimate consumer of the
+        # stream. This method touches only ``events_by_id``.
+        return cycle.calls(events_by_id)
 
     async def _send_interrupt_soft(self, session_id: str) -> None:
         """POST ``user.interrupt`` to terminate the session cleanly.

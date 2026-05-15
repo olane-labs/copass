@@ -348,22 +348,35 @@ async def test_requires_action_before_use_events_buffers_until_arrival() -> None
 
 
 @pytest.mark.asyncio
-async def test_requires_action_arrives_before_use_events_drains_stream() -> None:
-    """Regression for staging incident 2026-05-14 — the Concierge
-    4-tool burst surfaced ``requires_action`` BEFORE the matching
-    ``agent.custom_tool_use`` events.
+async def test_requires_action_before_use_events_continues_stream_no_tool_execution() -> None:  # noqa: E501
+    """Hypothetical out-of-order SSE delivery — requires_action arrives
+    before the matching ``agent.custom_tool_use`` events.
 
-    Phase 1's ``_await_pending_calls`` had a TODO ("no live trace
-    shows this") and aborted immediately on a miss. Staging proved
-    the assumption wrong: the SSE iterator yielded
-    ``session.thread_status_idle`` with
-    ``stop_reason.type='requires_action'`` ahead of the use events,
-    causing v2 to interrupt with empty post-tool synthesis. v2 must
-    drain additional events from the stream until every requested id
-    is buffered, then resolve the cycle cleanly.
+    1.4.1 added a drain inside ``_await_pending_calls`` that pulled
+    events from the stream to satisfy this case. 1.4.3 removed it:
+    the drain raced the outer ``async for sdk_event in stream`` loop
+    and ate subsequent text deltas (staging 2026-05-16 incident).
+
+    In 1.4.3 this scenario produces:
+    - The cycle fails (no buffered ids) → log warning + continue.
+    - Use events that arrive AFTER are still consumed by the outer
+      loop and yielded as :class:`AgentToolCall`.
+    - But the tools are NOT executed and no replies are POSTed —
+      we missed the chance during the cycle's lifetime.
+    - The run ends with whatever terminal event the stream provides
+      (here, ``end_turn`` because the model knew the tools were
+      server-executed and didn't need our reply).
+
+    For genuinely custom tools where Anthropic IS waiting on a
+    ``user.custom_tool_result``, this scenario would hang the
+    session and the outer ``total_timeout_s`` would fire. That's
+    the trade-off documented in the ``_await_pending_calls``
+    docstring: drain-once-and-eat-streaming is worse than don't-drain-
+    and-occasionally-stall, because the former hits production every
+    Concierge multi-tool turn (staging 2026-05-16) while the latter
+    is a hypothetical out-of-order race we've never observed.
     """
     stream = _StubStream([
-        # requires_action FIRST, before any use events.
         _StubSdkEvent(
             type="session.thread_status_idle",
             id="idle_1",
@@ -372,8 +385,6 @@ async def test_requires_action_arrives_before_use_events_drains_stream() -> None
                 event_ids=["sevt_a", "sevt_b"],
             ),
         ),
-        # Use events arrive AFTER — out-of-order on the wire. v2 must
-        # drain these into the buffer to satisfy the cycle.
         _StubSdkEvent(
             type="agent.custom_tool_use",
             id="sevt_a",
@@ -386,7 +397,6 @@ async def test_requires_action_arrives_before_use_events_drains_stream() -> None
             name="echo",
             input={"q": "y"},
         ),
-        # After we POST the replies, model emits end_turn.
         _StubSdkEvent(
             type="session.thread_status_idle",
             id="idle_2",
@@ -400,51 +410,104 @@ async def test_requires_action_arrives_before_use_events_drains_stream() -> None
     async for evt in backend.stream(agent, "hello", _ctx()):
         events.append(evt)
 
-    # Both tool calls surfaced.
+    # AgentToolCall fires for both — the outer loop reads them after
+    # the cycle fails and yields them as observed-but-unanswered.
     tool_calls = [e for e in events if isinstance(e, AgentToolCall)]
-    assert len(tool_calls) == 2
     assert {c.call_id for c in tool_calls} == {"sevt_a", "sevt_b"}
 
-    # Both tools executed.
+    # Tools were NOT executed locally (the cycle had already failed
+    # by the time the use events surfaced). No AgentToolResult, no
+    # reply POSTed.
     tool_results = [e for e in events if isinstance(e, AgentToolResult)]
-    assert len(tool_results) == 2
+    assert tool_results == []
 
-    # End cleanly with end_turn — NOT requires_action_missing_event_id.
-    assert events[-1] == AgentFinish(
-        stop_reason=STOP_REASON_END_TURN,
-        usage={},
-        session_id="sesn_test_1",
+    sent = backend._client.beta.sessions.events.sent  # type: ignore[attr-defined]
+    assert all(
+        s["events"][0]["type"] != "user.custom_tool_result" for s in sent
+    )
+    assert all(
+        s["events"][0]["type"] != "user.interrupt" for s in sent
     )
 
-    # Replies POSTed for both ids. No events.list call (the stub
-    # doesn't expose one, so the test would crash).
-    sent = backend._client.beta.sessions.events.sent  # type: ignore[attr-defined]
-    # 1 user.message + 1 batched cycle reply (both custom_tool_results).
-    assert len(sent) == 2
-    assert sent[0]["events"][0]["type"] == "user.message"
-    reply_ids = {e["custom_tool_use_id"] for e in sent[1]["events"]}
-    assert reply_ids == {"sevt_a", "sevt_b"}
+    # Run ended cleanly with end_turn from the model.
+    assert events[-1].stop_reason == STOP_REASON_END_TURN
 
 
 @pytest.mark.asyncio
-async def test_unknown_event_id_in_requires_action_aborts_via_interrupt() -> None:
-    """ADR 0001 §7 test #1 (stale-rehydrate-resistance).
+class _StubTextBlock:
+    """Minimal stand-in for an ``agent.message.content[i]`` text block."""
 
-    ``requires_action`` cites an id the SSE stream never surfaced. v2
-    must POST ``user.interrupt`` and yield
-    ``AgentFinish(requires_action_missing_event_id)`` rather than
-    fall back to ``events.list``. (The stub deliberately has no
-    ``events.list`` attribute — a regression that tries to call it
-    will crash loudly.)
+    def __init__(self, text: str) -> None:
+        self.type = "text"
+        self.text = text
+
+
+@pytest.mark.asyncio
+async def test_unresolved_requires_action_keeps_stream_open_for_final_message() -> None:  # noqa: E501
+    # Imported here (rather than at module top) so the test file's
+    # other tests stay compatible with the existing import block.
+    from copass_core_agents.events import AgentTextDelta as _AgentTextDelta
+    """Regression for staging incident 2026-05-16.
+
+    Anthropic console transcript showed the agent ran to completion —
+    preamble + tool calls + 14kB final ``agent.message`` with the
+    full result — but our client received only the preamble. Root
+    cause: v2's stream loop ``break``d out on
+    ``MissingPendingToolCallError`` and POSTed ``user.interrupt``
+    while Anthropic was already 35 seconds into generating the final
+    answer.
+
+    For sessions using server-executed tool surfaces (``mcp_toolset``
+    via the gateway, ``agent_toolset_20260401`` built-ins), Anthropic
+    does NOT wait for the client to reply to ``requires_action``.
+    The model continues generating regardless. v2 must keep
+    consuming the stream so the final text deltas reach the client.
+
+    This test pins the contract: when a ``requires_action`` cycle
+    fails to resolve, v2 logs a warning and **continues the stream
+    loop**. Subsequent ``agent.message`` deltas surface as
+    ``AgentTextDelta`` events; the run ends naturally with
+    ``end_turn`` from the model, not with our forced
+    ``AgentFinish(error)``.
     """
     stream = _StubStream([
-        # requires_action with no matching use event in the buffer.
+        # Preamble text that the model emits before tool calls.
+        _StubSdkEvent(
+            type="agent.message",
+            id="msg_preamble",
+            content=[
+                _StubTextBlock("Let me check that…"),
+            ],
+        ),
+        # requires_action with an id v2 cannot resolve (no matching
+        # use event was streamed, and the stub deliberately has no
+        # events.list to fall back to).
         _StubSdkEvent(
             type="session.thread_status_idle",
             id="idle_1",
             stop_reason=_StubStopReason(
-                type="requires_action", event_ids=["sevt_stale"],
+                type="requires_action", event_ids=["sevt_server_executed"],
             ),
+        ),
+        # The KEY assertion: events AFTER an unresolved requires_action
+        # must still reach the caller. Anthropic ran tools server-side,
+        # produced the final answer, and is streaming it back. v2 must
+        # not have broken out of the loop.
+        _StubSdkEvent(
+            type="agent.message",
+            id="msg_final",
+            content=[
+                _StubTextBlock(
+                    "Here's your full sales picture for last week: …",
+                ),
+            ],
+        ),
+        # Natural end_turn from the model — NOT a forced
+        # AgentFinish(error) from v2's old interrupt path.
+        _StubSdkEvent(
+            type="session.thread_status_idle",
+            id="idle_2",
+            stop_reason=_StubStopReason(type="end_turn"),
         ),
     ])
     backend = _make_backend(stream)
@@ -454,23 +517,33 @@ async def test_unknown_event_id_in_requires_action_aborts_via_interrupt() -> Non
     async for evt in backend.stream(agent, "hello", _ctx()):
         events.append(evt)
 
-    # Final event is AgentFinish with the locked stop_reason string.
+    # The preamble AND the final answer both reached the caller as
+    # AgentTextDelta. Before this fix, only the preamble surfaced.
+    text_deltas = [e for e in events if isinstance(e, _AgentTextDelta)]
+    delta_texts = [e.text for e in text_deltas]
+    assert "Let me check that…" in delta_texts
+    assert any(
+        "Here's your full sales picture" in t for t in delta_texts
+    ), (
+        "v2 must keep the stream loop alive across an unresolved "
+        "requires_action so post-tool text deltas reach the caller "
+        "(staging 2026-05-16 regression)"
+    )
+
+    # The run ended naturally with end_turn from the model, NOT with
+    # a forced AgentFinish(requires_action_missing_event_id) from v2.
     finishes = [e for e in events if isinstance(e, AgentFinish)]
     assert len(finishes) == 1
-    assert finishes[0].stop_reason == STOP_REASON_REQUIRES_ACTION_MISSING_EVENT_ID
+    assert finishes[0].stop_reason == STOP_REASON_END_TURN
 
-    # user.interrupt was POSTed.
+    # v2 did NOT POST user.interrupt — that was actively hostile to
+    # the server-driven session in the old behavior.
     sent = backend._client.beta.sessions.events.sent  # type: ignore[attr-defined]
     sent_types = [s["events"][0]["type"] for s in sent]
-    assert "user.interrupt" in sent_types
-
-    # Decision 2 invariant: no events.list call. The stub has no
-    # ``events.list`` attribute; accessing it would raise. Assert
-    # explicitly:
-    assert not hasattr(
-        backend._client.beta.sessions.events,  # type: ignore[attr-defined]
-        "list",
-    ), "v2 must never call events.list during a live stream (ADR 0001 Decision 2)"
+    assert "user.interrupt" not in sent_types, (
+        "v2 must not interrupt a session whose tools are server-executed; "
+        "Anthropic keeps generating regardless of our reply"
+    )
 
 
 @pytest.mark.asyncio
