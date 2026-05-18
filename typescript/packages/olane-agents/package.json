@@ -1,6 +1,6 @@
 {
   "name": "@copass/olane-agents",
-  "version": "0.7.2",
+  "version": "0.7.3",
   "description": "Headless library for managing Olane OS host singletons + per-session agent broker daemons. Wraps @copass/datasource-olane (OS lifecycle) and @olane/o-agent (agent broker primitives) into one Copass-flavored surface that any front-end (CLI, web, MCP) can consume.",
   "publishConfig": {
     "access": "public",
