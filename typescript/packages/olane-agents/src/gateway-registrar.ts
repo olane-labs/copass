@@ -12,13 +12,32 @@
  * See `auto-resolve-gateway.ts` for the api-side resolver.
  *
  * Flow on daemon boot:
- *   1. Build a transient `oClientNode` pointing at the gateway multiaddr.
- *   2. Call `o://daemons.register({daemon_id, user_id, daemon_address,
- *      capabilities, metadata})`.
- *   3. Start a periodic heartbeat (default 60s) — keeps `last_seen` fresh
+ *   1. Use the daemon's own ``os.rootLeader`` to dial the gateway
+ *      and call ``o://daemons.register({...})``. The dial is made
+ *      from the leader's libp2p stack so the gateway caches an
+ *      inbound connection keyed under the LEADER's peer-id.
+ *   2. Periodic heartbeat (default 60s) — keeps `last_seen` fresh
  *      so the gateway doesn't filter us out as stale.
- *   4. On graceful shutdown: stop the heartbeat, call
- *      `o://daemons.unregister`, tear down the client.
+ *   3. On graceful shutdown: stop the heartbeat, call
+ *      `o://daemons.unregister`.
+ *
+ * Why the leader does the register itself (rather than a transient
+ * `oClientNode`): the gateway's anchor-scoped dialer
+ * (``o-private-network/nodes/compute-sandbox/src/registry-http.ts``,
+ * PR #21) pre-populates ``oNodeAddress.transports`` with the daemon's
+ * libp2p multiaddr so the framework's
+ * ``getCachedConnectionFromAddress`` can find an existing inbound
+ * connection by peer-id and reuse it (skipping a fresh ``p2pNode.dial``
+ * that would trip the libp2p ``denyDialPeer`` gater). For that cache
+ * hit to fire, the gateway's inbound-connection cache must be keyed
+ * on the same peer-id the gateway-side dialer is looking up — the
+ * LEADER's peer-id, which is what ``daemon_address`` carries. The
+ * old design booted a transient ``oClientNode`` with its own
+ * per-process peer-id; the gateway then had a connection keyed under
+ * that transient peer, while dials to the leader's peer always
+ * missed → fresh dial → gater block. Using the leader directly
+ * closes that loop without touching the framework's gater or
+ * connection-cache contract.
  *
  * Best-effort throughout:
  *   - Registration failure during boot is logged but does NOT block the
@@ -29,19 +48,15 @@
  *   - Unregister at shutdown is best-effort (gateway may already be
  *     unreachable).
  *
- * `daemon_address` reported to the gateway is the daemon's first local
- * libp2p multiaddr. For the MVP threat model (single-user, single-host
- * or LAN-reachable) this is fine. Phase 2 will add circuit-relay-client
- * reservation against the gateway so the daemon is publicly dialable.
+ * `daemon_address` reported to the gateway is the daemon's first
+ * non-loopback libp2p multiaddr from ``rootLeader``. For the MVP
+ * threat model (single-user, single-host or LAN-reachable) this is
+ * fine. Phase 2 will add circuit-relay-client reservation against
+ * the gateway so the daemon is publicly dialable for clients that
+ * can't reach the leader's IP directly.
  */
 
-import { oAddress } from '@olane/o-core';
-import {
-  oClientNode,
-  oNodeAddress,
-  oNodeTransport,
-} from '@olane/o-node';
-import { webTransport, webSockets, tcp, memory } from '@olane/o-config';
+import { oNodeAddress, oNodeTransport } from '@olane/o-node';
 
 /** Olane address of the registry tool on the gateway. Matches
  *  `REGISTRY_TOOL_ADDRESS` in
@@ -142,12 +157,26 @@ export async function registerWithGateway(
   const capabilities = options.capabilities ?? ['network-broker'];
   const heartbeatMs = options.heartbeatMs ?? DEFAULT_HEARTBEAT_MS;
 
-  // Resolve the daemon's primary dialable multiaddr.
+  // Resolve the daemon's primary dialable multiaddr off the LEADER —
+  // the gateway-side dialer (registry-http.ts:buildDialAddress)
+  // expects ``daemon.daemon_address`` to carry the leader's peer-id,
+  // because that's the peer the gateway will open streams against
+  // after the registration cache is hit.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const leader = os?.rootLeader as any;
+  const leaderNode = os?.rootLeader as any;
+  if (!leaderNode || typeof leaderNode.use !== 'function') {
+    throw new Error(
+      'registerWithGateway: os.rootLeader is missing or has no use() — ' +
+        'expected an oNode-shaped leader; the registration dial must ' +
+        'originate from the leader so the gateway caches an inbound ' +
+        'connection under the leader\'s peer-id.',
+    );
+  }
   const transports: Array<{ toString(): string }> =
-    leader?.transports ||
-    (typeof leader?.getMultiaddrs === 'function' ? leader.getMultiaddrs() : []) ||
+    leaderNode?.transports ||
+    (typeof leaderNode?.getMultiaddrs === 'function'
+      ? leaderNode.getMultiaddrs()
+      : []) ||
     [];
   // Prefer a non-loopback transport so external callers can dial it;
   // fall back to whatever the leader has if all are loopback (MVP
@@ -164,31 +193,21 @@ export async function registerWithGateway(
     );
   }
 
-  // Boot a transient client pointing at the gateway. The gateway's
-  // top-level address is `o://leader`; the registry tool is `o://daemons`,
-  // routed via the leader.
-  const gatewayLeaderAddress = new oNodeAddress(
-    'o://leader',
+  // The gateway hosts the registry tool at ``o://daemons``. We address
+  // it directly with the gateway's libp2p multiaddr as a transport
+  // hint — the framework's ``oSearchResolver`` early-returns when
+  // ``address.transports.length > 0`` (matching the gateway-side
+  // dialer's pattern), and the leader's libp2p stack opens an
+  // outbound connection to the gateway's peer. From the gateway's
+  // perspective the connection is INBOUND from the leader's
+  // peer-id — its connection-manager ``answer()`` path caches it
+  // (``o-node-connection.manager.ts:205``). Subsequent gateway →
+  // daemon dials look the leader peer-id up in that cache and skip
+  // the dial path entirely.
+  const gatewayRegistryAddress = new oNodeAddress(
+    GATEWAY_REGISTRY_ADDRESS,
     [new oNodeTransport(options.gatewayMultiaddr)],
   );
-  const clientId = Math.random().toString(36).slice(2, 10);
-  // Explicit libp2p transports — the gateway can be reached over WSS
-  // (E2B-deployed via `/dns4/.../tcp/443/tls/ws/p2p/<id>`), TCP (local
-  // docker-compose), webTransport (browser-side daemons), or in-memory
-  // (tests). Without setting these on the transient client, the
-  // outbound dial fails with "No transports provided for the address"
-  // because the auto-defaults don't propagate through `oClientNode`'s
-  // explicit-leader path the same way they do through `oHost`.
-  const client = new oClientNode({
-    address: new oNodeAddress(`o://gateway-registrar-${clientId}`),
-    leader: gatewayLeaderAddress,
-    parent: null,
-    network: {
-      transports: [webTransport(), webSockets(), tcp(), memory()],
-    },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } as any);
-  await client.start();
 
   const registerPayload = {
     daemon_id: daemonId,
@@ -201,7 +220,7 @@ export async function registerWithGateway(
   // Best-effort initial registration. If this fails the daemon still
   // boots; the next heartbeat re-attempts register-on-not_registered.
   try {
-    await client.use(new oAddress(GATEWAY_REGISTRY_ADDRESS), {
+    await leaderNode.use(gatewayRegistryAddress, {
       method: 'register',
       params: registerPayload,
     });
@@ -222,15 +241,15 @@ export async function registerWithGateway(
       // isn't currently registered (e.g. gateway restarted, our row was
       // dropped), heartbeat returns `{ok: false, reason: 'not_registered'}`
       // — in that case we re-register so the daemon reappears.
-      const raw = await client.use(
-        new oAddress(GATEWAY_REGISTRY_ADDRESS),
-        { method: 'heartbeat', params: { daemon_id: daemonId } },
-      );
+      const raw = await leaderNode.use(gatewayRegistryAddress, {
+        method: 'heartbeat',
+        params: { daemon_id: daemonId },
+      });
       const result =
         (raw as { result?: { data?: { ok?: boolean; reason?: string } } })
           ?.result?.data;
       if (result?.ok === false && result.reason === 'not_registered') {
-        await client.use(new oAddress(GATEWAY_REGISTRY_ADDRESS), {
+        await leaderNode.use(gatewayRegistryAddress, {
           method: 'register',
           params: registerPayload,
         });
@@ -274,18 +293,15 @@ export async function registerWithGateway(
     stopped = true;
     clearInterval(timer);
     try {
-      await client.use(new oAddress(GATEWAY_REGISTRY_ADDRESS), {
+      await leaderNode.use(gatewayRegistryAddress, {
         method: 'unregister',
         params: { daemon_id: daemonId },
       });
     } catch (err) {
       log('unregister failed (gateway may already be unreachable)', err);
     }
-    try {
-      await client.stop();
-    } catch {
-      /* best-effort */
-    }
+    // No client.stop() — the leader is the daemon's own root node and
+    // outlives the registrar. The host shuts it down via OlaneOS.
   };
 
   return { unregister, daemonId };
