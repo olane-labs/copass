@@ -5,6 +5,21 @@ Hand-ported from ``typescript/packages/core/src/resources/retrieval.ts``.
 All three accept either a ``window`` (a :class:`WindowLike` — typically
 a ``ContextWindow``) or a raw ``history`` list. When ``window`` is set
 it wins and ``history`` is ignored. Server caps at 20 turns.
+
+All three responses MAY carry an optional ``cost`` sub-object. When
+the deployment is configured with ``gate_mode == "off"``, ``cost`` is
+absent / ``None``; in ``"shadow"`` and ``"enforce"`` modes it carries
+``{microcents, usd, deduction_id, gate_mode}``. The Python type for
+that sub-object is :class:`copass_core.types.CostInfo`; consumers that
+want it parsed call ``CostInfo.from_dict(response["cost"])``.
+
+TODO: replace the ``Dict[str, Any]`` returns with typed
+``DiscoverResponse`` / ``InterpretResponse`` / ``SearchResponse``
+envelopes so ``cost`` (and the rest of the envelope) gets IDE
+autocomplete. Held back from this change because the broader retrieval
+envelope (header / items / brief / citations / answer / preset /
+execution_time_ms / etc.) is not yet typed anywhere in this SDK and
+typing only one nested field is inconsistent. Tracked separately.
 """
 
 from __future__ import annotations

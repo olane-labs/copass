@@ -21,7 +21,7 @@ import httpx
 import pytest
 import respx
 
-from copass_core import ApiKeyAuth, CopassClient
+from copass_core import ApiKeyAuth, CopassClient, CostInfo
 
 
 # ─── /discover ────────────────────────────────────────────────────────
@@ -304,3 +304,96 @@ async def test_search_alias_preset_passes_through(client: CopassClient) -> None:
     await client.retrieval.search(sandbox_id="sb-1", query="q", preset="copass/2.0")
     body = json.loads(route.calls.last.request.content)
     assert body["preset"] == "copass/2.0"
+
+
+# ─── Cost field on response envelope ─────────────────────────────────
+#
+# The server attaches an optional ``cost`` sub-object to all three
+# retrieval responses when retrieval has a billable cost. These tests
+# verify the SDK does not strip it, and that ``CostInfo.from_dict``
+# is the documented path for typed consumption.
+
+
+@respx.mock
+async def test_discover_passes_through_cost_field(client: CopassClient) -> None:
+    """Server returns ``cost`` in enforce mode — the SDK does not
+    strip it, and ``CostInfo.from_dict`` parses the sub-object."""
+    respx.post("http://test/api/v1/query/sandboxes/sb-1/discover").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "header": "menu",
+                "items": [],
+                "count": 0,
+                "sandbox_id": "sb-1",
+                "query": "q",
+                "next_steps": "",
+                "cost": {
+                    "microcents": 1234,
+                    "usd": 0.001234,
+                    "deduction_id": "5f3e8b9c-1234-4abc-9def-0123456789ab",
+                    "gate_mode": "enforce",
+                },
+            },
+        )
+    )
+    resp = await client.retrieval.discover(sandbox_id="sb-1", query="q")
+    assert resp["cost"]["microcents"] == 1234
+    cost = CostInfo.from_dict(resp["cost"])
+    assert cost.gate_mode == "enforce"
+    assert cost.deduction_id == "5f3e8b9c-1234-4abc-9def-0123456789ab"
+
+
+@respx.mock
+async def test_interpret_cost_shadow_with_null_deduction_id(
+    client: CopassClient,
+) -> None:
+    """Shadow mode with no ledger entry: ``cost`` is populated (caller
+    learns the figure) but ``deduction_id`` is ``null``. The SDK
+    round-trips both correctly."""
+    respx.post("http://test/api/v1/query/sandboxes/sb-1/interpret").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "brief": "answer",
+                "citations": [],
+                "items": [["cid-1"]],
+                "sandbox_id": "sb-1",
+                "query": "q",
+                "cost": {
+                    "microcents": 800,
+                    "usd": 0.0008,
+                    "deduction_id": None,
+                    "gate_mode": "shadow",
+                },
+            },
+        )
+    )
+    resp = await client.retrieval.interpret(
+        sandbox_id="sb-1", query="q", items=[["cid-1"]],
+    )
+    cost = CostInfo.from_dict(resp["cost"])
+    assert cost.gate_mode == "shadow"
+    assert cost.deduction_id is None
+    assert cost.microcents == 800
+
+
+@respx.mock
+async def test_search_cost_absent_in_gate_off_mode(client: CopassClient) -> None:
+    """Gate ``off``: backend omits ``cost`` entirely (or sends null).
+    Consumers MUST treat absent / null identically."""
+    respx.post("http://test/api/v1/query/sandboxes/sb-1/search").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "answer": "ok",
+                "preset": "copass/copass_1.0",
+                "execution_time_ms": 100,
+                "sandbox_id": "sb-1",
+                "query": "q",
+                # no "cost" key — gate_mode = "off"
+            },
+        )
+    )
+    resp = await client.retrieval.search(sandbox_id="sb-1", query="q")
+    assert resp.get("cost") is None
