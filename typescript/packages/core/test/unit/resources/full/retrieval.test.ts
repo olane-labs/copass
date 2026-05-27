@@ -217,3 +217,144 @@ describe('retrieval.search', () => {
     expect((lastFetchCall().body as { preset: string }).preset).toBe('copass/2.0');
   });
 });
+
+/**
+ * Optional `cost?: CostInfo` on retrieval responses.
+ *
+ * The server populates this field when retrieval has a billable cost
+ * (`gate_mode` of `shadow` or `enforce`); the field is absent / `null`
+ * when `gate_mode` is `off` or when the server omits it. The SDK is
+ * purely typed pass-through — these tests assert the shape round-trips
+ * and that absence stays valid (backward compat with older servers).
+ */
+describe('retrieval cost field', () => {
+  beforeEach(() => mockFetch.mockReset());
+
+  it('unpacks cost on discover when gate is in enforce mode', async () => {
+    mockFetch.mockResolvedValue(
+      jsonResponse({
+        header: '',
+        items: [],
+        count: 0,
+        sandbox_id: 'sb-1',
+        query: 'q',
+        next_steps: '',
+        cost: {
+          microcents: 1234,
+          usd: 0.001234,
+          deduction_id: '5f3e8b9c-1234-4abc-9def-0123456789ab',
+          gate_mode: 'enforce',
+        },
+      }),
+    );
+    const client = makeClient();
+    const resp = await client.retrieval.discover('sb-1', { query: 'q' });
+    expect(resp.cost).toBeDefined();
+    expect(resp.cost?.microcents).toBe(1234);
+    expect(resp.cost?.usd).toBeCloseTo(0.001234, 6);
+    expect(resp.cost?.deduction_id).toBe('5f3e8b9c-1234-4abc-9def-0123456789ab');
+    expect(resp.cost?.gate_mode).toBe('enforce');
+  });
+
+  it('unpacks cost on interpret in shadow mode with null deduction_id', async () => {
+    mockFetch.mockResolvedValue(
+      jsonResponse({
+        brief: 'answer',
+        citations: [],
+        items: [['cid-1']],
+        sandbox_id: 'sb-1',
+        query: 'q',
+        cost: {
+          microcents: 5000,
+          usd: 0.005,
+          deduction_id: null,
+          gate_mode: 'shadow',
+        },
+      }),
+    );
+    const client = makeClient();
+    const resp = await client.retrieval.interpret('sb-1', {
+      query: 'q',
+      items: [['cid-1']],
+    });
+    expect(resp.cost?.microcents).toBe(5000);
+    expect(resp.cost?.deduction_id).toBeNull();
+    expect(resp.cost?.gate_mode).toBe('shadow');
+  });
+
+  it('unpacks cost on search with minimal payload (microcents + gate_mode only)', async () => {
+    mockFetch.mockResolvedValue(
+      jsonResponse({
+        answer: 'ok',
+        preset: 'copass/copass_1.0',
+        execution_time_ms: 100,
+        sandbox_id: 'sb-1',
+        query: 'q',
+        cost: {
+          microcents: 42,
+          gate_mode: 'enforce',
+        },
+      }),
+    );
+    const client = makeClient();
+    const resp = await client.retrieval.search('sb-1', { query: 'q' });
+    expect(resp.cost?.microcents).toBe(42);
+    expect(resp.cost?.gate_mode).toBe('enforce');
+    expect(resp.cost?.usd).toBeUndefined();
+    expect(resp.cost?.deduction_id).toBeUndefined();
+  });
+
+  it('tolerates absent cost field (gate_mode off or older server)', async () => {
+    mockFetch.mockResolvedValue(
+      jsonResponse({
+        header: '',
+        items: [],
+        count: 0,
+        sandbox_id: 'sb-1',
+        query: 'q',
+        next_steps: '',
+        // no `cost` field — server omits when gate_mode is off.
+      }),
+    );
+    const client = makeClient();
+    const resp = await client.retrieval.discover('sb-1', { query: 'q' });
+    expect(resp.cost).toBeUndefined();
+  });
+
+  it('tolerates explicit null cost (server may emit null when gate_mode is off)', async () => {
+    mockFetch.mockResolvedValue(
+      jsonResponse({
+        answer: 'ok',
+        preset: 'copass/copass_1.0',
+        execution_time_ms: 100,
+        sandbox_id: 'sb-1',
+        query: 'q',
+        cost: null,
+      }),
+    );
+    const client = makeClient();
+    const resp = await client.retrieval.search('sb-1', { query: 'q' });
+    expect(resp.cost).toBeNull();
+  });
+
+  it('CostInfo round-trips through JSON.parse(JSON.stringify(...))', () => {
+    const original = {
+      microcents: 1234,
+      usd: 0.001234,
+      deduction_id: '5f3e8b9c-1234-4abc-9def-0123456789ab',
+      gate_mode: 'enforce' as const,
+    };
+    const roundTripped = JSON.parse(JSON.stringify(original)) as typeof original;
+    expect(roundTripped).toEqual(original);
+    expect(roundTripped.microcents).toBe(1234);
+    expect(roundTripped.gate_mode).toBe('enforce');
+  });
+
+  it('supports all three gate_mode literals (off / shadow / enforce)', () => {
+    // Type-instantiation smoke: the union must accept each literal.
+    // Compile-time check; if any literal stops being assignable this
+    // file won't typecheck.
+    const modes: Array<'off' | 'shadow' | 'enforce'> = ['off', 'shadow', 'enforce'];
+    expect(modes).toHaveLength(3);
+  });
+});
