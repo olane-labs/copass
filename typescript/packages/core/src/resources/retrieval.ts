@@ -17,6 +17,49 @@ import type { WindowLike } from '../context-window/types.js';
 
 export type ChatRole = 'user' | 'assistant' | 'system';
 
+/**
+ * Per-call cost telemetry attached to retrieval responses.
+ *
+ * `microcents` is the authoritative integer cost reported by the server.
+ * `usd` is a display-only convenience (`microcents / 1_000_000`, rounded
+ * to 6 decimals) — clients summing across responses MUST sum `microcents`
+ * and divide once at display to avoid float-rounding drift.
+ *
+ * The field is optional on each response envelope: populated when the
+ * server is configured to surface cost (`gate_mode` of `shadow` or
+ * `enforce`) and absent / `null` when `gate_mode` is `off`.
+ *
+ * `gate_mode` indicates whether the server is enforcing credit balances
+ * (`enforce`), reporting cost without enforcement (`shadow`), or not
+ * tracking cost at all (`off`). Use it to detect "shadow mode is on —
+ * cost is approximate" without inferring from a null `deduction_id`.
+ */
+export interface CostInfo {
+  /**
+   * Authoritative integer cost in USD microcents (1e-6 USD). Sum this
+   * field — not `usd` — to aggregate cost across calls.
+   */
+  microcents: number;
+  /**
+   * Display-only USD convenience: `microcents / 1_000_000`, rounded to
+   * 6 decimals. Float; do not sum for accounting.
+   */
+  usd?: number;
+  /**
+   * Opaque ledger identifier returned by the server; use it to join
+   * against billing records you fetch from the server. May be `null`
+   * (e.g. shadow mode where no ledger row was written, or paths that
+   * skip settlement).
+   */
+  deduction_id?: string | null;
+  /**
+   * Server cost-tracking mode for this request. `off` means cost is
+   * not tracked, `shadow` means cost is reported without enforcement,
+   * `enforce` means credit balances are enforced.
+   */
+  gate_mode: 'off' | 'shadow' | 'enforce';
+}
+
 export interface ChatMessage {
   role: ChatRole;
   content: string;
@@ -97,6 +140,13 @@ export interface DiscoverResponse {
   query: string;
   /** Short actionable pointer for what to do after picking items. */
   next_steps: string;
+  /**
+   * Optional per-call cost telemetry. Populated by the server when
+   * retrieval has a billable cost (`gate_mode` of `shadow` or
+   * `enforce`); absent / `null` when `gate_mode` is `off` or when the
+   * server omits the field. See {@link CostInfo} for field semantics.
+   */
+  cost?: CostInfo | null;
 }
 
 export interface InterpretRequest {
@@ -132,6 +182,13 @@ export interface InterpretResponse {
   sandbox_id: string;
   project_id?: string;
   query: string;
+  /**
+   * Optional per-call cost telemetry. Populated by the server when
+   * retrieval has a billable cost (`gate_mode` of `shadow` or
+   * `enforce`); absent / `null` when `gate_mode` is `off` or when the
+   * server omits the field. See {@link CostInfo} for field semantics.
+   */
+  cost?: CostInfo | null;
 }
 
 /**
@@ -184,6 +241,13 @@ export interface SearchResponse {
   sandbox_id: string;
   project_id?: string;
   query: string;
+  /**
+   * Optional per-call cost telemetry. Populated by the server when
+   * retrieval has a billable cost (`gate_mode` of `shadow` or
+   * `enforce`); absent / `null` when `gate_mode` is `off` or when the
+   * server omits the field. See {@link CostInfo} for field semantics.
+   */
+  cost?: CostInfo | null;
 }
 
 /**

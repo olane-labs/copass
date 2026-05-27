@@ -55,6 +55,7 @@ export { RetrievalResource } from './resources/retrieval.js';
 export type {
   ChatRole,
   ChatMessage,
+  CostInfo,
   DiscoveryItem,
   DiscoverRequest,
   DiscoverResponse,
