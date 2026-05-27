@@ -14,9 +14,20 @@ name: release-python
 #     ``[tool.hatch.version] source = regex``, so the workflow only
 #     needs to call ``python -m build`` per package — no version
 #     stamping step. The ``release-production`` matrix publishes
-#     every package at the same version in parallel. Skipped silently
-#     when ``python/VERSION`` did not change in the pushed commit —
-#     pushing a typo fix to ``production`` does not republish anything.
+#     every package at the same version in parallel.
+#
+#     **Auto-patch bump.** Every push to ``production`` ships a release.
+#     The ``prepare-version`` job:
+#       - If ``python/VERSION`` changed in the pushed commit → uses it
+#         verbatim (manual major/minor/breaking bumps stay in your hands).
+#       - If unchanged → auto-bumps the PATCH component, commits the new
+#         ``python/VERSION`` back to ``production`` with the default
+#         ``GITHUB_TOKEN`` (which does NOT re-trigger workflows, so no
+#         recursion), and proceeds to publish that version.
+#     Net effect: merge to ``production`` and the lockstep release ships
+#     automatically — no manual VERSION bump required for routine fixes.
+#     Non-SemVer ``python/VERSION`` (e.g. ``1.4.3a1``) fails the auto-bump
+#     and requires a manual edit.
 #
 # Both paths use PyPI Trusted Publishing (OIDC — no long-lived tokens).
 #
@@ -35,10 +46,9 @@ name: release-python
 on:
   push:
     branches: [production]
-    # No ``paths:`` filter — GitHub doesn't fire path-filtered pushes
-    # on initial branch creation, and the internal
-    # ``check-lockstep-version`` job already gates on whether
-    # ``python/VERSION`` actually changed in the pushed commit.
+    # No ``paths:`` filter — every push to ``production`` ships a
+    # release. ``prepare-version`` either uses an explicit VERSION bump
+    # or auto-bumps the patch component when nothing changed.
   workflow_dispatch:
     inputs:
       package:
@@ -71,58 +81,90 @@ concurrency:
 jobs:
   # ─── Lockstep production release ─────────────────────────────────
   #
-  # Fires on push to ``production`` when ``python/VERSION`` changed in
-  # the pushed commit. Reads the canonical version from that file,
-  # stamps it into every package's ``pyproject.toml`` + ``__version__``
-  # at build time, and publishes all 5 in parallel.
+  # Fires on every push to ``production``. ``prepare-version`` resolves
+  # the version to ship: if ``python/VERSION`` changed in the pushed
+  # commit it's used as-is; otherwise the patch component is auto-bumped
+  # and the new VERSION is committed back to ``production``. The matrix
+  # then checks out the resolved SHA so ``[tool.hatch.version]`` reads
+  # the right value at build time.
 
-  check-lockstep-version:
-    name: Check python/VERSION
+  prepare-version:
+    name: Prepare release version
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/production' }}
     runs-on: ubuntu-latest
+    permissions:
+      # Needed to push the auto-bump commit back to ``production``.
+      contents: write
     outputs:
-      version: ${{ steps.read.outputs.version }}
-      should_release: ${{ steps.read.outputs.should_release }}
+      version: ${{ steps.resolve.outputs.version }}
+      sha: ${{ steps.resolve.outputs.sha }}
     steps:
       - uses: actions/checkout@v4
         with:
           # Need the parent commit to diff python/VERSION against.
           fetch-depth: 2
+          # Default token + persist so we can push the auto-bump.
+          # Pushes made with the default GITHUB_TOKEN do NOT trigger
+          # new workflow runs — no recursion risk.
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: true
 
-      - id: read
+      - name: Configure git identity
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - id: resolve
         run: |
           set -euo pipefail
           if [ ! -f python/VERSION ]; then
-            echo "::warning::python/VERSION missing — skipping lockstep release"
-            echo "should_release=false" >> "$GITHUB_OUTPUT"
-            exit 0
+            echo "::error::python/VERSION missing"
+            exit 1
           fi
 
-          v=$(tr -d '[:space:]' < python/VERSION)
-          if [ -z "$v" ]; then
+          current=$(tr -d '[:space:]' < python/VERSION)
+          if [ -z "$current" ]; then
             echo "::error::python/VERSION is empty"
             exit 1
           fi
-          echo "version=$v" >> "$GITHUB_OUTPUT"
 
           # Did VERSION change in the pushed commit? Match only actual
           # +/- content lines (``^[+-][^+-]``) — the naive ``^[+-]``
           # also matches the ``--- a/...`` / ``+++ b/...`` diff headers
           # and would always return true on a metadata-only change.
-          # Newly-added files surface as ``+0.4.1`` lines (correctly
-          # detected as a release-worthy change).
           if git diff HEAD~1 HEAD -- python/VERSION | grep -q '^[+-][^+-]'; then
-            echo "should_release=true" >> "$GITHUB_OUTPUT"
-            echo "::notice::Lockstep release of all Python packages at $v"
-          else
-            echo "should_release=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::python/VERSION unchanged ($v) — skipping release"
+            echo "::notice::python/VERSION explicitly set to $current — using verbatim"
+            echo "version=$current" >> "$GITHUB_OUTPUT"
+            echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
 
+          # VERSION unchanged → auto-bump PATCH. Only valid for clean
+          # SemVer (``MAJOR.MINOR.PATCH``); pre-release / build-metadata
+          # variants must be bumped manually.
+          if ! echo "$current" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::Cannot auto-bump non-SemVer python/VERSION '$current'. Bump it manually and re-push."
+            exit 1
+          fi
+
+          major=$(echo "$current" | cut -d. -f1)
+          minor=$(echo "$current" | cut -d. -f2)
+          patch=$(echo "$current" | cut -d. -f3)
+          new="${major}.${minor}.$((patch + 1))"
+          echo "$new" > python/VERSION
+
+          echo "::notice::Auto-bumped python/VERSION ${current} → ${new}"
+
+          git add python/VERSION
+          git commit -m "chore(python): auto-bump VERSION ${current} → ${new} [release]"
+          git push origin HEAD:production
+
+          echo "version=$new" >> "$GITHUB_OUTPUT"
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
   release-production:
-    name: "Release ${{ matrix.package }} @ ${{ needs.check-lockstep-version.outputs.version }}"
-    needs: [check-lockstep-version]
-    if: needs.check-lockstep-version.outputs.should_release == 'true'
+    name: "Release ${{ matrix.package }} @ ${{ needs.prepare-version.outputs.version }}"
+    needs: [prepare-version]
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
@@ -149,6 +191,12 @@ jobs:
           - copass-pydantic-ai
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Pin to the SHA resolved by ``prepare-version`` — if that
+          # job auto-bumped python/VERSION, this is the bump commit
+          # (not the original trigger SHA). Hatch then reads the
+          # correct version when ``python -m build`` runs below.
+          ref: ${{ needs.prepare-version.outputs.sha }}
 
       - uses: actions/setup-python@v5
         with:
