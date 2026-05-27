@@ -33,6 +33,14 @@ name: release-python
 #     Non-SemVer ``python/VERSION`` (e.g. ``1.4.3a1``) fails the
 #     auto-bump and requires a manual edit.
 #
+#     **PyPI propagation gate.** PyPI's upload API returns 200 OK
+#     before the new version is queryable via the JSON / simple-index
+#     endpoint (the CDN takes 1-2 minutes to catch up). The final
+#     ``verify-propagation`` job polls every package until all 11 are
+#     queryable at the target version, so downstream consumers (e.g.
+#     the backend deploy on a ``chore(deps): bump copass-*`` merge)
+#     can't race the propagation window.
+#
 # Both paths use PyPI Trusted Publishing (OIDC — no long-lived tokens).
 #
 # Prerequisites (done once per package on pypi.org):
@@ -260,6 +268,88 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: python/${{ matrix.package }}/dist/
+
+  verify-propagation:
+    # PyPI's upload API returns 200 OK before the version is queryable
+    # via the JSON API (CDN-fronted index). A downstream consumer that
+    # races this workflow — e.g. a backend deploy on a `chore(deps):
+    # bump copass-*` merge — can hit a stale resolver mid-propagation
+    # and fail with "No matching distribution found" even though the
+    # upload succeeded. This job blocks the workflow from going green
+    # until every package in the lockstep matrix is actually queryable
+    # at the resolved version, so downstream jobs can use
+    # ``workflow_run`` (or a manual rerun after this completes) without
+    # the race.
+    #
+    # Polls each of the 11 packages every 10s for up to 5 minutes.
+    # Each loop iteration only re-queries packages still missing the
+    # target version, so propagation time scales with the slowest
+    # package, not the package count.
+    name: Verify PyPI propagation @ ${{ needs.prepare-version.outputs.version }}
+    needs: [prepare-version, release-production]
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Poll PyPI JSON API until every package returns the target version
+        env:
+          TARGET_VERSION: ${{ needs.prepare-version.outputs.version }}
+        run: |
+          set -euo pipefail
+
+          # Lockstep matrix — keep in sync with ``release-production``.
+          packages=(
+            copass-core
+            copass-core-agents
+            copass-context-agents
+            copass-anthropic-agents
+            copass-google-agents
+            copass-hermes-agents
+            copass-agent-router
+            copass-config
+            copass-langchain
+            copass-management
+            copass-pydantic-ai
+          )
+
+          # Tunables. 30 attempts × 10s = 5 minutes — PyPI's CDN
+          # typically catches up within 1-2 minutes; 5 is generous.
+          max_attempts=30
+          sleep_seconds=10
+
+          remaining=("${packages[@]}")
+          for attempt in $(seq 1 "$max_attempts"); do
+            still_pending=()
+            for pkg in "${remaining[@]}"; do
+              # ``releases`` is a dict keyed by version string; presence
+              # of the target key means the version is registered. The
+              # JSON endpoint is cached more aggressively than the
+              # simple-index endpoint, so a positive answer here means
+              # ``pip`` resolvers can see it too.
+              found=$(
+                curl -fsSL "https://pypi.org/pypi/${pkg}/json" \
+                  | python3 -c 'import json,os,sys; print("yes" if os.environ["TARGET_VERSION"] in json.load(sys.stdin).get("releases",{}) else "no")' \
+                  2>/dev/null || echo "error"
+              )
+
+              if [ "$found" = "yes" ]; then
+                echo "::notice::${pkg}@${TARGET_VERSION} queryable on PyPI"
+              else
+                still_pending+=("$pkg")
+              fi
+            done
+
+            if [ "${#still_pending[@]}" -eq 0 ]; then
+              echo "::notice::All ${#packages[@]} packages propagated at ${TARGET_VERSION} (attempt ${attempt})"
+              exit 0
+            fi
+
+            echo "Attempt ${attempt}/${max_attempts} — still waiting on: ${still_pending[*]}"
+            remaining=("${still_pending[@]}")
+            sleep "$sleep_seconds"
+          done
+
+          echo "::error::PyPI propagation timed out after $((max_attempts * sleep_seconds))s. Still missing ${TARGET_VERSION}: ${remaining[*]}"
+          exit 1
 
   # ─── Manual single-package dispatch jobs ─────────────────────────
   #
