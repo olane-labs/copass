@@ -42,18 +42,38 @@ def test_param_descriptions_non_empty() -> None:
         assert value.strip(), name
 
 
-def test_system_prompts_mention_discover_and_interpret() -> None:
-    for name in ("COPASS_AGENT_MCP_SYSTEM_PROMPT", "COPASS_AGENT_SDK_SYSTEM_PROMPT"):
-        prompt = getattr(cfg, name)
-        assert "discover" in prompt
-        assert "interpret" in prompt
-        assert "search" in prompt
+def test_sdk_system_prompt_drills_via_search_not_interpret() -> None:
+    """Drill-in guidance is unified on ``search`` across MCP and SDK
+    surfaces. ``interpret`` is still registered by SDK adapters for
+    backward compat but is no longer the recommended drill-in path."""
+    prompt = cfg.COPASS_AGENT_SDK_SYSTEM_PROMPT
+    assert "discover" in prompt
+    assert "search" in prompt
+    assert "interpret" not in prompt
+
+
+def test_mcp_system_prompt_drops_interpret_and_auto_fire() -> None:
+    """MCP gives no auto-fire guarantee (that is an SDK / host
+    convention) and no longer exposes ``interpret``."""
+    prompt = cfg.COPASS_AGENT_MCP_SYSTEM_PROMPT
+    assert "interpret" not in prompt
+    assert "auto-fire" not in prompt
+    assert "auto-inject" not in prompt
+    assert "discover" in prompt
+    assert "search" in prompt
 
 
 def test_mcp_prompt_uses_mcp_tool_names() -> None:
     prompt = cfg.COPASS_AGENT_MCP_SYSTEM_PROMPT
     assert "mcp__copass__discover" in prompt
-    assert "mcp__copass__interpret" in prompt
+    assert "mcp__copass__search" in prompt
+
+
+def test_search_description_carries_per_turn_rule() -> None:
+    """Per-turn enforcement lives in ``SEARCH_DESCRIPTION`` so it
+    survives if a hook's injected context is compacted out."""
+    desc = cfg.SEARCH_DESCRIPTION
+    assert "every user turn" in desc.lower()
 
 
 def test_sdk_prompt_uses_bare_tool_names() -> None:

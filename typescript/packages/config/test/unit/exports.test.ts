@@ -30,18 +30,29 @@ describe('@copass/config exports', () => {
     expect(config.DISCOVER_DESCRIPTION).toMatch(/new\s+signal/i);
   });
 
-  it('MCP_DISCOVER_DESCRIPTION additionally mentions the env var hook', () => {
-    expect(config.MCP_DISCOVER_DESCRIPTION).toMatch(/COPASS_CONTEXT_WINDOW_ID/);
-    expect(config.MCP_DISCOVER_DESCRIPTION).toMatch(/context_window_create/);
+  it('DISCOVER_DESCRIPTION points drill-in at search (not interpret)', () => {
+    expect(config.DISCOVER_DESCRIPTION).toMatch(/drill.*search|search.*drill/i);
+    expect(config.DISCOVER_DESCRIPTION).not.toMatch(/interpret/i);
   });
 
-  it('system prompts tell the LLM it can call discover repeatedly', () => {
-    for (const prompt of [
-      config.COPASS_AGENT_MCP_SYSTEM_PROMPT,
-      config.COPASS_AGENT_SDK_SYSTEM_PROMPT,
-    ]) {
-      expect(prompt).toMatch(/multiple times|again/i);
-      expect(prompt).toMatch(/new\s+items|fresh\s+signal/i);
-    }
+  it('MCP_DISCOVER_DESCRIPTION does NOT mention auto-fire (MCP gives no such guarantee)', () => {
+    expect(config.MCP_DISCOVER_DESCRIPTION).not.toMatch(/auto-fire|auto-inject/i);
+    expect(config.MCP_DISCOVER_DESCRIPTION).not.toMatch(/interpret/i);
+  });
+
+  it('SEARCH_DESCRIPTION carries the per-turn hard rule', () => {
+    expect(config.SEARCH_DESCRIPTION).toMatch(/every user turn/i);
+    expect(config.SEARCH_DESCRIPTION).toMatch(/discover|search/);
+  });
+
+  it('MCP system prompt does not reference the removed interpret tool', () => {
+    expect(config.COPASS_AGENT_MCP_SYSTEM_PROMPT).not.toMatch(/interpret/i);
+  });
+
+  it('SDK system prompt drills in via search, not interpret', () => {
+    const prompt = config.COPASS_AGENT_SDK_SYSTEM_PROMPT;
+    expect(prompt).toMatch(/discover/);
+    expect(prompt).toMatch(/search/);
+    expect(prompt).not.toMatch(/interpret/i);
   });
 });

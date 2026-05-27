@@ -1,6 +1,6 @@
 # @copass/mastra
 
-**Copass retrieval as Mastra tools.** The LLM decides whether to `discover`, `interpret`, or `search` — you don't write the tool-calling loop.
+**Copass retrieval as Mastra tools.** The LLM picks `discover` (menu of relevant items) or `search` (synthesized answer) — you don't write the tool-calling loop. `interpret` is exposed for back-compat but legacy; prefer `search` for drill-in.
 
 ## Prerequisites
 
@@ -77,7 +77,7 @@ Tool results (`role: 'tool'`) are skipped by default; opt in with `createWindowT
 
 ## Why this, not the raw API
 
-- **LLM chooses the retrieval shape.** Three tools; the model picks the right one per turn.
+- **LLM chooses the retrieval shape.** `discover` for a menu of relevant items, `search` for a synthesized answer. `interpret` is wired for back-compat (legacy — prefer `search`).
 - **Window-aware automatically** — when paired with `createWindowTracker`. Without the tracker, retrieval sees an empty history.
 - **Mastra-native tool shape.** Drop the returned `{ discover, interpret, search }` object straight into any agent config.
 
@@ -86,8 +86,8 @@ Tool results (`role: 'tool'`) are skipped by default; opt in with `createWindowT
 | Tool | When the LLM calls it |
 |---|---|
 | `discover` | "What's relevant?" — ranked menu of pointers |
-| `interpret` | "Tell me about these specific items." — brief pinned to canonical_ids |
-| `search` | "Answer this directly." — full synthesized answer |
+| `search` | "Tell me about X" / "Answer this." — synthesized answer (canonical drill-in) |
+| `interpret` | Legacy — brief pinned to canonical_ids. Prefer `search` for drill-in. |
 
 ## Conversation metadata
 

@@ -1,6 +1,6 @@
 # @copass/ai-sdk
 
-**Copass retrieval as Vercel AI SDK tools.** The LLM decides whether to `discover`, `interpret`, or `search` — you don't write the tool-calling loop.
+**Copass retrieval as Vercel AI SDK tools.** The LLM picks `discover` (menu of relevant items) or `search` (synthesized answer) — you don't write the tool-calling loop. `interpret` is exposed for back-compat but legacy; prefer `search` for drill-in.
 
 ## Prerequisites
 
@@ -100,7 +100,7 @@ Tool messages (role: `'tool'`) are skipped by default since they're usually retr
 
 ## Why this, not the raw API
 
-- **LLM chooses the retrieval shape.** You expose three tools; Claude picks `discover` for exploration, `interpret` for drilling into picked items, or `search` for a direct answer.
+- **LLM chooses the retrieval shape.** Claude picks `discover` for a menu of relevant items or `search` for a synthesized answer. `interpret` is also wired up for back-compat (legacy — prefer `search`).
 - **Window-aware retrieval.** Each retrieval call carries the `window` argument so the server knows which items have already been surfaced in this conversation. Add `createWindowTracker` (above) to get automatic cross-turn awareness.
 - **Trimmed response shapes.** Tools return only what the model needs (`{header, items, next_steps}` / `{brief}` / `{answer}`) — no sandbox/project echoes that waste tokens.
 
@@ -109,8 +109,8 @@ Tool messages (role: `'tool'`) are skipped by default since they're usually retr
 | Tool | When the LLM calls it |
 |---|---|
 | `discover` | "What's relevant?" — ranked menu of pointers |
-| `interpret` | "Tell me about these specific items." — brief pinned to canonical_ids |
-| `search` | "Answer this directly." — full synthesized answer |
+| `search` | "Tell me about X" / "Answer this." — synthesized answer (canonical drill-in) |
+| `interpret` | Legacy — brief pinned to canonical_ids. Prefer `search` for drill-in. |
 
 ## Conversation metadata
 
