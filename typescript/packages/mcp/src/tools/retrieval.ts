@@ -7,7 +7,7 @@ import {
   SEARCH_DESCRIPTION,
   SEARCH_QUERY_PARAM,
 } from '@copass/config';
-import type { CopassClient } from '@copass/core';
+import type { CopassClient, CostInfo } from '@copass/core';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ServerConfig } from '../config.js';
 import type { WindowRegistry } from '../windows.js';
@@ -18,18 +18,67 @@ interface RetrievalDeps {
   windows: WindowRegistry;
 }
 
-function mcpResult(payload: unknown) {
+interface McpToolResult {
+  content: Array<{ type: 'text'; text: string }>;
+  isError?: boolean;
+  _meta?: Record<string, unknown>;
+  // Index signature to match MCP SDK's `CallToolResult` shape (extends
+  // `ResultSchema`'s loose object). Without it, TS rejects assignment
+  // into the `ToolCallback` return type.
+  [key: string]: unknown;
+}
+
+function mcpResult(payload: unknown): McpToolResult {
   return {
     content: [{ type: 'text' as const, text: JSON.stringify(payload, null, 2) }],
   };
 }
 
-function mcpError(error: unknown) {
+function mcpError(error: unknown): McpToolResult {
   const message = error instanceof Error ? error.message : String(error);
   return {
     content: [{ type: 'text' as const, text: `Error: ${message}` }],
     isError: true,
   };
+}
+
+/**
+ * Project optional per-call cost telemetry onto a tool result. Mutates two
+ * surfaces so both LLM and programmatic consumers see it:
+ *
+ * 1. Appends a compact one-line `Cost: …` summary to the text content so a
+ *    calling LLM can self-throttle. Skipped when cost is absent, or when
+ *    the gate is `off` and the call had zero microcents (no signal to add).
+ *    Deduction ids are deliberately omitted from the text — they're opaque
+ *    ledger references with no value to an LLM.
+ * 2. Sets `_meta.cost` to the raw `CostInfo` object whenever the server
+ *    returned one, including in `off` mode, so programmatic consumers can
+ *    read the gate mode explicitly and join against ledger ids.
+ *
+ * No-op when `cost` is `null` or `undefined`.
+ */
+function appendCostToResult(result: McpToolResult, cost: CostInfo | null | undefined): McpToolResult {
+  if (cost === null || cost === undefined) return result;
+
+  const microcents = cost.microcents;
+  // `_meta.cost` is always set when the server reports cost — even in
+  // `off` mode — so programmatic consumers can see the gate state.
+  result._meta = { ...(result._meta ?? {}), cost };
+
+  if (typeof microcents !== 'number') return result;
+  // Skip the LLM-visible line when the server isn't actually tracking
+  // anything — `off` mode with zero microcents conveys no signal.
+  if (cost.gate_mode === 'off' && microcents === 0) return result;
+
+  // Prefer the server-supplied `usd` display value when present; fall
+  // back to `microcents / 1_000_000` rounded to 6 decimals to match the
+  // SDK's convention.
+  const usd = typeof cost.usd === 'number' ? cost.usd : Number((microcents / 1_000_000).toFixed(6));
+  const usdStr = usd.toFixed(6);
+  const line = `Cost: ${microcents} µ¢ ($${usdStr}) [gate: ${cost.gate_mode}]`;
+
+  result.content = [...result.content, { type: 'text' as const, text: line }];
+  return result;
 }
 
 export function registerRetrievalTools(server: McpServer, deps: RetrievalDeps): void {
@@ -68,21 +117,24 @@ export function registerRetrievalTools(server: McpServer, deps: RetrievalDeps): 
           // (/discover rejects them) so we don't second-guess here.
           preset: preset ?? config.preset,
         });
-        return mcpResult({
-          header: response.header,
-          // Project the v2 fields (`subgraph` + `matched_query_nodes`)
-          // alongside the v1 fields. Populated only under
-          // `copass/copass_2.0` (or its `copass/2.0` alias); `null`
-          // under v1.
-          items: response.items.map((item) => ({
-            score: item.score,
-            summary: item.summary,
-            canonical_ids: item.canonical_ids,
-            subgraph: item.subgraph ?? null,
-            matched_query_nodes: item.matched_query_nodes ?? null,
-          })),
-          next_steps: response.next_steps,
-        });
+        return appendCostToResult(
+          mcpResult({
+            header: response.header,
+            // Project the v2 fields (`subgraph` + `matched_query_nodes`)
+            // alongside the v1 fields. Populated only under
+            // `copass/copass_2.0` (or its `copass/2.0` alias); `null`
+            // under v1.
+            items: response.items.map((item) => ({
+              score: item.score,
+              summary: item.summary,
+              canonical_ids: item.canonical_ids,
+              subgraph: item.subgraph ?? null,
+              matched_query_nodes: item.matched_query_nodes ?? null,
+            })),
+            next_steps: response.next_steps,
+          }),
+          response.cost,
+        );
       } catch (e) {
         return mcpError(e);
       }
@@ -129,7 +181,7 @@ export function registerRetrievalTools(server: McpServer, deps: RetrievalDeps): 
           window: windows.resolve(),
           preset: preset ?? config.preset,
         });
-        return mcpResult({ answer: response.answer });
+        return appendCostToResult(mcpResult({ answer: response.answer }), response.cost);
       } catch (e) {
         return mcpError(e);
       }
