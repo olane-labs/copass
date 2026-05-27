@@ -20,14 +20,18 @@ name: release-python
 #     The ``prepare-version`` job:
 #       - If ``python/VERSION`` changed in the pushed commit → uses it
 #         verbatim (manual major/minor/breaking bumps stay in your hands).
-#       - If unchanged → auto-bumps the PATCH component, commits the new
-#         ``python/VERSION`` back to ``production`` with the default
-#         ``GITHUB_TOKEN`` (which does NOT re-trigger workflows, so no
-#         recursion), and proceeds to publish that version.
+#       - If unchanged → queries PyPI for the highest published version
+#         of the sentinel package (``copass-config``) and auto-bumps its
+#         PATCH component. The matrix stamps the resolved version into a
+#         workspace-local ``python/VERSION`` before build — no commit or
+#         push back to ``production`` (which has branch protection that
+#         blocks workflow-token writes). PyPI is the source of truth.
 #     Net effect: merge to ``production`` and the lockstep release ships
 #     automatically — no manual VERSION bump required for routine fixes.
-#     Non-SemVer ``python/VERSION`` (e.g. ``1.4.3a1``) fails the auto-bump
-#     and requires a manual edit.
+#     ``python/VERSION`` in-repo is treated as a manual override floor;
+#     it is allowed to lag behind PyPI between manual bumps.
+#     Non-SemVer ``python/VERSION`` (e.g. ``1.4.3a1``) fails the
+#     auto-bump and requires a manual edit.
 #
 # Both paths use PyPI Trusted Publishing (OIDC — no long-lived tokens).
 #
@@ -92,29 +96,26 @@ jobs:
     name: Prepare release version
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/production' }}
     runs-on: ubuntu-latest
-    permissions:
-      # Needed to push the auto-bump commit back to ``production``.
-      contents: write
+    # No ``contents: write`` — we do NOT push the bump back. Branch
+    # protection on ``production`` rejects workflow-token writes, so
+    # PyPI is the source of truth instead: each matrix job stamps the
+    # resolved version into a workspace-local ``python/VERSION`` before
+    # ``python -m build`` runs.
     outputs:
       version: ${{ steps.resolve.outputs.version }}
-      sha: ${{ steps.resolve.outputs.sha }}
     steps:
       - uses: actions/checkout@v4
         with:
           # Need the parent commit to diff python/VERSION against.
           fetch-depth: 2
-          # Default token + persist so we can push the auto-bump.
-          # Pushes made with the default GITHUB_TOKEN do NOT trigger
-          # new workflow runs — no recursion risk.
-          token: ${{ secrets.GITHUB_TOKEN }}
-          persist-credentials: true
-
-      - name: Configure git identity
-        run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - id: resolve
+        env:
+          # Sentinel package used to discover the highest version
+          # currently on PyPI when no manual bump is provided. All
+          # Python packages release in lockstep, so any one of them
+          # works; ``copass-config`` is the most stable.
+          PYPI_SENTINEL: copass-config
         run: |
           set -euo pipefail
           if [ ! -f python/VERSION ]; then
@@ -122,8 +123,8 @@ jobs:
             exit 1
           fi
 
-          current=$(tr -d '[:space:]' < python/VERSION)
-          if [ -z "$current" ]; then
+          file_v=$(tr -d '[:space:]' < python/VERSION)
+          if [ -z "$file_v" ]; then
             echo "::error::python/VERSION is empty"
             exit 1
           fi
@@ -133,34 +134,44 @@ jobs:
           # also matches the ``--- a/...`` / ``+++ b/...`` diff headers
           # and would always return true on a metadata-only change.
           if git diff HEAD~1 HEAD -- python/VERSION | grep -q '^[+-][^+-]'; then
-            echo "::notice::python/VERSION explicitly set to $current — using verbatim"
-            echo "version=$current" >> "$GITHUB_OUTPUT"
-            echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+            echo "::notice::python/VERSION explicitly set to ${file_v} in this push — using verbatim"
+            echo "version=${file_v}" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          # VERSION unchanged → auto-bump PATCH. Only valid for clean
-          # SemVer (``MAJOR.MINOR.PATCH``); pre-release / build-metadata
-          # variants must be bumped manually.
-          if ! echo "$current" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-            echo "::error::Cannot auto-bump non-SemVer python/VERSION '$current'. Bump it manually and re-push."
+          # VERSION unchanged → derive next patch from PyPI. The
+          # in-repo ``python/VERSION`` is treated as a manual override
+          # floor and is allowed to lag behind PyPI between bumps.
+          pypi_v=$(
+            curl -fsSL "https://pypi.org/pypi/${PYPI_SENTINEL}/json" \
+              | python3 -c 'import json,sys; print(json.load(sys.stdin)["info"]["version"])'
+          )
+          if [ -z "$pypi_v" ]; then
+            echo "::error::Could not read latest version of ${PYPI_SENTINEL} from PyPI"
             exit 1
           fi
 
-          major=$(echo "$current" | cut -d. -f1)
-          minor=$(echo "$current" | cut -d. -f2)
-          patch=$(echo "$current" | cut -d. -f3)
+          # If the in-repo file is higher than PyPI (manual bump landed
+          # in a prior commit but never published — e.g. last release
+          # workflow failed), use the higher of the two as the base.
+          base="$pypi_v"
+          if [ "$(printf '%s\n%s\n' "$file_v" "$pypi_v" | sort -V | tail -n1)" = "$file_v" ] \
+             && [ "$file_v" != "$pypi_v" ]; then
+            base="$file_v"
+            echo "::notice::python/VERSION (${file_v}) is ahead of PyPI (${pypi_v}); using ${base} as base"
+          fi
+
+          if ! echo "$base" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::Cannot auto-bump non-SemVer version '${base}'. Edit python/VERSION manually and re-push."
+            exit 1
+          fi
+
+          major=$(echo "$base" | cut -d. -f1)
+          minor=$(echo "$base" | cut -d. -f2)
+          patch=$(echo "$base" | cut -d. -f3)
           new="${major}.${minor}.$((patch + 1))"
-          echo "$new" > python/VERSION
-
-          echo "::notice::Auto-bumped python/VERSION ${current} → ${new}"
-
-          git add python/VERSION
-          git commit -m "chore(python): auto-bump VERSION ${current} → ${new} [release]"
-          git push origin HEAD:production
-
-          echo "version=$new" >> "$GITHUB_OUTPUT"
-          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "::notice::Auto-resolved release version: base=${base} (PyPI=${pypi_v}, file=${file_v}) → ${new}"
+          echo "version=${new}" >> "$GITHUB_OUTPUT"
 
   release-production:
     name: "Release ${{ matrix.package }} @ ${{ needs.prepare-version.outputs.version }}"
@@ -191,12 +202,6 @@ jobs:
           - copass-pydantic-ai
     steps:
       - uses: actions/checkout@v4
-        with:
-          # Pin to the SHA resolved by ``prepare-version`` — if that
-          # job auto-bumped python/VERSION, this is the bump commit
-          # (not the original trigger SHA). Hatch then reads the
-          # correct version when ``python -m build`` runs below.
-          ref: ${{ needs.prepare-version.outputs.sha }}
 
       - uses: actions/setup-python@v5
         with:
@@ -209,10 +214,13 @@ jobs:
         if: matrix.package == 'copass-management'
         run: python3 python/copass-management/scripts/sync_spec.py
 
-      # NB: no version-stamping step — each package's ``pyproject.toml``
-      # reads ``python/VERSION`` directly via
-      # ``[tool.hatch.version] source = regex``. ``python -m build``
-      # picks up the canonical version at build time.
+      - name: Stamp resolved release version into python/VERSION
+        # Each package's ``pyproject.toml`` reads ``python/VERSION``
+        # directly via ``[tool.hatch.version] source = regex``. We
+        # overwrite the file in the workspace (no commit) with the
+        # version resolved by ``prepare-version`` so ``python -m build``
+        # picks up the correct value at build time.
+        run: echo "${{ needs.prepare-version.outputs.version }}" > python/VERSION
 
       - name: Install local sibling packages (so tests resolve from checkout)
         run: |
