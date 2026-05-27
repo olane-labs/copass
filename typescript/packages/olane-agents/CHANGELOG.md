@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.7.4](https://github.com/olane-labs/copass/compare/@copass/olane-agents@0.7.2...@copass/olane-agents@0.7.4) (2026-05-27)
+
+### Bug Fixes
+
+- **olane-agents:** registrar dials gateway via os.rootLeader directly ([eb680bb](https://github.com/olane-labs/copass/commit/eb680bb6da087684b7f482ee98bce7c4c4a3873a)), closes [#21](https://github.com/olane-labs/copass/issues/21)
+
 ## [0.7.2](https://github.com/olane-labs/copass/compare/@copass/olane-agents@0.7.0...@copass/olane-agents@0.7.2) (2026-05-12)
 
 ### Bug Fixes
