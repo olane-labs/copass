@@ -58,16 +58,17 @@ Restart the client after editing. If you see `copass` in the tool picker, you're
 
 ## Verify
 
-Ask Claude "what tools do you have from copass?" — it should list 28 tools across two surfaces: 8 retrieval / Context Window / writeback tools (`discover`, `interpret`, `search`, `context_window_create`, `context_window_add_turn`, `context_window_attach`, `context_window_close`, `ingest`) and the 20 management tools enumerated below.
+Ask Claude "what tools do you have from copass?" — it should list 27 tools across two surfaces: 7 retrieval / Context Window / writeback tools (`discover`, `search`, `context_window_create`, `context_window_add_turn`, `context_window_attach`, `context_window_close`, `ingest`) and the 20 management tools enumerated below.
 
 Then try: *"Use `context_window_create` and then discover anything about checkout retry behavior."* If retrieval returns something, you're end-to-end.
 
 ## Tools
 
 **Retrieval:**
-- `discover` — ranked menu of relevant context
-- `interpret` — brief pinned to picked items
-- `search` — full synthesized answer
+- `discover` — ranked menu of relevant context (often auto-injected by the host's CLI hook)
+- `search` — synthesized answer to a focused question
+
+`interpret` is backend-only — still available to the SDK adapters (langchain / mastra / ai-sdk / pydantic-ai) but not exposed as an MCP tool.
 
 **Context Window** — persistent, window-aware memory across turns:
 - `context_window_create` — open a new window (returns `data_source_id`)

@@ -1,9 +1,6 @@
 import { z } from 'zod';
 import {
   DISCOVER_QUERY_PARAM,
-  INTERPRET_DESCRIPTION,
-  INTERPRET_ITEMS_PARAM,
-  INTERPRET_QUERY_PARAM,
   MCP_DISCOVER_DESCRIPTION,
   PRESET_PARAM,
   PROJECT_ID_PARAM,
@@ -92,38 +89,11 @@ export function registerRetrievalTools(server: McpServer, deps: RetrievalDeps): 
     },
   );
 
-  server.registerTool(
-    'interpret',
-    {
-      description: INTERPRET_DESCRIPTION,
-      inputSchema: {
-        query: z.string().describe(INTERPRET_QUERY_PARAM),
-        items: z.array(z.array(z.string()).min(1)).min(1).describe(INTERPRET_ITEMS_PARAM),
-        preset: z.enum([
-          'copass/copass_1.0',
-          'copass/copass_2.0',
-          // Short aliases (kept for backward-compat)
-          'copass/1.0',
-          'copass/2.0',
-        ]).optional().describe(PRESET_PARAM),
-        project_id: z.string().optional().describe(PROJECT_ID_PARAM),
-      },
-    },
-    async ({ query, items, preset, project_id }) => {
-      try {
-        const response = await client.retrieval.interpret(config.sandbox_id, {
-          query,
-          items,
-          project_id: project_id ?? config.project_id,
-          window: windows.resolve(),
-          preset: preset ?? config.preset,
-        });
-        return mcpResult({ brief: response.brief });
-      } catch (e) {
-        return mcpError(e);
-      }
-    },
-  );
+  // `interpret` is intentionally NOT registered as an MCP tool — agents
+  // should use `discover` (auto-fired per turn via the hook) for context
+  // and `search` for semantic lookups. The backend `/interpret` endpoint
+  // stays available for legacy non-MCP clients (langchain/mastra/ai-sdk
+  // adapters) that still register it.
 
   server.registerTool(
     'search',

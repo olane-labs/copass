@@ -1,6 +1,6 @@
 # @copass/langchain
 
-**Copass retrieval as LangChain tools.** The LLM decides whether to `discover`, `interpret`, or `search` — you don't write the tool-calling loop.
+**Copass retrieval as LangChain tools.** The LLM picks `discover` (menu of relevant items) or `search` (synthesized answer) — you don't write the tool-calling loop. `interpret` is exposed for back-compat but legacy; prefer `search` for drill-in.
 
 ## Prerequisites
 
@@ -65,13 +65,13 @@ Run twice with the same `window` — the second call won't re-surface items the 
 
 ## Tools
 
-The agent has three Copass tools in its toolbelt; the LLM picks one per turn:
+The agent has the Copass retrieval tools in its toolbelt; the LLM picks one per turn:
 
 | Tool | When the LLM calls it |
 |---|---|
 | `discover` | "What's relevant?" — ranked menu of pointers |
-| `interpret` | "Tell me about these specific items." — brief pinned to canonical_ids |
-| `search` | "Answer this directly." — full synthesized answer |
+| `search` | "Tell me about X" / "Answer this." — synthesized answer (canonical drill-in) |
+| `interpret` | Legacy — brief pinned to canonical_ids. Prefer `search` for drill-in. |
 
 Add your own tools via the `tools` option — they'll be mixed in alongside the Copass three:
 
@@ -89,7 +89,7 @@ const agent = createCopassAgent({
 
 - **One call, zero plumbing.** `createCopassAgent` pre-wires the tools, the `createReactAgent` setup, and the window-auto-tracking callback. You don't learn LangChain callbacks to get working window-aware retrieval.
 - **Still a standard Runnable.** The returned agent is a LangChain `Runnable` — it composes with chains, routers, and LangGraph nodes just like anything else.
-- **LLM chooses the retrieval shape.** Three tools; the model picks the right one per turn.
+- **LLM chooses the retrieval shape.** `discover` for a menu of relevant items, `search` for a synthesized answer. `interpret` is wired for back-compat (legacy — prefer `search`).
 
 ## Advanced: using the primitives directly
 

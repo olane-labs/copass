@@ -1,6 +1,6 @@
 # copass-pydantic-ai
 
-**Copass retrieval as Pydantic AI tools.** The LLM decides whether to `discover`, `interpret`, or `search` — you don't write the tool-calling loop.
+**Copass retrieval as Pydantic AI tools.** The LLM picks `discover` (menu of relevant items) or `search` (synthesized answer) — you don't write the tool-calling loop. `interpret` is exposed for back-compat but legacy; prefer `search` for drill-in.
 
 ## Prerequisites
 
@@ -71,8 +71,8 @@ If it worked, the answer cites concepts from whatever you ingested. Run twice wi
 | Tool | When the LLM calls it |
 |---|---|
 | `discover` | "What's relevant?" — ranked menu of pointers |
-| `interpret` | "Tell me about these specific items." — brief pinned to canonical_ids |
-| `search` | "Answer this directly." — full synthesized answer |
+| `search` | "Tell me about X" / "Answer this." — synthesized answer (canonical drill-in) |
+| `interpret` | Legacy — brief pinned to canonical_ids. Prefer `search` for drill-in. |
 
 ## Window-aware retrieval
 

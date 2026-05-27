@@ -19,14 +19,12 @@ DISCOVER_DESCRIPTION = "\n".join(
         "",
         "Window-aware by construction: results automatically exclude items already",
         "surfaced earlier in this conversation, so every call returns genuinely NEW",
-        "signal — never duplicates. This makes `discover` the primary context-",
-        "engineering primitive: call it freely whenever you need more context. Repeated",
-        "calls progressively map the relevant slice of the knowledge graph, and because",
-        "results skip what's already been seen, you never waste tokens re-consuming",
-        "known material.",
+        "signal — never duplicates. Repeated calls progressively map the relevant",
+        "slice of the knowledge graph, and because results skip what's already been",
+        "seen, you never waste tokens re-consuming known material.",
         "",
-        "After calling, pass an item's canonical_ids tuple to `interpret` for a deeper",
-        "brief, or call `discover` again for more items.",
+        "To drill into a menu item, call `search` with a focused natural-language",
+        "question.",
     ]
 )
 """Description for the ``discover`` retrieval tool.
@@ -39,47 +37,38 @@ context is needed, not just as the first step."""
 
 MCP_DISCOVER_DESCRIPTION = "\n".join(
     [
-        "Return a ranked menu of context items relevant to a query. Each item is a",
-        "pointer (canonical_ids + short summary), not prose.",
+        "Ranked menu of items from the user's knowledge graph. Window-aware:",
+        "each call returns only items not already surfaced — no duplicates.",
         "",
-        "Window-aware by construction: when a Context Window is active (pre-attached via",
-        "COPASS_CONTEXT_WINDOW_ID or created via `context_window_create`), results",
-        "automatically exclude items already surfaced earlier in this conversation.",
-        "Every call returns genuinely NEW signal — never duplicates.",
-        "",
-        "This makes `discover` the primary context-engineering primitive: call it",
-        "freely whenever you need more context. Repeated calls progressively map the",
-        "relevant slice of the knowledge graph, and because results skip what's",
-        "already been seen, you never waste tokens re-consuming known material.",
-        "",
-        "After calling, pass an item's canonical_ids tuple to `interpret` for a deeper",
-        "brief, or call `discover` again for more items.",
+        "To drill into a menu item, call `search` with a focused natural-language",
+        "question.",
     ]
 )
 """MCP-specific variant of :data:`DISCOVER_DESCRIPTION`.
 
-Identical content plus one clarifying clause about how the server's
-Context Window is bound — MCP consumers don't construct a
-``ContextWindow`` object themselves, they inherit one via
-``COPASS_CONTEXT_WINDOW_ID`` env var or the ``context_window_create``
-tool."""
+Distinct from the SDK variant because the MCP surface drops the
+``interpret`` tool (backend-only) — drill-in goes through ``search``.
+No auto-fire framing here: that is an SDK / host convention, not an
+MCP guarantee."""
 
 
 INTERPRET_DESCRIPTION = "\n".join(
     [
-        "Return a 1–2 paragraph synthesized brief pinned to specific items picked from",
-        "`discover`. Pass one or more canonical_ids tuples (one per item you want to",
-        "include). Use this AFTER `discover` when you know which items matter.",
+        "Legacy: prefer `search` with a natural-language question for drill-in.",
+        "Returns a 1–2 paragraph brief pinned to specific items picked from",
+        "`discover`. Still exposed by SDK adapters for backward compatibility.",
     ]
 )
-"""Description for the ``interpret`` retrieval tool."""
+"""Description for the ``interpret`` retrieval tool (legacy — SDK adapters only)."""
 
 
 SEARCH_DESCRIPTION = "\n".join(
     [
-        "Return a full synthesized natural-language answer in one call. Use for",
-        "self-contained questions that do NOT benefit from a staged discover→interpret flow.",
-        "Heaviest of the three tools.",
+        "Synthesized natural-language answer grounded in the user's knowledge",
+        "graph. Phrase the query as a natural-language question, not keywords.",
+        "",
+        "Hard rule: every user turn must be informed by EITHER the `discover`",
+        "menu OR at least one `search` call before you answer.",
     ]
 )
 """Description for the ``search`` retrieval tool."""

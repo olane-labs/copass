@@ -37,9 +37,9 @@ export interface CopassToolsOptions {
 /**
  * Return Copass retrieval as a set of Vercel AI SDK tool objects.
  *
- * Agent-framework-neutral shape: the LLM chooses whether to surface a menu
- * (`discover`), drill into specific items (`interpret`), or get a
- * synthesized answer in one shot (`search`).
+ * Agent-framework-neutral shape: the LLM picks `discover` (menu of
+ * relevant items) or `search` (synthesized answer). `interpret` stays
+ * registered for back-compat but is legacy — prefer `search` for drill-in.
  *
  * @example
  * ```ts
