@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.11.0](https://github.com/olane-labs/copass/compare/@copass/core@0.10.2...@copass/core@0.11.0) (2026-05-28)
+
+### Features
+
+- **core:** add CostInfo interface for retrieval cost surfacing ([d86689b](https://github.com/olane-labs/copass/commit/d86689beef97bc875969d0bcabca0a2d876909a3))
+
 ## [0.10.2](https://github.com/olane-labs/copass/compare/@copass/core@0.10.1...@copass/core@0.10.2) (2026-05-27)
 
 **Note:** Version bump only for package @copass/core

@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.6.0](https://github.com/olane-labs/copass/compare/@copass/mcp@0.5.13...@copass/mcp@0.6.0) (2026-05-28)
+
+### Features
+
+- **mcp:** project retrieval cost on discover/search tool results ([02bef1c](https://github.com/olane-labs/copass/commit/02bef1cbbd9155f92e9ea2772880737fe4e4ef89))
+
 ## [0.5.13](https://github.com/olane-labs/copass/compare/@copass/mcp@0.5.12...@copass/mcp@0.5.13) (2026-05-27)
 
 **Note:** Version bump only for package @copass/mcp

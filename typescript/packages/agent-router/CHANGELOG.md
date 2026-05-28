@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.8.3](https://github.com/olane-labs/copass/compare/@copass/agent-router@0.8.2...@copass/agent-router@0.8.3) (2026-05-28)
+
+**Note:** Version bump only for package @copass/agent-router
+
 ## [0.8.2](https://github.com/olane-labs/copass/compare/@copass/agent-router@0.8.1...@copass/agent-router@0.8.2) (2026-05-27)
 
 **Note:** Version bump only for package @copass/agent-router
