@@ -3,6 +3,8 @@ export {
   MCP_DISCOVER_DESCRIPTION,
   INTERPRET_DESCRIPTION,
   SEARCH_DESCRIPTION,
+  GET_ORIGIN_DESCRIPTION,
+  MCP_GET_ORIGIN_DESCRIPTION,
 } from './tool-descriptions.js';
 
 export {
@@ -12,6 +14,8 @@ export {
   INTERPRET_ITEMS_PARAM,
   PROJECT_ID_PARAM,
   PRESET_PARAM,
+  ORIGIN_CANONICAL_IDS_PARAM,
+  ORIGIN_LIMIT_PARAM,
 } from './param-descriptions.js';
 
 export {

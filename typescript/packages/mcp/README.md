@@ -1,6 +1,6 @@
 # @copass/mcp
 
-**Standalone MCP server for [Copass](https://copass.id).** Exposes retrieval + Context Window as MCP tools for any client — Claude Code, Claude Desktop, Cursor, Claude Agent SDK, or your own.
+**Standalone MCP server for [Copass](https://copass.id).** Exposes retrieval (`discover` / `search` / `get_origin`) + Context Window as MCP tools for any client — Claude Code, Claude Desktop, Cursor, Claude Agent SDK, or your own.
 
 ## Prerequisites
 
@@ -58,7 +58,7 @@ Restart the client after editing. If you see `copass` in the tool picker, you're
 
 ## Verify
 
-Ask Claude "what tools do you have from copass?" — it should list 27 tools across two surfaces: 7 retrieval / Context Window / writeback tools (`discover`, `search`, `context_window_create`, `context_window_add_turn`, `context_window_attach`, `context_window_close`, `ingest`) and the 20 management tools enumerated below.
+Ask Claude "what tools do you have from copass?" — it should list 28 tools across two surfaces: 8 retrieval / Context Window / writeback tools (`discover`, `search`, `get_origin`, `context_window_create`, `context_window_add_turn`, `context_window_attach`, `context_window_close`, `ingest`) and the 20 management tools enumerated below.
 
 Then try: *"Use `context_window_create` and then discover anything about checkout retry behavior."* If retrieval returns something, you're end-to-end.
 
@@ -67,6 +67,7 @@ Then try: *"Use `context_window_create` and then discover anything about checkou
 **Retrieval:**
 - `discover` — ranked menu of relevant context (often auto-injected by the host's CLI hook)
 - `search` — synthesized answer to a focused question
+- `get_origin` — map `canonical_ids` from `discover` to the source files those entities were extracted from. Cheap (no LLM); pair with `discover` so the agent can open the right file with its native read tool.
 
 `interpret` is backend-only — still available to the SDK adapters (langchain / mastra / ai-sdk / pydantic-ai) but not exposed as an MCP tool.
 

@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## Unreleased
+
+### Features
+
+- **mcp:** register a new `get_origin` tool — maps `canonical_ids` (from `discover`) to the source files those entities were extracted from. Cheap, no LLM. Cost telemetry projected via the existing `appendCostToResult` helper.
+
 # [0.6.0](https://github.com/olane-labs/copass/compare/@copass/mcp@0.5.13...@copass/mcp@0.6.0) (2026-05-28)
 
 ### Features

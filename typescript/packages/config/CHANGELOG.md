@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## Unreleased
+
+### Features
+
+- **config:** add `GET_ORIGIN_DESCRIPTION` / `MCP_GET_ORIGIN_DESCRIPTION` tool descriptions and `ORIGIN_CANONICAL_IDS_PARAM` / `ORIGIN_LIMIT_PARAM` parameter descriptions for the new `get_origin` retrieval tool.
+- **config:** update `COPASS_AGENT_MCP_SYSTEM_PROMPT` and `COPASS_AGENT_SDK_SYSTEM_PROMPT` to introduce `get_origin` as the third retrieval primitive alongside `discover` and `search`.
+
 ## [0.5.2](https://github.com/olane-labs/copass/compare/@copass/config@0.5.1...@copass/config@0.5.2) (2026-05-27)
 
 **Note:** Version bump only for package @copass/config

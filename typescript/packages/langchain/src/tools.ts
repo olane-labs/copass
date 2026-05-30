@@ -3,9 +3,12 @@ import { z } from 'zod';
 import {
   DISCOVER_DESCRIPTION,
   DISCOVER_QUERY_PARAM,
+  GET_ORIGIN_DESCRIPTION,
   INTERPRET_DESCRIPTION,
   INTERPRET_ITEMS_PARAM,
   INTERPRET_QUERY_PARAM,
+  ORIGIN_CANONICAL_IDS_PARAM,
+  ORIGIN_LIMIT_PARAM,
   SEARCH_DESCRIPTION,
   SEARCH_QUERY_PARAM,
 } from '@copass/config';
@@ -137,5 +140,48 @@ export function copassTools(options: CopassToolsOptions) {
     },
   );
 
-  return { discover, interpret, search };
+  const get_origin = tool(
+    async ({
+      canonical_ids,
+      limit_per_canonical,
+    }: {
+      canonical_ids: string[];
+      limit_per_canonical?: number;
+    }) => {
+      const response = await client.retrieval.getOrigin(sandbox_id, {
+        canonical_ids,
+        ...(limit_per_canonical !== undefined ? { limit_per_canonical } : {}),
+      });
+      return {
+        sandbox_id: response.sandbox_id,
+        origins: response.origins.map((entry) => ({
+          canonical_id: entry.canonical_id,
+          files: entry.files.map((f) => ({
+            file_path: f.file_path,
+            extraction_count: f.extraction_count,
+          })),
+        })),
+      };
+    },
+    {
+      name: 'get_origin',
+      description: GET_ORIGIN_DESCRIPTION,
+      schema: z.object({
+        canonical_ids: z
+          .array(z.string())
+          .min(1)
+          .max(100)
+          .describe(ORIGIN_CANONICAL_IDS_PARAM),
+        limit_per_canonical: z
+          .number()
+          .int()
+          .min(1)
+          .max(50)
+          .optional()
+          .describe(ORIGIN_LIMIT_PARAM),
+      }),
+    },
+  );
+
+  return { discover, interpret, search, get_origin };
 }

@@ -172,5 +172,51 @@ class RetrievalResource(BaseResource):
             body,
         )
 
+    async def get_origin(
+        self,
+        sandbox_id: str,
+        *,
+        canonical_ids: List[str],
+        limit_per_canonical: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """Look up source files for one or more canonical entities.
+
+        Pair with ``discover``: after the caller picks items from the
+        menu, ``get_origin`` returns the files those canonicals were
+        extracted from so an agent can localize its next action.
+
+        ``canonical_ids`` is at least 1, at most 100 per call.
+        ``limit_per_canonical`` (1–50) caps the returned file count per
+        canonical; omit to take the server default.
+
+        The response shape is::
+
+            {
+              "sandbox_id": "...",
+              "origins": [
+                {
+                  "canonical_id": "...",
+                  "files": [
+                    {"file_path": "src/foo.py", "extraction_count": 3},
+                    ...
+                  ]
+                },
+                ...
+              ],
+              "cost": {...} | None
+            }
+
+        Canonicals with no recorded file metadata come back with
+        ``files=[]``, so the ``origins`` list is positionally aligned
+        with ``canonical_ids``.
+        """
+        body: Dict[str, Any] = {"canonical_ids": canonical_ids}
+        if limit_per_canonical is not None:
+            body["limit_per_canonical"] = limit_per_canonical
+        return await self._post(
+            f"/api/v1/query/sandboxes/{sandbox_id}/origins",
+            body,
+        )
+
 
 __all__ = ["RetrievalResource"]

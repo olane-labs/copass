@@ -34,9 +34,10 @@ beforeAll(() => {
 // retrieval / ingest tool is added/removed). The test below also
 // asserts on the cardinality so accidental additions are caught.
 const EXPECTED_TOOL_NAMES = new Set<string>([
-  // retrieval (2) — `interpret` is backend-only; not exposed via MCP.
+  // retrieval (3) — `interpret` is backend-only; not exposed via MCP.
   'discover',
   'search',
+  'get_origin',
   // context window (4)
   'context_window_create',
   'context_window_add_turn',

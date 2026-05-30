@@ -1,6 +1,6 @@
 # @copass/mastra
 
-**Copass retrieval as Mastra tools.** The LLM picks `discover` (menu of relevant items) or `search` (synthesized answer) — you don't write the tool-calling loop. `interpret` is exposed for back-compat but legacy; prefer `search` for drill-in.
+**Copass retrieval as Mastra tools.** The LLM picks `discover` (menu of relevant items), `search` (synthesized answer), or `get_origin` (map canonical_ids to source files) — you don't write the tool-calling loop. `interpret` is exposed for back-compat but legacy; prefer `search` for drill-in.
 
 ## Prerequisites
 
@@ -77,9 +77,9 @@ Tool results (`role: 'tool'`) are skipped by default; opt in with `createWindowT
 
 ## Why this, not the raw API
 
-- **LLM chooses the retrieval shape.** `discover` for a menu of relevant items, `search` for a synthesized answer. `interpret` is wired for back-compat (legacy — prefer `search`).
+- **LLM chooses the retrieval shape.** `discover` for a menu of relevant items, `search` for a synthesized answer, `get_origin` to map canonical_ids to source files. `interpret` is wired for back-compat (legacy — prefer `search`).
 - **Window-aware automatically** — when paired with `createWindowTracker`. Without the tracker, retrieval sees an empty history.
-- **Mastra-native tool shape.** Drop the returned `{ discover, interpret, search }` object straight into any agent config.
+- **Mastra-native tool shape.** Drop the returned `{ discover, interpret, search, get_origin }` object straight into any agent config.
 
 ## Tools
 
@@ -87,6 +87,7 @@ Tool results (`role: 'tool'`) are skipped by default; opt in with `createWindowT
 |---|---|
 | `discover` | "What's relevant?" — ranked menu of pointers |
 | `search` | "Tell me about X" / "Answer this." — synthesized answer (canonical drill-in) |
+| `get_origin` | "Where does this live?" — maps canonical_ids from `discover` to source files. Cheap, no LLM. |
 | `interpret` | Legacy — brief pinned to canonical_ids. Prefer `search` for drill-in. |
 
 ## Conversation metadata

@@ -1,7 +1,7 @@
 {
   "name": "@copass/mcp",
   "version": "0.6.0",
-  "description": "Standalone MCP server for Copass — drop-in discover/interpret/search + Context Window tools for any MCP client (Claude Agent SDK, Claude Code, Claude Desktop, Cursor)",
+  "description": "Standalone MCP server for Copass — drop-in discover/search/get_origin + Context Window tools for any MCP client (Claude Agent SDK, Claude Code, Claude Desktop, Cursor)",
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"

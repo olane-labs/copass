@@ -2,6 +2,9 @@ import { z } from 'zod';
 import {
   DISCOVER_QUERY_PARAM,
   MCP_DISCOVER_DESCRIPTION,
+  MCP_GET_ORIGIN_DESCRIPTION,
+  ORIGIN_CANONICAL_IDS_PARAM,
+  ORIGIN_LIMIT_PARAM,
   PRESET_PARAM,
   PROJECT_ID_PARAM,
   SEARCH_DESCRIPTION,
@@ -182,6 +185,53 @@ export function registerRetrievalTools(server: McpServer, deps: RetrievalDeps): 
           preset: preset ?? config.preset,
         });
         return appendCostToResult(mcpResult({ answer: response.answer }), response.cost);
+      } catch (e) {
+        return mcpError(e);
+      }
+    },
+  );
+
+  server.registerTool(
+    'get_origin',
+    {
+      description: MCP_GET_ORIGIN_DESCRIPTION,
+      inputSchema: {
+        canonical_ids: z
+          .array(z.string())
+          .min(1)
+          .max(100)
+          .describe(ORIGIN_CANONICAL_IDS_PARAM),
+        limit_per_canonical: z
+          .number()
+          .int()
+          .min(1)
+          .max(50)
+          .optional()
+          .describe(ORIGIN_LIMIT_PARAM),
+      },
+    },
+    async ({ canonical_ids, limit_per_canonical }) => {
+      try {
+        const response = await client.retrieval.getOrigin(config.sandbox_id, {
+          canonical_ids,
+          // Omit `limit_per_canonical` from the payload when the caller
+          // didn't supply one so the server applies its own default
+          // (currently 10) and adapters don't have to encode that here.
+          ...(limit_per_canonical !== undefined ? { limit_per_canonical } : {}),
+        });
+        return appendCostToResult(
+          mcpResult({
+            sandbox_id: response.sandbox_id,
+            origins: response.origins.map((entry) => ({
+              canonical_id: entry.canonical_id,
+              files: entry.files.map((f) => ({
+                file_path: f.file_path,
+                extraction_count: f.extraction_count,
+              })),
+            })),
+          }),
+          response.cost,
+        );
       } catch (e) {
         return mcpError(e);
       }

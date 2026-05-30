@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## Unreleased
+
+### Features
+
+- **core:** add `getOrigin(sandboxId, request)` method on `RetrievalResource` and the corresponding `OriginsRequest`, `OriginsResponse`, `OriginEntry`, `OriginFile` types. Entity → source-file lookup paired with `discover`: after the caller picks items, `getOrigin` returns the files those canonicals were extracted from. Cheap (no LLM legs), read-only.
+
 # [0.11.0](https://github.com/olane-labs/copass/compare/@copass/core@0.10.2...@copass/core@0.11.0) (2026-05-28)
 
 ### Features

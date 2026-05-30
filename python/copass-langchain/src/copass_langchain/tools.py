@@ -19,9 +19,12 @@ from typing import Any, Dict, List, Optional
 from copass_config import (
     DISCOVER_DESCRIPTION,
     DISCOVER_QUERY_PARAM,
+    GET_ORIGIN_DESCRIPTION,
     INTERPRET_DESCRIPTION,
     INTERPRET_ITEMS_PARAM,
     INTERPRET_QUERY_PARAM,
+    ORIGIN_CANONICAL_IDS_PARAM,
+    ORIGIN_LIMIT_PARAM,
     SEARCH_DESCRIPTION,
     SEARCH_QUERY_PARAM,
 )
@@ -34,17 +37,18 @@ from copass_langchain.types import ContextWindowLike
 
 @dataclass(frozen=True)
 class CopassTools:
-    """Bundle of the three Copass retrieval tools as
+    """Bundle of the four Copass retrieval tools as
     ``StructuredTool`` instances. Pass ``tools.discover``,
-    ``tools.interpret``, ``tools.search`` (or ``tools.all()``) to the
-    agent framework."""
+    ``tools.interpret``, ``tools.search``, ``tools.get_origin``
+    (or ``tools.all()``) to the agent framework."""
 
     discover: StructuredTool
     interpret: StructuredTool
     search: StructuredTool
+    get_origin: StructuredTool
 
     def all(self) -> List[StructuredTool]:
-        return [self.discover, self.interpret, self.search]
+        return [self.discover, self.interpret, self.search, self.get_origin]
 
 
 class _DiscoverArgs(BaseModel):
@@ -62,6 +66,21 @@ class _InterpretArgs(BaseModel):
 
 class _SearchArgs(BaseModel):
     query: str = Field(..., description=SEARCH_QUERY_PARAM)
+
+
+class _GetOriginArgs(BaseModel):
+    canonical_ids: List[str] = Field(
+        ...,
+        min_length=1,
+        max_length=100,
+        description=ORIGIN_CANONICAL_IDS_PARAM,
+    )
+    limit_per_canonical: Optional[int] = Field(
+        default=None,
+        ge=1,
+        le=50,
+        description=ORIGIN_LIMIT_PARAM,
+    )
 
 
 def copass_tools(
@@ -146,6 +165,32 @@ def copass_tools(
         )
         return {"answer": response.get("answer", "")}
 
+    async def _get_origin(
+        canonical_ids: List[str],
+        limit_per_canonical: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        response = await client.retrieval.get_origin(
+            sandbox_id=sandbox_id,
+            canonical_ids=canonical_ids,
+            limit_per_canonical=limit_per_canonical,
+        )
+        return {
+            "sandbox_id": response.get("sandbox_id"),
+            "origins": [
+                {
+                    "canonical_id": entry.get("canonical_id"),
+                    "files": [
+                        {
+                            "file_path": f.get("file_path"),
+                            "extraction_count": f.get("extraction_count"),
+                        }
+                        for f in entry.get("files", [])
+                    ],
+                }
+                for entry in response.get("origins", [])
+            ],
+        }
+
     return CopassTools(
         discover=StructuredTool.from_function(
             coroutine=_discover,
@@ -164,6 +209,12 @@ def copass_tools(
             name="search",
             description=SEARCH_DESCRIPTION,
             args_schema=_SearchArgs,
+        ),
+        get_origin=StructuredTool.from_function(
+            coroutine=_get_origin,
+            name="get_origin",
+            description=GET_ORIGIN_DESCRIPTION,
+            args_schema=_GetOriginArgs,
         ),
     )
 

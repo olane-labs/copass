@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## Unreleased
+
+### Features
+
+- **mastra:** register a `get_origin` Mastra tool alongside `discover` / `interpret` / `search`. Returned from `copassTools(...)` as part of the standard tool bundle.
+
 ## [0.5.9](https://github.com/olane-labs/copass/compare/@copass/mastra@0.5.8...@copass/mastra@0.5.9) (2026-05-27)
 
 **Note:** Version bump only for package @copass/mastra

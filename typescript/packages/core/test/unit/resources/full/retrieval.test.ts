@@ -358,3 +358,116 @@ describe('retrieval cost field', () => {
     expect(modes).toHaveLength(3);
   });
 });
+
+/**
+ * ``retrieval.getOrigin`` — entity → source-file lookup.
+ *
+ * Cheap, read-only companion to ``discover``. The SDK posts the
+ * caller's ``canonical_ids`` to ``/origins`` and surfaces the per-file
+ * roll-up the server returns.
+ */
+describe('retrieval.getOrigin', () => {
+  beforeEach(() => mockFetch.mockReset());
+
+  it('POSTs to /origins with the canonical_ids body', async () => {
+    mockFetch.mockResolvedValue(
+      jsonResponse({
+        sandbox_id: 'sb-1',
+        origins: [
+          {
+            canonical_id: 'cid-1',
+            files: [
+              { file_path: 'src/click/core.py', extraction_count: 12 },
+              { file_path: 'src/click/decorators.py', extraction_count: 3 },
+            ],
+          },
+        ],
+      }),
+    );
+    const client = makeClient();
+    const resp = await client.retrieval.getOrigin('sb-1', {
+      canonical_ids: ['cid-1'],
+    });
+    const call = lastFetchCall();
+
+    expect(call.url).toContain('/api/v1/query/sandboxes/sb-1/origins');
+    expect(call.method).toBe('POST');
+    expect(call.body).toEqual({ canonical_ids: ['cid-1'] });
+    expect(resp.sandbox_id).toBe('sb-1');
+    expect(resp.origins[0].canonical_id).toBe('cid-1');
+    expect(resp.origins[0].files[0].file_path).toBe('src/click/core.py');
+    expect(resp.origins[0].files[0].extraction_count).toBe(12);
+  });
+
+  it('forwards limit_per_canonical when supplied', async () => {
+    mockFetch.mockResolvedValue(
+      jsonResponse({ sandbox_id: 'sb-1', origins: [] }),
+    );
+    const client = makeClient();
+    await client.retrieval.getOrigin('sb-1', {
+      canonical_ids: ['cid-1', 'cid-2'],
+      limit_per_canonical: 3,
+    });
+    const body = lastFetchCall().body as Record<string, unknown>;
+    expect(body.canonical_ids).toEqual(['cid-1', 'cid-2']);
+    expect(body.limit_per_canonical).toBe(3);
+  });
+
+  it('omits limit_per_canonical from body when not supplied (server applies default)', async () => {
+    mockFetch.mockResolvedValue(
+      jsonResponse({ sandbox_id: 'sb-1', origins: [] }),
+    );
+    const client = makeClient();
+    await client.retrieval.getOrigin('sb-1', { canonical_ids: ['cid-1'] });
+    const body = lastFetchCall().body as Record<string, unknown>;
+    expect(body).not.toHaveProperty('limit_per_canonical');
+  });
+
+  it('preserves response position alignment when files is empty', async () => {
+    // The server returns `files=[]` for canonicals it has no recorded
+    // origins for so the response stays positionally aligned with the
+    // input. The SDK is a pure pass-through.
+    mockFetch.mockResolvedValue(
+      jsonResponse({
+        sandbox_id: 'sb-1',
+        origins: [
+          { canonical_id: 'cid-1', files: [{ file_path: 'src/a.py', extraction_count: 1 }] },
+          { canonical_id: 'cid-2', files: [] },
+        ],
+      }),
+    );
+    const client = makeClient();
+    const resp = await client.retrieval.getOrigin('sb-1', {
+      canonical_ids: ['cid-1', 'cid-2'],
+    });
+    expect(resp.origins.map((o) => o.canonical_id)).toEqual(['cid-1', 'cid-2']);
+    expect(resp.origins[1].files).toEqual([]);
+  });
+
+  it('unpacks cost when the server attaches it', async () => {
+    mockFetch.mockResolvedValue(
+      jsonResponse({
+        sandbox_id: 'sb-1',
+        origins: [],
+        cost: { microcents: 0, gate_mode: 'enforce' },
+      }),
+    );
+    const client = makeClient();
+    const resp = await client.retrieval.getOrigin('sb-1', {
+      canonical_ids: ['cid-1'],
+    });
+    expect(resp.cost?.microcents).toBe(0);
+    expect(resp.cost?.gate_mode).toBe('enforce');
+  });
+
+  it('tolerates an absent cost field (gate_mode off / older server)', async () => {
+    mockFetch.mockResolvedValue(
+      jsonResponse({ sandbox_id: 'sb-1', origins: [] }),
+    );
+    const client = makeClient();
+    const resp = await client.retrieval.getOrigin('sb-1', {
+      canonical_ids: ['cid-1'],
+    });
+    expect(resp.cost).toBeUndefined();
+  });
+});

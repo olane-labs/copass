@@ -1,6 +1,6 @@
 # @copass/ai-sdk
 
-**Copass retrieval as Vercel AI SDK tools.** The LLM picks `discover` (menu of relevant items) or `search` (synthesized answer) — you don't write the tool-calling loop. `interpret` is exposed for back-compat but legacy; prefer `search` for drill-in.
+**Copass retrieval as Vercel AI SDK tools.** The LLM picks `discover` (menu of relevant items), `search` (synthesized answer), or `get_origin` (map canonical_ids to source files) — you don't write the tool-calling loop. `interpret` is exposed for back-compat but legacy; prefer `search` for drill-in.
 
 ## Prerequisites
 
@@ -65,7 +65,7 @@ console.log(text);
 
 - `new CopassClient({ auth })` — authenticated REST client.
 - `contextWindow.create(...)` — opens an ephemeral data source for this conversation.
-- `copassTools({ ... })` — returns `discover` / `interpret` / `search` tools Claude can invoke autonomously. The `window` argument makes each retrieval window-aware at the server level.
+- `copassTools({ ... })` — returns `discover` / `interpret` / `search` / `get_origin` tools Claude can invoke autonomously. The `window` argument makes each window-aware retrieval call window-aware at the server level (`get_origin` is a cheap windowless lookup).
 
 Everything else — `generateText`, `model:`, `maxSteps:`, `prompt:` — is vanilla Vercel AI SDK.
 
@@ -100,7 +100,7 @@ Tool messages (role: `'tool'`) are skipped by default since they're usually retr
 
 ## Why this, not the raw API
 
-- **LLM chooses the retrieval shape.** Claude picks `discover` for a menu of relevant items or `search` for a synthesized answer. `interpret` is also wired up for back-compat (legacy — prefer `search`).
+- **LLM chooses the retrieval shape.** Claude picks `discover` for a menu of relevant items, `search` for a synthesized answer, or `get_origin` to map canonical_ids to the source files those entities were extracted from. `interpret` is also wired up for back-compat (legacy — prefer `search`).
 - **Window-aware retrieval.** Each retrieval call carries the `window` argument so the server knows which items have already been surfaced in this conversation. Add `createWindowTracker` (above) to get automatic cross-turn awareness.
 - **Trimmed response shapes.** Tools return only what the model needs (`{header, items, next_steps}` / `{brief}` / `{answer}`) — no sandbox/project echoes that waste tokens.
 
@@ -110,6 +110,7 @@ Tool messages (role: `'tool'`) are skipped by default since they're usually retr
 |---|---|
 | `discover` | "What's relevant?" — ranked menu of pointers |
 | `search` | "Tell me about X" / "Answer this." — synthesized answer (canonical drill-in) |
+| `get_origin` | "Where does this live?" — maps canonical_ids from `discover` to source files. Cheap, no LLM. Pair with the agent's native read tool. |
 | `interpret` | Legacy — brief pinned to canonical_ids. Prefer `search` for drill-in. |
 
 ## Conversation metadata

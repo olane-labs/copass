@@ -14,6 +14,7 @@ from typing import Any, Callable, Optional
 
 from ._strings import (
     DISCOVER_DESCRIPTION,
+    GET_ORIGIN_DESCRIPTION,
     INTERPRET_DESCRIPTION,
     SEARCH_DESCRIPTION,
 )
@@ -28,8 +29,8 @@ def copass_tools(
     project_id: Optional[str] = None,
     window: Optional[WindowLike] = None,
     preset: SearchPreset = "copass/copass_1.0",
-) -> tuple[Callable[..., Any], Callable[..., Any], Callable[..., Any]]:
-    """Return Copass retrieval as three Pydantic AI-compatible tool callables.
+) -> tuple[Callable[..., Any], Callable[..., Any], Callable[..., Any], Callable[..., Any]]:
+    """Return Copass retrieval as four Pydantic AI-compatible tool callables.
 
     Args:
         client: A :class:`CopassRetrievalClient` for the target sandbox.
@@ -46,8 +47,8 @@ def copass_tools(
             decomposition before retrieval on ``search``.
 
     Returns:
-        ``(discover, interpret, search)`` — three async callables, ready to
-        pass directly to ``pydantic_ai.Agent(tools=[...])``.
+        ``(discover, interpret, search, get_origin)`` — four async callables,
+        ready to pass directly to ``pydantic_ai.Agent(tools=[...])``.
 
     Example::
 
@@ -55,12 +56,15 @@ def copass_tools(
         from copass_pydantic_ai import CopassRetrievalClient, copass_tools
 
         client = CopassRetrievalClient(api_url="...", api_key="olk_...")
-        discover, interpret, search = copass_tools(
+        discover, interpret, search, get_origin = copass_tools(
             client=client,
             sandbox_id="sandbox_abc",
         )
 
-        agent = Agent("anthropic:claude-opus-4-7", tools=[discover, interpret, search])
+        agent = Agent(
+            "anthropic:claude-opus-4-7",
+            tools=[discover, interpret, search, get_origin],
+        )
         result = await agent.run("why is checkout flaky?")
     """
 
@@ -112,6 +116,32 @@ def copass_tools(
         )
         return {"answer": response.get("answer")}
 
+    async def get_origin(
+        canonical_ids: list[str],
+        limit_per_canonical: Optional[int] = None,
+    ) -> dict[str, Any]:
+        response = await client.get_origin(
+            sandbox_id,
+            canonical_ids=canonical_ids,
+            limit_per_canonical=limit_per_canonical,
+        )
+        return {
+            "sandbox_id": response.get("sandbox_id"),
+            "origins": [
+                {
+                    "canonical_id": entry.get("canonical_id"),
+                    "files": [
+                        {
+                            "file_path": f.get("file_path"),
+                            "extraction_count": f.get("extraction_count"),
+                        }
+                        for f in entry.get("files", [])
+                    ],
+                }
+                for entry in response.get("origins", [])
+            ],
+        }
+
     # Pydantic AI reads each tool's description from `fn.__doc__` at agent
     # construction. Setting it here (rather than inlining as source-level
     # docstrings) pins the LLM-facing copy to the shared `_strings` module
@@ -119,5 +149,6 @@ def copass_tools(
     discover.__doc__ = DISCOVER_DESCRIPTION
     interpret.__doc__ = INTERPRET_DESCRIPTION
     search.__doc__ = SEARCH_DESCRIPTION
+    get_origin.__doc__ = GET_ORIGIN_DESCRIPTION
 
-    return discover, interpret, search
+    return discover, interpret, search, get_origin

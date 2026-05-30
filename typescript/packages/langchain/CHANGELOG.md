@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## Unreleased
+
+### Features
+
+- **langchain:** register a `get_origin` LangChain tool alongside `discover` / `interpret` / `search`. Returned from `copassTools(...)` as part of the standard tool bundle.
+
 ## [0.5.9](https://github.com/olane-labs/copass/compare/@copass/langchain@0.5.8...@copass/langchain@0.5.9) (2026-05-27)
 
 **Note:** Version bump only for package @copass/langchain

@@ -62,10 +62,13 @@ from copass_config.param_descriptions import (
     DISCOVER_QUERY_PARAM,
     INTERPRET_ITEMS_PARAM,
     INTERPRET_QUERY_PARAM,
+    ORIGIN_CANONICAL_IDS_PARAM,
+    ORIGIN_LIMIT_PARAM,
     SEARCH_QUERY_PARAM,
 )
 from copass_config.tool_descriptions import (
     DISCOVER_DESCRIPTION,
+    GET_ORIGIN_DESCRIPTION,
     INTERPRET_DESCRIPTION,
     SEARCH_DESCRIPTION,
 )
@@ -258,6 +261,75 @@ class _CopassSearchTool(AgentTool):
         return {"answer": response.get("answer")}
 
 
+class _CopassGetOriginTool(AgentTool):
+    def __init__(
+        self,
+        *,
+        client: CopassClient,
+        sandbox_id: str,
+    ) -> None:
+        self._client = client
+        self._sandbox_id = sandbox_id
+
+    @property
+    def spec(self) -> ToolSpec:
+        return ToolSpec(
+            name="get_origin",
+            description=GET_ORIGIN_DESCRIPTION,
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "canonical_ids": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "minItems": 1,
+                        "maxItems": 100,
+                        "description": ORIGIN_CANONICAL_IDS_PARAM,
+                    },
+                    "limit_per_canonical": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 50,
+                        "description": ORIGIN_LIMIT_PARAM,
+                    },
+                },
+                "required": ["canonical_ids"],
+                "additionalProperties": False,
+            },
+        )
+
+    async def invoke(
+        self,
+        arguments: dict,
+        *,
+        context: Optional[AgentInvocationContext] = None,
+    ) -> dict:
+        raw_ids = arguments.get("canonical_ids", []) or []
+        canonical_ids: List[str] = [str(x) for x in raw_ids if x]
+        limit = arguments.get("limit_per_canonical")
+        response = await self._client.retrieval.get_origin(
+            self._sandbox_id,
+            canonical_ids=canonical_ids,
+            limit_per_canonical=int(limit) if limit is not None else None,
+        )
+        return {
+            "sandbox_id": response.get("sandbox_id"),
+            "origins": [
+                {
+                    "canonical_id": entry.get("canonical_id"),
+                    "files": [
+                        {
+                            "file_path": f.get("file_path"),
+                            "extraction_count": f.get("extraction_count"),
+                        }
+                        for f in entry.get("files", [])
+                    ],
+                }
+                for entry in response.get("origins", [])
+            ],
+        }
+
+
 def copass_retrieval_tools(
     *,
     client: CopassClient,
@@ -266,7 +338,7 @@ def copass_retrieval_tools(
     window: Optional[WindowLike] = None,
     preset: SearchPreset = "copass/copass_1.0",
 ) -> List[AgentTool]:
-    """Return ``[discover, interpret, search]`` as :class:`AgentTool` instances.
+    """Return ``[discover, interpret, search, get_origin]`` as :class:`AgentTool` instances.
 
     Args:
         client: An authenticated :class:`copass_core.CopassClient`.
@@ -285,8 +357,10 @@ def copass_retrieval_tools(
             decomposition on ``search``.
 
     Returns:
-        ``[discover, interpret, search]`` ready to pass to
-        :meth:`AgentToolRegistry.extend`.
+        ``[discover, interpret, search, get_origin]`` ready to pass to
+        :meth:`AgentToolRegistry.extend`. The first three are
+        window-aware; ``get_origin`` is a cheap windowless lookup that
+        maps canonical_ids to source files.
     """
     return [
         _CopassDiscoverTool(
@@ -309,6 +383,10 @@ def copass_retrieval_tools(
             project_id=project_id,
             window=window,
             preset=preset,
+        ),
+        _CopassGetOriginTool(
+            client=client,
+            sandbox_id=sandbox_id,
         ),
     ]
 

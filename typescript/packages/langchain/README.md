@@ -1,6 +1,6 @@
 # @copass/langchain
 
-**Copass retrieval as LangChain tools.** The LLM picks `discover` (menu of relevant items) or `search` (synthesized answer) — you don't write the tool-calling loop. `interpret` is exposed for back-compat but legacy; prefer `search` for drill-in.
+**Copass retrieval as LangChain tools.** The LLM picks `discover` (menu of relevant items), `search` (synthesized answer), or `get_origin` (map canonical_ids to source files) — you don't write the tool-calling loop. `interpret` is exposed for back-compat but legacy; prefer `search` for drill-in.
 
 ## Prerequisites
 
@@ -71,9 +71,10 @@ The agent has the Copass retrieval tools in its toolbelt; the LLM picks one per 
 |---|---|
 | `discover` | "What's relevant?" — ranked menu of pointers |
 | `search` | "Tell me about X" / "Answer this." — synthesized answer (canonical drill-in) |
+| `get_origin` | "Where does this live?" — maps canonical_ids from `discover` to source files. Cheap, no LLM. |
 | `interpret` | Legacy — brief pinned to canonical_ids. Prefer `search` for drill-in. |
 
-Add your own tools via the `tools` option — they'll be mixed in alongside the Copass three:
+Add your own tools via the `tools` option — they'll be mixed in alongside the Copass four:
 
 ```ts
 const agent = createCopassAgent({

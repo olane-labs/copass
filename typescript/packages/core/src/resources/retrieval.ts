@@ -263,6 +263,69 @@ function resolveBody<T extends { window?: WindowLike; history?: ChatMessage[] }>
   return { ...rest, history: resolved } as Omit<T, 'window'> & { history: ChatMessage[] };
 }
 
+/**
+ * Request body for `client.retrieval.getOrigin(sandboxId, …)` — entity →
+ * source file lookup. Pair with `discover`: after the caller picks items
+ * from the menu, `getOrigin` returns the files those canonicals were
+ * extracted from so an agent can localize its next action.
+ */
+export interface OriginsRequest {
+  /**
+   * Canonical IDs to look up. Typically the `canonical_ids` arrays from
+   * `DiscoveryItem`s the caller chose. Capped at 100 per request server-side.
+   */
+  canonical_ids: string[];
+  /**
+   * Per-canonical cap on returned files (1–50). Files are sorted by how
+   * many extractions of the canonical came from each, descending.
+   * Defaults to 10 server-side when omitted.
+   */
+  limit_per_canonical?: number;
+}
+
+/** One source file recorded against a canonical. */
+export interface OriginFile {
+  /**
+   * Source file path as stamped at ingest time. Typically a repo-relative
+   * POSIX path (e.g. `src/foo/bar.py`). The literal value the ingestion
+   * pipeline recorded — caller decides how to resolve it.
+   */
+  file_path: string;
+  /**
+   * Number of independent extractions of this canonical that came from
+   * this file. Higher = the canonical's center-of-mass is here.
+   */
+  extraction_count: number;
+}
+
+/** Per-canonical roll-up of source files. */
+export interface OriginEntry {
+  /** Echo of the canonical_id the caller supplied. */
+  canonical_id: string;
+  /**
+   * Distinct files the canonical was extracted from, ordered by
+   * `extraction_count` descending. Empty when the canonical has no
+   * recorded file-path metadata (e.g. sandboxes ingested before
+   * file-path stamping shipped).
+   */
+  files: OriginFile[];
+}
+
+export interface OriginsResponse {
+  sandbox_id: string;
+  /**
+   * One entry per requested `canonical_id`, in the same order. Entries
+   * for canonicals with no recorded files come back with `files=[]`, so
+   * the response stays positionally aligned with the input list.
+   */
+  origins: OriginEntry[];
+  /**
+   * Optional per-call cost telemetry — populated under the same
+   * `gate_mode` rules as the other retrieval responses. See {@link CostInfo}.
+   */
+  cost?: CostInfo | null;
+}
+
 export class RetrievalResource extends BaseResource {
   discover(sandboxId: string, request: DiscoverRequest): Promise<DiscoverResponse> {
     return this.post<DiscoverResponse>(
@@ -282,6 +345,19 @@ export class RetrievalResource extends BaseResource {
     return this.post<SearchResponse>(
       `/api/v1/query/sandboxes/${encodeURIComponent(sandboxId)}/search`,
       resolveBody(request),
+    );
+  }
+
+  /**
+   * Look up source files for one or more canonical entities. Use this
+   * after `discover` to localize the agent's next action — e.g. open
+   * the file with a native read tool. Cheaper than `search`: no LLM
+   * legs, no synthesis, just an indexed DB lookup.
+   */
+  getOrigin(sandboxId: string, request: OriginsRequest): Promise<OriginsResponse> {
+    return this.post<OriginsResponse>(
+      `/api/v1/query/sandboxes/${encodeURIComponent(sandboxId)}/origins`,
+      request,
     );
   }
 }

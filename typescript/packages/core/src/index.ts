@@ -65,6 +65,10 @@ export type {
   SearchRequest,
   SearchResponse,
   SearchPreset,
+  OriginsRequest,
+  OriginsResponse,
+  OriginEntry,
+  OriginFile,
 } from './resources/retrieval.js';
 export { UsersResource } from './resources/users.js';
 export { ApiKeysResource } from './resources/api-keys.js';

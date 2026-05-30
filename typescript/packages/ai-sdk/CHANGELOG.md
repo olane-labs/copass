@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## Unreleased
+
+### Features
+
+- **ai-sdk:** register a `get_origin` tool alongside `discover` / `interpret` / `search`. Wraps `client.retrieval.getOrigin` — pass canonical_ids from `discover` items to get the source files they were extracted from.
+
 ## [0.5.8](https://github.com/olane-labs/copass/compare/@copass/ai-sdk@0.5.7...@copass/ai-sdk@0.5.8) (2026-05-27)
 
 **Note:** Version bump only for package @copass/ai-sdk

@@ -63,3 +63,35 @@ export const SEARCH_DESCRIPTION = [
   'Hard rule: every user turn must be informed by EITHER the `discover`',
   'menu OR at least one `search` call before you answer.',
 ].join('\n');
+
+/**
+ * Description for the `get_origin` retrieval tool.
+ *
+ * The third leg of the three-step retrieval flow alongside `discover` and
+ * `search`: cheap, read-only entity → source-file lookup. Use it after a
+ * `discover` call to localize the agent's next action without paying for
+ * another LLM-driven `search`.
+ */
+export const GET_ORIGIN_DESCRIPTION = [
+  'Look up source files for one or more canonical entities. Pair with',
+  '`discover`: pass the `canonical_ids` from the items you picked, and',
+  'get back the files those entities were extracted from. Cheap (no LLM',
+  'legs) and meant to be called right before opening a file with your',
+  'native read tool.',
+  '',
+  'A single canonical can span multiple files; each file comes with an',
+  '`extraction_count` so you can prefer the file the entity is most',
+  'concentrated in.',
+].join('\n');
+
+/**
+ * MCP-specific variant of {@link GET_ORIGIN_DESCRIPTION}.
+ *
+ * Same semantics, terser framing — MCP hosts already render tool names
+ * prominently, so the description leads with the action.
+ */
+export const MCP_GET_ORIGIN_DESCRIPTION = [
+  'Map canonical_ids (from `discover`) to source files. Cheap, no LLM.',
+  'Returns one entry per canonical with the files it was extracted from,',
+  'ordered by extraction frequency.',
+].join('\n');

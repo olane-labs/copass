@@ -108,6 +108,26 @@ class CopassRetrievalClient:
             body["project_id"] = project_id
         return await self._post(f"/api/v1/query/sandboxes/{sandbox_id}/search", body)
 
+    async def get_origin(
+        self,
+        sandbox_id: str,
+        *,
+        canonical_ids: list[str],
+        limit_per_canonical: Optional[int] = None,
+    ) -> dict[str, Any]:
+        """POST ``/api/v1/query/sandboxes/{sandbox_id}/origins``.
+
+        Returns the source files each canonical was extracted from.
+        ``canonical_ids`` must be at least 1 element and at most 100;
+        ``limit_per_canonical`` (1-50) caps the files per canonical.
+        """
+        body: dict[str, Any] = {"canonical_ids": canonical_ids}
+        if limit_per_canonical is not None:
+            body["limit_per_canonical"] = limit_per_canonical
+        return await self._post(
+            f"/api/v1/query/sandboxes/{sandbox_id}/origins", body,
+        )
+
     async def _post(self, path: str, body: dict[str, Any]) -> dict[str, Any]:
         async with httpx.AsyncClient(timeout=self._timeout) as http:
             response = await http.post(
