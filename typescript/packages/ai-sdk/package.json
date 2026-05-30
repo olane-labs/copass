@@ -64,7 +64,7 @@
     "zod": ">=3.23.0"
   },
   "devDependencies": {
-    "@copass/core": "^0.6.3",
+    "@copass/core": "workspace:*",
     "@types/node": "^25.0.0",
     "ai": "^6.0.0",
     "tsup": "^8.5.0",

@@ -12,7 +12,13 @@ import {
   SEARCH_DESCRIPTION,
   SEARCH_QUERY_PARAM,
 } from '@copass/config';
-import type { CopassClient, SearchPreset, WindowLike } from '@copass/core';
+import type {
+  CopassClient,
+  OriginEntry,
+  OriginFile,
+  SearchPreset,
+  WindowLike,
+} from '@copass/core';
 
 export interface CopassToolsOptions {
   /** An authenticated `@copass/core` client. */
@@ -154,9 +160,9 @@ export function copassTools(options: CopassToolsOptions) {
       });
       return {
         sandbox_id: response.sandbox_id,
-        origins: response.origins.map((entry) => ({
+        origins: response.origins.map((entry: OriginEntry) => ({
           canonical_id: entry.canonical_id,
-          files: entry.files.map((f) => ({
+          files: entry.files.map((f: OriginFile) => ({
             file_path: f.file_path,
             extraction_count: f.extraction_count,
           })),
