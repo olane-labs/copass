@@ -138,6 +138,10 @@ def copass_tools(
                     "canonical_ids": item.get("canonical_ids", []),
                     "subgraph": item.get("subgraph"),
                     "matched_query_nodes": item.get("matched_query_nodes"),
+                    # Inline source-file paths so the agent can ``read``
+                    # directly without a follow-up ``get_origin`` call.
+                    # Empty list when the backend couldn't enrich.
+                    "file_paths": item.get("file_paths") or [],
                 }
                 for item in response.get("items", [])
             ],

@@ -105,6 +105,24 @@ export interface DiscoveryItem {
    * `copass/copass_2.0` preset.
    */
   matched_query_nodes?: string[] | null;
+  /**
+   * Distinct source file paths this item's canonicals were extracted
+   * from, ordered by extraction frequency descending. Populated server-
+   * side from `metadata_discovered(file_path=…)` events the ingestion
+   * pipeline stamps onto each canonical when the source chunk carried
+   * a `[File: …]` header (code ingest).
+   *
+   * Eliminates the `discover → get_origin` round-trip when the agent
+   * only needs to know which files to open: read this field first;
+   * fall back to {@link RetrievalResource.getOrigin} only when this
+   * list is empty.
+   *
+   * Empty for legacy sandboxes that predate file-path stamping,
+   * conversation-only ingests with no file markers, or items where
+   * every backing canonical was deduped from a previously-unstamped
+   * extraction.
+   */
+  file_paths?: string[];
 }
 
 export interface DiscoverRequest {

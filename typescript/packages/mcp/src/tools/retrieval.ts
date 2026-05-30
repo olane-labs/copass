@@ -133,6 +133,12 @@ export function registerRetrievalTools(server: McpServer, deps: RetrievalDeps): 
               canonical_ids: item.canonical_ids,
               subgraph: item.subgraph ?? null,
               matched_query_nodes: item.matched_query_nodes ?? null,
+              // Inline file_paths so agents can route directly from
+              // discover → read without a follow-up get_origin call.
+              // Empty for items the server couldn't enrich (legacy
+              // sandboxes, conversation-only ingests). Populated by
+              // the backend's discover_file_paths enrichment.
+              file_paths: item.file_paths ?? [],
             })),
             next_steps: response.next_steps,
           }),

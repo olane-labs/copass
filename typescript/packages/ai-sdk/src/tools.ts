@@ -94,6 +94,11 @@ export function copassTools(options: CopassToolsOptions) {
             canonical_ids: item.canonical_ids,
             subgraph: item.subgraph ?? null,
             matched_query_nodes: item.matched_query_nodes ?? null,
+            // Inline source-file paths so the agent can `read` directly
+            // without a follow-up `get_origin` call. Empty array when
+            // the backend couldn't enrich (legacy sandbox / no file
+            // markers in source chunks).
+            file_paths: item.file_paths ?? [],
           })),
           next_steps: response.next_steps,
         };
