@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.5.10](https://github.com/olane-labs/copass/compare/@copass/mastra@0.5.9...@copass/mastra@0.5.10) (2026-05-30)
+
+**Note:** Version bump only for package @copass/mastra
+
 ## Unreleased
 
 ### Features

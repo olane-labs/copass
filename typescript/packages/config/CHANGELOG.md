@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.5.3](https://github.com/olane-labs/copass/compare/@copass/config@0.5.2...@copass/config@0.5.3) (2026-05-30)
+
+**Note:** Version bump only for package @copass/config
+
 ## Unreleased
 
 ### Features

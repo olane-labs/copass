@@ -90,7 +90,7 @@ importers:
   packages/agent-router:
     devDependencies:
       '@copass/core':
-        specifier: ^0.11.0
+        specifier: ^0.11.1
         version: link:../core
       '@types/node':
         specifier: ^25.0.0
@@ -105,7 +105,7 @@ importers:
   packages/ai-sdk:
     dependencies:
       '@copass/config':
-        specifier: ^0.5.2
+        specifier: ^0.5.3
         version: link:../config
     devDependencies:
       '@copass/core':
@@ -235,7 +235,7 @@ importers:
   packages/langchain:
     dependencies:
       '@copass/config':
-        specifier: ^0.5.2
+        specifier: ^0.5.3
         version: link:../config
     devDependencies:
       '@copass/core':
@@ -287,7 +287,7 @@ importers:
   packages/mastra:
     dependencies:
       '@copass/config':
-        specifier: ^0.5.2
+        specifier: ^0.5.3
         version: link:../config
     devDependencies:
       '@copass/core':
@@ -312,7 +312,7 @@ importers:
   packages/mcp:
     dependencies:
       '@copass/config':
-        specifier: ^0.5.2
+        specifier: ^0.5.3
         version: link:../config
       '@copass/management':
         specifier: ^0.5.13
