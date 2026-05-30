@@ -34,7 +34,7 @@ def _client_with_v2_response() -> MagicMock:
 @pytest.mark.asyncio
 async def test_discover_wrapper_forwards_preset_and_projects_v2_fields() -> None:
     client = _client_with_v2_response()
-    discover, _, _ = copass_tools(
+    discover, _, _, _ = copass_tools(
         client=client,
         sandbox_id="sb-1",
         preset="copass/copass_2.0",

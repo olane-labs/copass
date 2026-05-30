@@ -50,14 +50,19 @@ def _make_client() -> CopassRetrievalClient:
     return c
 
 
-def test_returns_three_async_callables() -> None:
+def test_returns_four_async_callables() -> None:
     client = _make_client()
     tools = copass_tools(client=client, sandbox_id="sb1")
 
-    assert len(tools) == 3
-    discover, interpret, search = tools
+    assert len(tools) == 4
+    discover, interpret, search, get_origin = tools
 
-    for fn, name in [(discover, "discover"), (interpret, "interpret"), (search, "search")]:
+    for fn, name in [
+        (discover, "discover"),
+        (interpret, "interpret"),
+        (search, "search"),
+        (get_origin, "get_origin"),
+    ]:
         assert inspect.iscoroutinefunction(fn)
         assert fn.__name__ == name
         assert fn.__doc__ and fn.__doc__.strip()
@@ -66,7 +71,7 @@ def test_returns_three_async_callables() -> None:
 @pytest.mark.asyncio
 async def test_discover_forwards_query_and_trims_response() -> None:
     client = _make_client()
-    discover, _, _ = copass_tools(client=client, sandbox_id="sb1")
+    discover, _, _, _ = copass_tools(client=client, sandbox_id="sb1")
 
     result = await discover(query="checkout")
 
@@ -103,7 +108,7 @@ async def test_discover_forwards_project_and_window() -> None:
 
     window = FakeWindow()
     client = _make_client()
-    discover, _, _ = copass_tools(
+    discover, _, _, _ = copass_tools(
         client=client,
         sandbox_id="sb1",
         project_id="proj_42",
@@ -120,7 +125,7 @@ async def test_discover_forwards_project_and_window() -> None:
 @pytest.mark.asyncio
 async def test_interpret_forwards_items_and_preset() -> None:
     client = _make_client()
-    _, interpret, _ = copass_tools(client=client, sandbox_id="sb1", preset="copass/1.0")
+    _, interpret, _, _ = copass_tools(client=client, sandbox_id="sb1", preset="copass/1.0")
 
     result = await interpret(query="why is checkout flaky?", items=[["c1", "c2"]])
 
@@ -138,7 +143,7 @@ async def test_interpret_forwards_items_and_preset() -> None:
 @pytest.mark.asyncio
 async def test_interpret_defaults_preset_to_copass_1_0() -> None:
     client = _make_client()
-    _, interpret, _ = copass_tools(client=client, sandbox_id="sb1")
+    _, interpret, _, _ = copass_tools(client=client, sandbox_id="sb1")
 
     await interpret(query="q", items=[["c1"]])
 
@@ -148,7 +153,7 @@ async def test_interpret_defaults_preset_to_copass_1_0() -> None:
 @pytest.mark.asyncio
 async def test_search_returns_only_answer() -> None:
     client = _make_client()
-    _, _, search = copass_tools(client=client, sandbox_id="sb1", preset="copass/1.0")
+    _, _, search, _ = copass_tools(client=client, sandbox_id="sb1", preset="copass/1.0")
 
     result = await search(query="how does auth handle refresh?")
 

@@ -41,9 +41,12 @@ def test_descriptions_match_copass_config(client: CopassClient) -> None:
     assert tools.search.description == SEARCH_DESCRIPTION
 
 
-def test_tools_all_returns_three(client: CopassClient) -> None:
+def test_tools_all_returns_four(client: CopassClient) -> None:
     tools = copass_tools(client=client, sandbox_id="sb-1")
-    assert len(tools.all()) == 3
+    assert len(tools.all()) == 4
+    assert {t.name for t in tools.all()} == {
+        "discover", "interpret", "search", "get_origin",
+    }
 
 
 @respx.mock
