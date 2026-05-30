@@ -232,10 +232,13 @@ jobs:
 
       - name: Install local sibling packages (so tests resolve from checkout)
         run: |
-          # Install the SDK + agents packages from local checkout so this
-          # package's tests run against the freshly-stamped sources, not
-          # the previous PyPI release.
-          for sibling in copass-core copass-core-agents copass-context-agents; do
+          # Install the SDK + agents + config packages from local checkout
+          # so this package's tests run against the freshly-stamped sources,
+          # not the previous PyPI release. ``copass-config`` belongs here
+          # because adapters import its constants directly — when a new
+          # tool/param description is added, dependents fail to import
+          # against PyPI's stale config until config itself is republished.
+          for sibling in copass-core copass-core-agents copass-context-agents copass-config; do
             if [ "$sibling" != "${{ matrix.package }}" ] && [ -f "python/$sibling/pyproject.toml" ]; then
               pip install -e "python/$sibling" || true
             fi
