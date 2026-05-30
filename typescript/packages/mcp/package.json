@@ -1,6 +1,6 @@
 {
   "name": "@copass/mcp",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "Standalone MCP server for Copass — drop-in discover/search/get_origin + Context Window tools for any MCP client (Claude Agent SDK, Claude Code, Claude Desktop, Cursor)",
   "publishConfig": {
     "access": "public",
@@ -61,7 +61,7 @@
   },
   "dependencies": {
     "@copass/config": "^0.5.3",
-    "@copass/management": "^0.5.13",
+    "@copass/management": "^0.5.14",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "zod": "^4.3.0"
   },

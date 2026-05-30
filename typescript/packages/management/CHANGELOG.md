@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.5.14](https://github.com/olane-labs/copass/compare/@copass/management@0.5.13...@copass/management@0.5.14) (2026-05-30)
+
+**Note:** Version bump only for package @copass/management
+
 ## [0.5.13](https://github.com/olane-labs/copass/compare/@copass/management@0.5.11...@copass/management@0.5.13) (2026-05-09)
 
 ### Bug Fixes

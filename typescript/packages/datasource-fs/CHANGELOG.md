@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.5.9](https://github.com/olane-labs/copass/compare/@copass/datasource-fs@0.5.8...@copass/datasource-fs@0.5.9) (2026-05-30)
+
+**Note:** Version bump only for package @copass/datasource-fs
+
 ## [0.5.8](https://github.com/olane-labs/copass/compare/@copass/datasource-fs@0.5.6...@copass/datasource-fs@0.5.8) (2026-05-09)
 
 ### Bug Fixes

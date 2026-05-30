@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.7.5](https://github.com/olane-labs/copass/compare/@copass/olane-agents@0.7.4...@copass/olane-agents@0.7.5) (2026-05-30)
+
+**Note:** Version bump only for package @copass/olane-agents
+
 ## [0.7.4](https://github.com/olane-labs/copass/compare/@copass/olane-agents@0.7.2...@copass/olane-agents@0.7.4) (2026-05-27)
 
 ### Bug Fixes
