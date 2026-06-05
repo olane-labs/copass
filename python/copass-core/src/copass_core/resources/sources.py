@@ -345,6 +345,7 @@ class SourcesResource(BaseResource):
         occurred_at: Optional[str] = None,
         speaker: Optional[str] = None,
         participants: Optional[List[str]] = None,
+        origin: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Primary ingestion path — pushes ``text`` through this
         data source. Equivalent to calling
@@ -359,6 +360,12 @@ class SourcesResource(BaseResource):
         ``speaker`` and ``participants`` are conversation-shape
         metadata — useful when the source pushes chat-style content.
         See :meth:`IngestResource.text` for the full semantics.
+
+        ``origin`` is structured source provenance for code/document
+        ingestion — e.g. ``{"source_type": "code", "repo": "...",
+        "path": "...", "commit_sha": "...", "committed_at": "...",
+        "authors": [{"name": "...", "email": "..."}]}``. Forwarded
+        verbatim; the backend validates and models it.
         """
         body: Dict[str, Any] = {"text": text, "data_source_id": source_id}
         if source_type is not None:
@@ -373,6 +380,8 @@ class SourcesResource(BaseResource):
             body["speaker"] = speaker
         if participants is not None:
             body["participants"] = participants
+        if origin is not None:
+            body["origin"] = origin
         return await self._post(_ingest_base(sandbox_id), body)
 
 
