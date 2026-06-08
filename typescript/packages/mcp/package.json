@@ -56,6 +56,10 @@
     "url": "git+https://github.com/olane-labs/copass.git",
     "directory": "typescript/packages/mcp"
   },
+  "homepage": "https://github.com/olane-labs/copass/tree/main/typescript/packages/mcp#readme",
+  "bugs": {
+    "url": "https://github.com/olane-labs/copass/issues"
+  },
   "engines": {
     "node": ">=18.0.0"
   },
